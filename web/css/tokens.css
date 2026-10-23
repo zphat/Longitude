@@ -1,0 +1,437 @@
+/* Longitude base tokens and elements. Theme colours are set on :root by
+   js/ui/theme.js; the values below are the Signal theme so the page looks
+   right before JavaScript runs. */
+
+@font-face {
+  font-family: "Manrope";
+  src: url("../fonts/ui/manrope.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Syne";
+  src: url("../fonts/ui/syne.woff2") format("woff2");
+  font-weight: 400 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Space Mono";
+  src: url("../fonts/ui/spacemono-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Space Mono";
+  src: url("../fonts/ui/spacemono-700.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
+  --bg: #090b0d;
+  --panel: #111517;
+  --panel2: #1b2023;
+  --line: #30383d;
+  --text: #eef1ec;
+  --muted: #a8b3b3;
+  --faint: #8d9a9a;
+  --accent: #d1ff4a;
+  --highlight: #ffc56b;
+  --ink: #16200d;
+  --green: #a7d9a0;
+  --red: #ff8f98;
+  --amber: #eed09a;
+  --workspace: #07080a;
+  --glass: rgba(17, 21, 23, 0.78);
+  --glass-strong: rgba(17, 21, 23, 0.96);
+  --line-soft: rgba(48, 56, 61, 0.7);
+  --hover: rgba(238, 241, 236, 0.06);
+  --active: rgba(238, 241, 236, 0.1);
+  --accent-soft: rgba(209, 255, 74, 0.14);
+  --accent-line: rgba(209, 255, 74, 0.45);
+  --highlight-soft: rgba(255, 197, 107, 0.16);
+  --red-soft: rgba(255, 143, 152, 0.14);
+  --shadow: rgba(0, 0, 0, 0.55);
+  --dot: rgba(238, 241, 236, 0.07);
+  --grain-op: 0.07;
+  --grain-blend: screen;
+  --scan-op: 0;
+
+  /* Fixed tokens */
+  --guide: #d1ff4a;        /* snap guides stay lime in every theme */
+  --guide-halo: rgba(0, 0, 0, 0.6);
+  --space-guide: #ffc56b;  /* spacing indicators */
+  --f-body: "Manrope", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-display: "Syne", "Manrope", system-ui, sans-serif;
+  --f-mono: "Space Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --r-lg: 18px;   /* islands */
+  --r: 12px;      /* cards, popovers */
+  --r-s: 9px;     /* controls */
+  --r-xs: 6px;
+  --gap: 10px;    /* gap between floating islands and the window edge */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t-fast: 120ms;
+  --t: 200ms;
+  --island-shadow: 0 18px 50px -18px var(--shadow), 0 2px 8px -2px var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --pop-shadow: 0 28px 70px -20px var(--shadow), 0 0 0 1px var(--line-soft), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --focus: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent);
+
+  font-family: var(--f-body);
+  font-size: 13px;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--workspace);
+  color: var(--text);
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea,
+[contenteditable] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+  outline: none;
+}
+
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  box-shadow: var(--focus);
+  border-radius: var(--r-s);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--panel2);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--line);
+  background-clip: padding-box;
+}
+
+svg.i {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  display: block;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+svg.i.sm {
+  width: 15px;
+  height: 15px;
+}
+svg.i.lg {
+  width: 22px;
+  height: 22px;
+}
+
+kbd,
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--f-body);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--muted);
+  background: var(--panel2);
+  border: 1px solid var(--line-soft);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 3px 5px;
+  min-width: 18px;
+  justify-content: center;
+}
+
+.mono,
+.num {
+  font-family: var(--f-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.micro {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* Floating island surface */
+.island {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(22px) saturate(1.25);
+  backdrop-filter: blur(22px) saturate(1.25);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-lg);
+  box-shadow: var(--island-shadow);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 7px 13px;
+  border-radius: var(--r-s);
+  border: 1px solid var(--line-soft);
+  background: var(--panel2);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast), color var(--t-fast);
+}
+.btn:hover {
+  background: color-mix(in srgb, var(--panel2) 80%, var(--text) 8%);
+  border-color: var(--line);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.99);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: 0 6px 22px -8px var(--accent-line);
+}
+.btn.primary:hover {
+  background: color-mix(in srgb, var(--accent) 88%, #ffffff 12%);
+  box-shadow: 0 8px 28px -8px var(--accent-line);
+}
+/* The glow above would replace the global focus ring: keep both. */
+.btn.primary:focus-visible,
+.btn.primary:focus-visible:hover {
+  box-shadow: var(--focus), 0 6px 22px -8px var(--accent-line);
+}
+.btn.ghost {
+  background: transparent;
+  border-color: transparent;
+}
+.btn.ghost:hover {
+  background: var(--hover);
+}
+.btn.danger {
+  color: var(--red);
+}
+.btn.danger:hover {
+  background: var(--red-soft);
+  border-color: transparent;
+}
+.btn.wide {
+  width: 100%;
+}
+.btn.big {
+  min-height: 42px;
+  font-size: 13.5px;
+  border-radius: 11px;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-s);
+  color: var(--muted);
+  transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
+}
+.icon-btn:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.icon-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.icon-btn.active,
+.icon-btn[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.icon-btn.sm {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 99px;
+  background: var(--panel2);
+  border: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.chip.accent {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--accent);
+}
+
+/* Text fields */
+.input,
+input[type="text"],
+input[type="search"],
+input[type="number"],
+input[type="url"],
+textarea,
+select {
+  background: var(--panel2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-s);
+  padding: 7px 10px;
+  min-height: 32px;
+  color: var(--text);
+  transition: border-color var(--t-fast), box-shadow var(--t-fast), background var(--t-fast);
+}
+.input:hover,
+input[type="text"]:hover,
+input[type="search"]:hover,
+input[type="number"]:hover,
+textarea:hover,
+select:hover {
+  border-color: var(--line);
+}
+.input:focus,
+input[type="text"]:focus,
+input[type="search"]:focus,
+input[type="number"]:focus,
+input[type="url"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+select {
+  cursor: pointer;
+  appearance: none;
+  padding-right: 28px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+
+/* Textures. Add class "grain" to a positioned element to overlay film grain. */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--grain-op);
+  mix-blend-mode: var(--grain-blend);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  z-index: 0;
+}
+.scan::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--scan-op);
+  background: repeating-linear-gradient(0deg, currentColor 0 1px, transparent 1px 3px);
+  z-index: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}

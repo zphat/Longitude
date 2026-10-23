@@ -1,0 +1,181 @@
+/* Drawing and text tools: the inline text editor, creation previews, the
+   refine brush ring and the magic eraser ripple. Overlay pieces live in the
+   editor's SVG overlay (screen space); on-canvas marks use the fixed guide
+   tokens so they read on any image in every theme. */
+
+/* ---- inline text editing ---------------------------------------------- */
+
+/* A transparent textarea laid exactly over the canvas text: the browser
+   draws the caret and selection, the canvas draws the glyphs. */
+textarea.text-edit,
+textarea.text-edit:hover,
+textarea.text-edit:focus {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 6;
+  display: block;
+  box-sizing: content-box;
+  min-width: 0;
+  min-height: 0;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: var(--accent);
+  resize: none;
+  overflow: hidden;
+  transform-origin: 0 0;
+  font-kerning: normal;
+  font-synthesis: weight style;
+  text-rendering: geometricPrecision;
+  text-indent: 0;
+  word-spacing: 0;
+  overflow-wrap: anywhere;
+  tab-size: 4;
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
+  transition: none;
+}
+textarea.text-edit::selection {
+  background: color-mix(in srgb, var(--accent) 34%, transparent);
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+textarea.text-edit::placeholder {
+  color: transparent;
+}
+
+/* ---- creation previews ------------------------------------------------- */
+
+/* Dragged text box (wrap width). */
+.draw-box {
+  fill: color-mix(in srgb, var(--guide) 6%, transparent);
+  stroke: var(--guide);
+  stroke-width: 1.25;
+  stroke-dasharray: 5 4;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 1px var(--guide-halo));
+}
+
+/* Live size / angle pill next to the pointer. */
+.draw-pill {
+  pointer-events: none;
+}
+.draw-pill rect {
+  fill: var(--glass-strong);
+  stroke: var(--line-soft);
+  stroke-width: 1;
+}
+.draw-pill text {
+  fill: var(--text);
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Pen stroke while drawing, and the clean shape it morphs into. */
+.pen-preview {
+  pointer-events: none;
+  fill-rule: nonzero;
+}
+.pen-morph {
+  pointer-events: none;
+}
+
+/* ---- refine brush --------------------------------------------------------- */
+
+.brush-cursor {
+  pointer-events: none;
+}
+.brush-cursor circle {
+  fill: none;
+}
+.brush-cursor .halo,
+.brush-cursor .sign-halo {
+  stroke: var(--guide-halo);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+}
+.brush-cursor .ring,
+.brush-cursor .sign {
+  stroke: var(--guide);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.brush-cursor.restore .ring {
+  stroke-dasharray: 4 3;
+}
+.brush-cursor.loading .ring {
+  stroke-dasharray: 2 4;
+  opacity: 0.6;
+}
+
+/* The removed parts of the image, faintly, while restoring. */
+.refine-ghost {
+  pointer-events: none;
+  opacity: 0.38;
+}
+
+/* ---- magic eraser ---------------------------------------------------------- */
+
+.magic-ripple {
+  pointer-events: none;
+}
+.magic-ripple circle {
+  fill: none;
+  stroke: var(--guide);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 1.5px var(--guide-halo));
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: magic-ripple 560ms var(--ease) forwards;
+}
+.magic-ripple .dot {
+  fill: var(--guide);
+  stroke: none;
+  animation: magic-dot 560ms var(--ease) forwards;
+}
+.magic-ripple.restore circle:not(.dot) {
+  stroke-dasharray: 5 4;
+}
+
+@keyframes magic-ripple {
+  from {
+    transform: scale(0.15);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes magic-dot {
+  0% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .magic-ripple circle,
+  .magic-ripple .dot {
+    animation: none;
+    opacity: 0.8;
+  }
+}

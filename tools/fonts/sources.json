@@ -1,0 +1,85 @@
+{
+  "repo": "https://raw.githubusercontent.com/google/fonts/main",
+  "ui": [
+    { "dir": "ofl/manrope", "src": "Manrope[wght].ttf", "out": "ui/manrope.woff2" },
+    { "dir": "ofl/syne", "src": "Syne[wght].ttf", "out": "ui/syne.woff2" },
+    { "dir": "ofl/spacemono", "src": "SpaceMono-Regular.ttf", "out": "ui/spacemono-400.woff2" },
+    { "dir": "ofl/spacemono", "src": "SpaceMono-Bold.ttf", "out": "ui/spacemono-700.woff2" }
+  ],
+  "families": [
+    { "slug": "anton", "dir": "ofl/anton", "license": "OFL.txt", "files": [
+      { "src": "Anton-Regular.ttf", "out": "anton/Anton-Regular.woff2" }
+    ] },
+    { "slug": "bebasneue", "dir": "ofl/bebasneue", "license": "OFL.txt", "files": [
+      { "src": "BebasNeue-Regular.ttf", "out": "bebasneue/BebasNeue-Regular.woff2" }
+    ] },
+    { "slug": "montserrat", "dir": "ofl/montserrat", "license": "OFL.txt", "files": [
+      { "src": "Montserrat[wght].ttf", "out": "montserrat/Montserrat-Variable.woff2" },
+      { "src": "Montserrat-Italic[wght].ttf", "out": "montserrat/Montserrat-Italic-Variable.woff2" }
+    ] },
+    { "slug": "oswald", "dir": "ofl/oswald", "license": "OFL.txt", "files": [
+      { "src": "Oswald[wght].ttf", "out": "oswald/Oswald-Variable.woff2" }
+    ] },
+    { "slug": "archivoblack", "dir": "ofl/archivoblack", "license": "OFL.txt", "files": [
+      { "src": "ArchivoBlack-Regular.ttf", "out": "archivoblack/ArchivoBlack-Regular.woff2" }
+    ] },
+    { "slug": "poppins", "dir": "ofl/poppins", "license": "OFL.txt", "files": [
+      { "src": "Poppins-ExtraBold.ttf", "out": "poppins/Poppins-ExtraBold.woff2" },
+      { "src": "Poppins-Black.ttf", "out": "poppins/Poppins-Black.woff2" },
+      { "src": "Poppins-BlackItalic.ttf", "out": "poppins/Poppins-BlackItalic.woff2" }
+    ] },
+    { "slug": "luckiestguy", "dir": "apache/luckiestguy", "license": "LICENSE.txt", "files": [
+      { "src": "LuckiestGuy-Regular.ttf", "out": "luckiestguy/LuckiestGuy-Regular.woff2" }
+    ] },
+    { "slug": "lilitaone", "dir": "ofl/lilitaone", "license": "OFL.txt", "files": [
+      { "src": "LilitaOne-Regular.ttf", "out": "lilitaone/LilitaOne-Regular.ttf" }
+    ] },
+    { "slug": "rubik", "dir": "ofl/rubik", "license": "OFL.txt", "files": [
+      { "src": "Rubik[wght].ttf", "out": "rubik/Rubik-Variable.woff2" }
+    ] },
+    { "slug": "bangers", "dir": "ofl/bangers", "license": "OFL.txt", "files": [
+      { "src": "Bangers-Regular.ttf", "out": "bangers/Bangers-Regular.woff2" }
+    ] },
+    { "slug": "comicneue", "dir": "ofl/comicneue", "license": "OFL.txt", "files": [
+      { "src": "ComicNeue-Bold.ttf", "out": "comicneue/ComicNeue-Bold.woff2" },
+      { "src": "ComicNeue-BoldItalic.ttf", "out": "comicneue/ComicNeue-BoldItalic.woff2" }
+    ] },
+    { "slug": "permanentmarker", "dir": "apache/permanentmarker", "license": "LICENSE.txt", "files": [
+      { "src": "PermanentMarker-Regular.ttf", "out": "permanentmarker/PermanentMarker-Regular.woff2" }
+    ] },
+    { "slug": "bungee", "dir": "ofl/bungee", "license": "OFL.txt", "files": [
+      { "src": "Bungee-Regular.ttf", "out": "bungee/Bungee-Regular.woff2" }
+    ] },
+    { "slug": "monoton", "dir": "ofl/monoton", "license": "OFL.txt", "files": [
+      { "src": "Monoton-Regular.ttf", "out": "monoton/Monoton-Regular.ttf" }
+    ] },
+    { "slug": "blackopsone", "dir": "ofl/blackopsone", "license": "OFL.txt", "files": [
+      { "src": "BlackOpsOne-Regular.ttf", "out": "blackopsone/BlackOpsOne-Regular.woff2" }
+    ] },
+    { "slug": "pressstart2p", "dir": "ofl/pressstart2p", "license": "OFL.txt", "files": [
+      { "src": "PressStart2P-Regular.ttf", "out": "pressstart2p/PressStart2P-Regular.ttf" }
+    ] },
+    { "slug": "creepster", "dir": "ofl/creepster", "license": "OFL.txt", "files": [
+      { "src": "Creepster-Regular.ttf", "out": "creepster/Creepster-Regular.ttf" }
+    ] },
+    { "slug": "unbounded", "dir": "ofl/unbounded", "license": "OFL.txt", "files": [
+      { "src": "Unbounded[wght].ttf", "out": "unbounded/Unbounded-Variable.woff2" }
+    ] },
+    { "slug": "righteous", "dir": "ofl/righteous", "license": "OFL.txt", "files": [
+      { "src": "Righteous-Regular.ttf", "out": "righteous/Righteous-Regular.ttf" }
+    ] },
+    { "slug": "russoone", "dir": "ofl/russoone", "license": "OFL.txt", "files": [
+      { "src": "RussoOne-Regular.ttf", "out": "russoone/RussoOne-Regular.ttf" }
+    ] },
+    { "slug": "syne", "dir": "ofl/syne", "license": "OFL.txt", "files": [] },
+    { "slug": "rubikglitch", "dir": "ofl/rubikglitch", "license": "OFL.txt", "files": [
+      { "src": "RubikGlitch-Regular.ttf", "out": "rubikglitch/RubikGlitch-Regular.woff2" }
+    ] },
+    { "slug": "inter", "dir": "ofl/inter", "license": "OFL.txt", "files": [
+      { "src": "Inter[opsz,wght].ttf", "out": "inter/Inter-Variable.woff2" },
+      { "src": "Inter-Italic[opsz,wght].ttf", "out": "inter/Inter-Italic-Variable.woff2" }
+    ] },
+    { "slug": "manrope", "dir": "ofl/manrope", "license": "OFL.txt", "files": [] },
+    { "slug": "spacemono", "dir": "ofl/spacemono", "license": "OFL.txt", "files": [] }
+  ]
+}

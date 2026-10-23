@@ -1,0 +1,347 @@
+{
+  "v": 1,
+  "checked": "2026-10-23",
+  "presets": [
+    {
+      "id": "yt-thumb",
+      "group": "YouTube",
+      "label": "YouTube thumbnail",
+      "width": 1280,
+      "height": 720,
+      "note": "16:9, JPG or PNG. The YouTube app takes up to 2 MB, a computer up to 50 MB. For the recommended 3840 × 2160, export at 3x.",
+      "keywords": "video cover 16:9",
+      "export": { "type": "image/jpeg", "quality": 0.92, "maxBytes": 2000000, "formats": ["image/jpeg", "image/png"] },
+      "guides": [
+        { "kind": "badge", "x": 0.862, "y": 0.86, "w": 0.115, "h": 0.088, "label": "12:34", "note": "Video length" },
+        { "kind": "bar", "x": 0, "y": 0.985, "w": 1, "h": 0.015, "label": "Watch progress", "note": "Shown on videos a viewer has started" }
+      ],
+      "sources": [
+        {
+          "title": "YouTube Help: Add video thumbnails",
+          "url": "https://support.google.com/youtube/answer/72431",
+          "checked": "2026-10-23",
+          "confirms": "16:9; JPG or PNG; 3840 × 2160 recommended, 640 px minimum width; 2 MB from mobile, 50 MB from desktop"
+        }
+      ]
+    },
+    {
+      "id": "yt-shorts",
+      "group": "YouTube",
+      "label": "YouTube Shorts",
+      "width": 1080,
+      "height": 1920,
+      "note": "9:16. The player covers the edges with the title, channel and buttons, so keep text in the safe zone. For a Shorts thumbnail, export at 2x (2160 × 3840 recommended).",
+      "keywords": "vertical short reel tiktok 9:16",
+      "export": { "type": "image/jpeg", "quality": 0.92, "maxBytes": 2000000, "formats": ["image/jpeg", "image/png"] },
+      "guides": [
+        { "kind": "zone", "x": 0, "y": 0, "w": 1, "h": 0.15, "label": "Covered by YouTube UI", "note": "Top bar" },
+        { "kind": "zone", "x": 0.8222, "y": 0.15, "w": 0.1778, "h": 0.5, "label": "Covered by YouTube UI", "note": "Like, comment, share and remix buttons" },
+        { "kind": "zone", "x": 0, "y": 0.65, "w": 1, "h": 0.35, "label": "Covered by YouTube UI", "note": "Title, channel name, subscribe and sound" },
+        { "kind": "safe", "x": 0.0444, "y": 0.15, "w": 0.7778, "h": 0.5, "label": "Safe zone" }
+      ],
+      "sources": [
+        {
+          "title": "YouTube Help: Add video thumbnails",
+          "url": "https://support.google.com/youtube/answer/72431",
+          "checked": "2026-10-23",
+          "confirms": "Shorts thumbnails 9:16, 2160 × 3840 recommended, 640 px minimum height"
+        },
+        {
+          "title": "Google Ads Help: About video ad specs (universal safe zones)",
+          "url": "https://support.google.com/google-ads/answer/13547298",
+          "checked": "2026-10-23",
+          "confirms": "Vertical 1080 × 1920 safe zone: 288 px top, 672 px bottom, 48 px left, 192 px right (from Google's safe zone diagram)"
+        },
+        {
+          "title": "Google Ads Help: Use square and vertical video",
+          "url": "https://support.google.com/google-ads/answer/9128498",
+          "checked": "2026-10-23",
+          "confirms": "Keep logos, products and text inside the safe zone so overlays and buttons do not cover them"
+        }
+      ]
+    },
+    {
+      "id": "yt-banner",
+      "group": "YouTube",
+      "label": "YouTube channel banner",
+      "width": 2560,
+      "height": 1440,
+      "note": "One image for every screen: TV shows all of it, desktop a wide strip, phones the centre. Keep text and logos inside the all-devices area. At least 2048 × 1152, 6 MB or smaller.",
+      "keywords": "channel art header cover",
+      "export": { "type": "image/jpeg", "quality": 0.92, "maxBytes": 6000000, "formats": ["image/jpeg", "image/png"] },
+      "guides": [
+        { "kind": "safe", "x": 0, "y": 0, "w": 1, "h": 1, "label": "TV" },
+        { "kind": "safe", "x": 0, "y": 0.3533, "w": 1, "h": 0.2934, "label": "Desktop" },
+        { "kind": "safe", "x": 0.1985, "y": 0.3533, "w": 0.603, "h": 0.2934, "label": "All devices", "note": "Text and logos: 1235 × 338 at 2048 × 1152, about 1546 × 423 here" }
+      ],
+      "sources": [
+        {
+          "title": "YouTube Help: Manage your channel branding",
+          "url": "https://support.google.com/youtube/answer/10456525",
+          "checked": "2026-10-23",
+          "confirms": "Minimum 2048 × 1152 (16:9); 2560 × 1440 recommended; text and logo safe area 1235 × 338 at the minimum size; 6 MB or smaller; cropped on some devices"
+        }
+      ]
+    },
+    {
+      "id": "yt-avatar",
+      "group": "YouTube",
+      "label": "YouTube profile picture",
+      "width": 800,
+      "height": 800,
+      "note": "Shown as a circle, as small as 98 px, so keep it bold and centred. JPG, PNG, GIF or BMP up to 15 MB. 800 × 800 is recommended.",
+      "keywords": "profile picture avatar icon logo pfp",
+      "export": { "type": "image/png", "quality": 0.92, "maxBytes": 15000000, "formats": ["image/png", "image/jpeg"] },
+      "guides": [{ "kind": "circle", "cx": 0.5, "cy": 0.5, "r": 0.5, "label": "Shown as a circle" }],
+      "sources": [
+        {
+          "title": "YouTube Help: Manage your channel branding",
+          "url": "https://support.google.com/youtube/answer/10456525",
+          "checked": "2026-10-23",
+          "confirms": "JPG, GIF, BMP or PNG (no animated GIF); up to 15 MB; renders at 98 × 98"
+        }
+      ]
+    },
+    {
+      "id": "yt-post",
+      "group": "YouTube",
+      "label": "YouTube post image",
+      "width": 1080,
+      "height": 1080,
+      "note": "The feed shows post images square. JPG, PNG, GIF or WebP up to 16 MB. YouTube gives no pixel size, so 1080 × 1080 is recommended.",
+      "keywords": "community post",
+      "export": { "type": "image/jpeg", "quality": 0.92, "maxBytes": 16000000, "formats": ["image/jpeg", "image/png", "image/webp"] },
+      "guides": [],
+      "sources": [
+        {
+          "title": "YouTube Help: Create posts",
+          "url": "https://support.google.com/youtube/answer/7124474",
+          "checked": "2026-10-23",
+          "confirms": "Up to 16 MB; JPG, PNG, GIF or WEBP; 1:1 suggested because the feed shows images square; up to 10 images per post"
+        }
+      ]
+    },
+    {
+      "id": "yt-watermark",
+      "group": "YouTube",
+      "label": "YouTube video watermark",
+      "width": 300,
+      "height": 300,
+      "note": "Square, at least 150 × 150, under 1 MB. It sits small over your videos, so a simple mark on a clear background reads best.",
+      "keywords": "branding subscribe logo",
+      "background": { "kind": "transparent" },
+      "export": { "type": "image/png", "quality": 0.92, "maxBytes": 1000000, "formats": ["image/png", "image/jpeg"] },
+      "guides": [],
+      "sources": [
+        {
+          "title": "YouTube Help: Manage your channel branding",
+          "url": "https://support.google.com/youtube/answer/10456525",
+          "checked": "2026-10-23",
+          "confirms": "Video watermark: square, minimum 150 × 150, less than 1 MB"
+        }
+      ]
+    },
+    {
+      "id": "sp-podcast",
+      "group": "Spotify",
+      "label": "Spotify podcast cover",
+      "width": 3000,
+      "height": 3000,
+      "note": "Square. Spotify suggests 1400 to 3000 px, JPG or PNG. It shows tiny in lists, so keep the title big.",
+      "keywords": "show art podcast cover episode",
+      "export": { "type": "image/jpeg", "quality": 0.92, "maxBytes": null, "formats": ["image/jpeg", "image/png"] },
+      "guides": [],
+      "sources": [
+        {
+          "title": "Spotify for Creators: The dos and don'ts of show art",
+          "url": "https://creators.spotify.com/resources/dos-donts-showart",
+          "checked": "2026-10-23",
+          "confirms": "Square 1:1, between 1400 × 1400 and 3000 × 3000 (article dated 2019)"
+        },
+        {
+          "title": "Spotify: Podcast Delivery Specification v1.10",
+          "url": "https://providersupport.spotify.com/article/podcast-delivery-specification-1-9",
+          "checked": "2026-10-23",
+          "confirms": "Episode and show artwork 1:1 in high resolution; no pixel or file size limit stated"
+        },
+        {
+          "title": "Spotify Help: Uploading cover art",
+          "url": "https://support.spotify.com/us/creators/article/uploading-cover-art/",
+          "checked": "2026-10-23",
+          "confirms": "How to upload; no size or format limits stated"
+        }
+      ]
+    },
+    {
+      "id": "sp-video-thumb",
+      "group": "Spotify",
+      "label": "Spotify video thumbnail",
+      "width": 1920,
+      "height": 1080,
+      "note": "16:9 landscape is required; 1920 × 1080 is suggested. Shown for video episodes in the Spotify mobile app.",
+      "keywords": "video podcast episode thumbnail 16:9",
+      "export": { "type": "image/jpeg", "quality": 0.92, "maxBytes": null, "formats": ["image/jpeg", "image/png"] },
+      "guides": [],
+      "sources": [
+        {
+          "title": "Spotify Help: Thumbnails",
+          "url": "https://support.spotify.com/us/creators/article/thumbnails/",
+          "checked": "2026-10-23",
+          "confirms": "Horizontal, 16:9 required; 1920 × 1080 suggested; shown only for video episodes in the mobile app"
+        }
+      ]
+    },
+    {
+      "id": "sp-playlist",
+      "group": "Spotify",
+      "label": "Spotify playlist cover",
+      "width": 1080,
+      "height": 1080,
+      "note": "Square JPG. Spotify's help gives no pixel size; staying under 4 MB is the widely reported limit.",
+      "keywords": "playlist cover",
+      "export": { "type": "image/jpeg", "quality": 0.9, "maxBytes": 4000000, "formats": ["image/jpeg"] },
+      "guides": [],
+      "sources": [
+        {
+          "title": "Spotify Help: Customize your playlist cover",
+          "url": "https://support.spotify.com/us/article/add-playlist-cover/",
+          "checked": "2026-10-23",
+          "confirms": "How to add a cover; no size or format limits stated"
+        },
+        {
+          "title": "Spotify for Developers: Add custom playlist cover image",
+          "url": "https://developer.spotify.com/documentation/web-api/reference/upload-custom-playlist-cover",
+          "checked": "2026-10-23",
+          "confirms": "JPEG only (API uploads are capped at 256 KB of Base64 data)"
+        },
+        {
+          "title": "Spotify Community: My playlist photo",
+          "url": "https://community.spotify.com/t5/Content-Questions/My-playlist-photo/m-p/4568090",
+          "checked": "2026-10-23",
+          "confirms": "Moderator answer: JPEG, up to 4 MB (not on the current help page)"
+        }
+      ]
+    },
+    {
+      "id": "sp-header",
+      "group": "Spotify",
+      "label": "Spotify artist header",
+      "width": 2660,
+      "height": 1140,
+      "note": "At least 2660 × 1140; JPG, PNG or GIF up to 20 MB. Shown on desktop, web and TV with your name over the lower left. Spotify asks for no text in artist images.",
+      "keywords": "artist banner header spotify for artists",
+      "export": { "type": "image/jpeg", "quality": 0.92, "maxBytes": 20000000, "formats": ["image/jpeg", "image/png"] },
+      "guides": [
+        { "kind": "safe", "x": 0.25, "y": 0.12, "w": 0.5, "h": 0.5, "label": "Safe area (approx.)", "note": "The header crops to the window; keep faces near the upper middle" },
+        { "kind": "zone", "x": 0, "y": 0.66, "w": 0.55, "h": 0.34, "label": "Covered by artist name", "note": "Approximate; the name and listener count sit here on desktop" }
+      ],
+      "sources": [
+        {
+          "title": "Spotify for Artists: Artist image guidelines",
+          "url": "https://support.spotify.com/us/artists/article/artist-image-guidelines/",
+          "checked": "2026-10-23",
+          "confirms": "Header at least 2660 × 1140; JPEG, PNG or GIF; up to 20 MB; no text, advertising or busy backgrounds"
+        },
+        {
+          "title": "Spotify for Artists: Managing your artist images on Spotify",
+          "url": "https://support.spotify.com/us/artists/article/managing-your-artist-images-on-spotify/",
+          "checked": "2026-10-23",
+          "confirms": "The header shows on desktop, web player and smart TVs"
+        }
+      ]
+    },
+    {
+      "id": "sp-avatar",
+      "group": "Spotify",
+      "label": "Spotify artist profile picture",
+      "width": 1500,
+      "height": 1500,
+      "note": "At least 750 × 750; JPG, PNG or GIF up to 20 MB. Shown as a circle in the mobile app and in search.",
+      "keywords": "artist avatar profile picture pfp spotify for artists",
+      "export": { "type": "image/jpeg", "quality": 0.92, "maxBytes": 20000000, "formats": ["image/jpeg", "image/png"] },
+      "guides": [{ "kind": "circle", "cx": 0.5, "cy": 0.5, "r": 0.5, "label": "Shown as a circle" }],
+      "sources": [
+        {
+          "title": "Spotify for Artists: Artist image guidelines",
+          "url": "https://support.spotify.com/us/artists/article/artist-image-guidelines/",
+          "checked": "2026-10-23",
+          "confirms": "Avatar at least 750 × 750; JPEG, PNG or GIF; up to 20 MB"
+        },
+        {
+          "title": "Spotify for Artists: Managing your artist images on Spotify",
+          "url": "https://support.spotify.com/us/artists/article/managing-your-artist-images-on-spotify/",
+          "checked": "2026-10-23",
+          "confirms": "The avatar shows at the top of the mobile profile and next to your name in search"
+        }
+      ]
+    },
+    {
+      "id": "sp-album",
+      "group": "Spotify",
+      "label": "Spotify album cover",
+      "width": 3000,
+      "height": 3000,
+      "note": "Square, 640 to 10,000 px, sRGB. Spotify asks for PNG or lossless JPG without an embedded colour profile. Uploads go through your distributor.",
+      "keywords": "single ep release artwork music cover",
+      "export": { "type": "image/png", "quality": 1, "maxBytes": null, "formats": ["image/png", "image/jpeg"] },
+      "guides": [],
+      "sources": [
+        {
+          "title": "Spotify for Artists: Cover art requirements",
+          "url": "https://support.spotify.com/us/artists/article/cover-art-requirements/",
+          "checked": "2026-10-23",
+          "confirms": "TIFF, PNG or JPG with lossless encoding; 640 to 10,000 px; 1:1; sRGB, 24 bits per pixel; no embedded profiles or orientation metadata"
+        }
+      ]
+    },
+    {
+      "id": "square",
+      "group": "Social",
+      "label": "Square post",
+      "width": 1080,
+      "height": 1080,
+      "note": "1:1 for feed posts and covers.",
+      "keywords": "instagram post 1:1",
+      "export": { "type": "image/png", "quality": 0.92, "maxBytes": null, "formats": [] },
+      "guides": [],
+      "sources": []
+    },
+    {
+      "id": "story",
+      "group": "Social",
+      "label": "Story",
+      "width": 1080,
+      "height": 1920,
+      "note": "9:16 for stories, Reels and Shorts covers. Keep text away from the top and bottom edges.",
+      "keywords": "instagram reel tiktok vertical 9:16",
+      "export": { "type": "image/png", "quality": 0.92, "maxBytes": null, "formats": [] },
+      "guides": [],
+      "sources": []
+    },
+    {
+      "id": "wide",
+      "group": "Social",
+      "label": "Wide",
+      "width": 1920,
+      "height": 1080,
+      "note": "16:9 full HD for video frames, slides and end screens.",
+      "keywords": "1080p hd landscape 16:9",
+      "export": { "type": "image/png", "quality": 0.92, "maxBytes": null, "formats": [] },
+      "guides": [],
+      "sources": []
+    },
+    {
+      "id": "custom",
+      "group": "Custom",
+      "label": "Custom size",
+      "width": 1280,
+      "height": 720,
+      "custom": true,
+      "note": "Any size from 16 to 8000 px.",
+      "keywords": "any size dimensions",
+      "export": { "type": "image/png", "quality": 0.92, "maxBytes": null, "formats": [] },
+      "guides": [],
+      "sources": []
+    }
+  ]
+}

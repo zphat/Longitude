@@ -1,0 +1,262 @@
+{
+  "v": 1,
+  "families": [
+    {
+      "family": "Longitude Meridian", "label": "Meridian", "category": "original",
+      "faces": [{ "file": "original/LongitudeMeridian-Regular.woff2", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "Arial Rounded MT Bold, Arial Black, sans-serif",
+      "license": "OFL-1.1", "credit": "Longitude contributors",
+      "tags": ["original", "rounded", "heavy", "bold", "caps", "condensed", "headline", "thumbnail"],
+      "sample": "IS THIS A SCAM?"
+    },
+    {
+      "family": "Longitude Meridian Slant", "label": "Meridian Slant", "category": "original",
+      "faces": [{ "file": "original/LongitudeMeridianSlant-Italic.woff2", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "Arial Black, sans-serif",
+      "license": "OFL-1.1", "credit": "Longitude contributors",
+      "tags": ["original", "rounded", "italic", "slanted", "heavy", "caps", "speed", "sport"],
+      "sample": "WAIT WHAT"
+    },
+    {
+      "family": "Longitude Gridline", "label": "Gridline", "category": "original",
+      "faces": [{ "file": "original/LongitudeGridline-Regular.woff2", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "monospace",
+      "license": "OFL-1.1", "credit": "Longitude contributors",
+      "tags": ["original", "pixel", "retro", "8-bit", "arcade", "game", "terminal", "lowercase"],
+      "sample": "GAME OVER"
+    },
+    {
+      "family": "Longitude Gridline Dot", "label": "Gridline Dot", "category": "original",
+      "faces": [{ "file": "original/LongitudeGridlineDot-Regular.woff2", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "monospace",
+      "license": "OFL-1.1", "credit": "Longitude contributors",
+      "tags": ["original", "dot matrix", "led", "marquee", "pixel", "neon", "sign", "scoreboard"],
+      "sample": "LIVE NOW"
+    },
+
+    {
+      "family": "Anton", "label": "Anton", "category": "classic",
+      "faces": [{ "file": "anton/Anton-Regular.woff2", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "Impact, Haettenschweiler, sans-serif",
+      "license": "OFL-1.1", "credit": "Vernon Adams",
+      "tags": ["impact", "condensed", "bold", "headline", "tall", "news"],
+      "sample": "WAIT WHAT"
+    },
+    {
+      "family": "Bebas Neue", "label": "Bebas Neue", "category": "classic",
+      "faces": [{ "file": "bebasneue/BebasNeue-Regular.woff2", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "Impact, sans-serif",
+      "license": "OFL-1.1", "credit": "Ryoichi Tsunekawa (Dharma Type)",
+      "tags": ["condensed", "caps", "clean", "headline", "tall", "minimal"],
+      "sample": "I TRIED IT"
+    },
+    {
+      "family": "Montserrat", "label": "Montserrat", "category": "classic",
+      "faces": [
+        { "file": "montserrat/Montserrat-Variable.woff2", "weight": 400, "style": "normal" },
+        { "file": "montserrat/Montserrat-Italic-Variable.woff2", "weight": 400, "style": "italic" }
+      ],
+      "variable": { "min": 100, "max": 900 }, "fallback": "Arial, sans-serif",
+      "license": "OFL-1.1", "credit": "Julieta Ulanovsky, Sol Matas, Juan Pablo del Peral, Jacques Le Bailly",
+      "tags": ["geometric", "bold", "black", "versatile", "wide", "italic", "variable"],
+      "sample": "DON'T BUY THIS", "defaultWeight": 900
+    },
+    {
+      "family": "Oswald", "label": "Oswald", "category": "classic",
+      "faces": [{ "file": "oswald/Oswald-Variable.woff2", "weight": 400, "style": "normal" }],
+      "variable": { "min": 200, "max": 700 }, "fallback": "Impact, Arial Narrow, sans-serif",
+      "license": "OFL-1.1", "credit": "Vernon Adams, Kalapi Gajjar, Cyreal",
+      "tags": ["condensed", "gothic", "headline", "news", "tall", "variable"],
+      "sample": "THE TRUTH", "defaultWeight": 700
+    },
+    {
+      "family": "Archivo Black", "label": "Archivo Black", "category": "classic",
+      "faces": [{ "file": "archivoblack/ArchivoBlack-Regular.woff2", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "Arial Black, sans-serif",
+      "license": "OFL-1.1", "credit": "Omnibus-Type",
+      "tags": ["heavy", "black", "grotesque", "wide", "headline", "bold"],
+      "sample": "IT WORKED"
+    },
+    {
+      "family": "Poppins", "label": "Poppins", "category": "classic",
+      "faces": [
+        { "file": "poppins/Poppins-ExtraBold.woff2", "weight": 800, "style": "normal" },
+        { "file": "poppins/Poppins-Black.woff2", "weight": 900, "style": "normal" },
+        { "file": "poppins/Poppins-BlackItalic.woff2", "weight": 900, "style": "italic" }
+      ],
+      "variable": null, "fallback": "Arial Black, sans-serif",
+      "license": "OFL-1.1", "credit": "Indian Type Foundry, Jonny Pinhorn, Ninad Kale",
+      "tags": ["geometric", "rounded", "heavy", "black", "friendly", "italic"],
+      "sample": "NEW SETUP", "defaultWeight": 900
+    },
+    {
+      "family": "Luckiest Guy", "label": "Luckiest Guy", "category": "classic",
+      "faces": [{ "file": "luckiestguy/LuckiestGuy-Regular.woff2", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "Impact, sans-serif",
+      "license": "Apache-2.0", "credit": "Astigmatic",
+      "tags": ["cartoon", "comic", "bubbly", "fun", "kids", "playful", "gaming"],
+      "sample": "SO GOOD"
+    },
+    {
+      "family": "Lilita One", "label": "Lilita One", "category": "classic",
+      "faces": [{ "file": "lilitaone/LilitaOne-Regular.ttf", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "Arial Rounded MT Bold, sans-serif",
+      "license": "OFL-1.1", "credit": "Juan Montoreano",
+      "tags": ["rounded", "friendly", "bold", "fun", "kids", "gaming"],
+      "sample": "WE DID IT"
+    },
+    {
+      "family": "Rubik", "label": "Rubik", "category": "classic",
+      "faces": [{ "file": "rubik/Rubik-Variable.woff2", "weight": 400, "style": "normal" }],
+      "variable": { "min": 300, "max": 900 }, "fallback": "Arial, sans-serif",
+      "license": "OFL-1.1", "credit": "Hubert and Fischer, Meir Sadan, Cyreal, Daniel Grumer, Omaima Dajani",
+      "tags": ["rounded", "black", "heavy", "soft", "friendly", "variable"],
+      "sample": "LEVEL UP", "defaultWeight": 900
+    },
+
+    {
+      "family": "Impact", "label": "Impact", "category": "meme", "source": "system",
+      "faces": [{ "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "Anton, Haettenschweiler, sans-serif",
+      "license": "System font", "credit": "Installed on your computer",
+      "tags": ["impact", "meme", "classic", "condensed", "caption", "system"],
+      "sample": "WHEN YOU SEE IT"
+    },
+    {
+      "family": "Arial Black", "label": "Arial Black", "category": "meme", "source": "system",
+      "faces": [{ "weight": 900, "style": "normal" }],
+      "variable": null, "fallback": "Archivo Black, Arial, sans-serif",
+      "license": "System font", "credit": "Installed on your computer",
+      "tags": ["heavy", "black", "meme", "caption", "system"],
+      "sample": "NOBODY:"
+    },
+    {
+      "family": "Bangers", "label": "Bangers", "category": "meme",
+      "faces": [{ "file": "bangers/Bangers-Regular.woff2", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "Impact, sans-serif",
+      "license": "OFL-1.1", "credit": "Vernon Adams",
+      "tags": ["comic", "action", "cartoon", "superhero", "loud", "slanted"],
+      "sample": "BOOM"
+    },
+    {
+      "family": "Comic Neue", "label": "Comic Neue", "category": "meme",
+      "faces": [
+        { "file": "comicneue/ComicNeue-Bold.woff2", "weight": 700, "style": "normal" },
+        { "file": "comicneue/ComicNeue-BoldItalic.woff2", "weight": 700, "style": "italic" }
+      ],
+      "variable": null, "fallback": "Comic Sans MS, cursive",
+      "license": "OFL-1.1", "credit": "Craig Rozynski, Hrant Papazian",
+      "tags": ["comic", "casual", "handwriting", "meme", "friendly", "italic"],
+      "sample": "OK BUT WHY"
+    },
+    {
+      "family": "Permanent Marker", "label": "Permanent Marker", "category": "meme",
+      "faces": [{ "file": "permanentmarker/PermanentMarker-Regular.woff2", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "cursive",
+      "license": "Apache-2.0", "credit": "Font Diner",
+      "tags": ["marker", "handwritten", "brush", "sharpie", "note", "scribble"],
+      "sample": "MUST WATCH"
+    },
+
+    {
+      "family": "Bungee", "label": "Bungee", "category": "display",
+      "faces": [{ "file": "bungee/Bungee-Regular.woff2", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "Impact, sans-serif",
+      "license": "OFL-1.1", "credit": "David Jonathan Ross",
+      "tags": ["signage", "blocky", "urban", "street", "caps", "bold"],
+      "sample": "BIG NEWS"
+    },
+    {
+      "family": "Monoton", "label": "Monoton", "category": "display",
+      "faces": [{ "file": "monoton/Monoton-Regular.ttf", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "sans-serif",
+      "license": "OFL-1.1", "credit": "Vernon Adams",
+      "tags": ["neon", "lines", "80s", "retro", "synthwave", "outline"],
+      "sample": "RETRO"
+    },
+    {
+      "family": "Black Ops One", "label": "Black Ops One", "category": "display",
+      "faces": [{ "file": "blackopsone/BlackOpsOne-Regular.woff2", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "Impact, sans-serif",
+      "license": "OFL-1.1", "credit": "James Grieshaber, Eben Sorkin",
+      "tags": ["stencil", "military", "army", "tactical", "gaming", "shooter"],
+      "sample": "MISSION FAILED"
+    },
+    {
+      "family": "Press Start 2P", "label": "Press Start 2P", "category": "display",
+      "faces": [{ "file": "pressstart2p/PressStart2P-Regular.ttf", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "monospace",
+      "license": "OFL-1.1", "credit": "CodeMan38",
+      "tags": ["pixel", "8-bit", "arcade", "game", "retro", "nes"],
+      "sample": "PLAYER 1"
+    },
+    {
+      "family": "Creepster", "label": "Creepster", "category": "display",
+      "faces": [{ "file": "creepster/Creepster-Regular.ttf", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "fantasy",
+      "license": "OFL-1.1", "credit": "Sideshow",
+      "tags": ["horror", "spooky", "halloween", "scary", "drip", "creepy"],
+      "sample": "DON'T LOOK"
+    },
+    {
+      "family": "Unbounded", "label": "Unbounded", "category": "display",
+      "faces": [{ "file": "unbounded/Unbounded-Variable.woff2", "weight": 400, "style": "normal" }],
+      "variable": { "min": 200, "max": 900 }, "fallback": "Arial Black, sans-serif",
+      "license": "OFL-1.1", "credit": "NaN",
+      "tags": ["wide", "extended", "futuristic", "tech", "crypto", "variable"],
+      "sample": "NEXT LEVEL", "defaultWeight": 800
+    },
+    {
+      "family": "Righteous", "label": "Righteous", "category": "display",
+      "faces": [{ "file": "righteous/Righteous-Regular.ttf", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "sans-serif",
+      "license": "OFL-1.1", "credit": "Astigmatic",
+      "tags": ["retro", "rounded", "70s", "groovy", "deco", "vibes"],
+      "sample": "GOOD VIBES"
+    },
+    {
+      "family": "Russo One", "label": "Russo One", "category": "display",
+      "faces": [{ "file": "russoone/RussoOne-Regular.ttf", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "Arial Black, sans-serif",
+      "license": "OFL-1.1", "credit": "Jovanny Lemonad",
+      "tags": ["tech", "sport", "racing", "esports", "bold", "square"],
+      "sample": "FULL SPEED"
+    },
+    {
+      "family": "Syne", "label": "Syne", "category": "display",
+      "faces": [{ "file": "ui/syne.woff2", "weight": 400, "style": "normal" }],
+      "variable": { "min": 400, "max": 800 }, "fallback": "sans-serif",
+      "license": "OFL-1.1", "credit": "Bonjour Monde, Lucas Descroix, George Triantafyllakos",
+      "tags": ["art", "editorial", "fashion", "quirky", "wide", "variable"],
+      "sample": "THE FUTURE", "defaultWeight": 800
+    },
+    {
+      "family": "Rubik Glitch", "label": "Rubik Glitch", "category": "display",
+      "faces": [{ "file": "rubikglitch/RubikGlitch-Regular.woff2", "weight": 400, "style": "normal" }],
+      "variable": null, "fallback": "Impact, sans-serif",
+      "license": "OFL-1.1", "credit": "NaN, Luke Prowse",
+      "tags": ["glitch", "distorted", "broken", "error", "hacker", "vhs"],
+      "sample": "ERROR 404"
+    },
+
+    {
+      "family": "Inter", "label": "Inter", "category": "clean",
+      "faces": [
+        { "file": "inter/Inter-Variable.woff2", "weight": 400, "style": "normal" },
+        { "file": "inter/Inter-Italic-Variable.woff2", "weight": 400, "style": "italic" }
+      ],
+      "variable": { "min": 100, "max": 900 }, "fallback": "Arial, sans-serif",
+      "license": "OFL-1.1", "credit": "Rasmus Andersson",
+      "tags": ["clean", "neutral", "ui", "modern", "minimal", "italic", "variable"],
+      "sample": "HOW IT WORKS", "defaultWeight": 800
+    },
+    {
+      "family": "Manrope", "label": "Manrope", "category": "clean",
+      "faces": [{ "file": "ui/manrope.woff2", "weight": 400, "style": "normal" }],
+      "variable": { "min": 200, "max": 800 }, "fallback": "Arial, sans-serif",
+      "license": "OFL-1.1", "credit": "Mikhail Sharanda",
+      "tags": ["clean", "modern", "geometric", "ui", "minimal", "variable"],
+      "sample": "QUICK GUIDE", "defaultWeight": 800
+    }
+  ]
+}

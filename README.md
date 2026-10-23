@@ -1,0 +1,192 @@
+# Longitude
+
+A small, open-source image editor for YouTube thumbnails and Spotify covers.
+Bring your own images, stack and resize them with snap guides, add big
+stroked text, circle and arrow the thing that matters, cut out the
+background, and export under the platform's size limit. No account, no
+subscription, no stock library, nothing uploaded.
+
+Longitude is the sibling of [Latitude](https://github.com/zphat/Latitude)
+(screen recorder) and [Sundial](https://github.com/zphat/Sundial) (planner)
+and shares their look: graphite surfaces, one acid-lime accent, sun-gold for
+the moments that need attention.
+
+## Start
+
+**Windows:** double-click `Start Longitude.cmd`. It starts a local server and
+opens Longitude in its own Edge window. Keep the black console window open
+while you work.
+
+**Any system with Python 3.8+:**
+
+```bash
+python serve.py --open
+```
+
+Then open <http://localhost:8770>. Chrome and Edge are the main targets;
+Firefox works except the colour eyedropper. In Edge or Chrome you can install
+it as an app (the install icon in the address bar) so it opens like any other
+program.
+
+Nothing to install, no build step. The only thing Longitude ever downloads is
+the background-removal model, once, when you first ask for it.
+
+## What it does
+
+- **Your own media.** Drop images anywhere, paste with Ctrl V, or press `I`.
+  PNG, JPEG, WebP, GIF, AVIF, BMP and SVG. Fonts you drop in (TTF, OTF, WOFF,
+  WOFF2) are added to the font picker and travel inside your project files.
+- **Layers.** Move, resize, rotate, flip, reorder, lock, hide, rename,
+  duplicate. Image sides crop, image corners scale. Shift-click or drag a box
+  to select several and align or distribute them.
+- **Snap guides.** Layers pull to the canvas centre, its edges and every other
+  layer's edges and centre. When something is centred you get a full-length
+  lime line and a "Centre" label. Hold Ctrl to move freely.
+- **Text that reads at thumbnail size.** Live font previews, size, colour or
+  gradient, stroke and stroke colour, a second outline, shadow, glow, a
+  background pill, letter spacing and line height. Edit the text right on the
+  canvas.
+- **Draw.** Highlight circle (`C`), arrows you can bend (`A`), rectangles and
+  shapes, and a pressure-aware pen (`P`). Draw a rough circle, line, arrow or
+  box with the pen and hold still for half a second: it becomes a clean one.
+- **Background removal on your computer.** One click on an image. Then refine
+  the edge with an erase/restore brush (`E`), or click away a flat colour with
+  the magic eraser (`M`). Add a sticker outline to the cutout.
+- **Export and compression.** PNG, JPG or WebP at 0.5x to 3x, a quality
+  slider, "fit under 2 MB" for YouTube, and a 256-colour PNG option that
+  shrinks flat graphics a lot. Copy to the clipboard or download.
+- **Preview in the feed.** See your design at real size in a mock YouTube home
+  grid, search results, up-next column and phone, or a Spotify library, in
+  dark and light.
+- **Quick tools.** Compress a batch of images, remove one background, or
+  resize and convert, without opening a design.
+- **Presets.** YouTube thumbnail, Shorts, channel banner (with its safe
+  areas), profile picture, post, watermark; Spotify podcast cover, video
+  thumbnail, playlist cover, artist header and picture, album cover; square,
+  story, wide, custom. Safe-zone overlays show what the platform covers, like
+  the duration badge on a thumbnail.
+- **Everything is a command.** Ctrl K (or `/`) finds any action, layer or
+  preset. Tooltips show the shortcut.
+- **Autosave.** Designs save to the browser as you work and appear on the home
+  screen. Save a portable `.longitude` file (images and custom fonts
+  included) to back up or move a design.
+
+## Shortcuts
+
+| Keys | Action |
+| --- | --- |
+| `V` `H` `T` `R` `O` `C` `A` `P` | Select, hand, text, rectangle, ellipse, highlight circle, arrow, pen |
+| Space (hold) | Pan |
+| `I` | Add an image |
+| `E` / `M` | Refine a cutout / magic eraser |
+| Ctrl K or `/` | Command palette |
+| Ctrl Z / Ctrl Shift Z | Undo / redo |
+| Ctrl D, Delete | Duplicate, delete |
+| Shift C | Centre the selection on the canvas |
+| Arrow keys (Shift for 10 px) | Nudge |
+| Ctrl ] / Ctrl [ | Bring forward / send backward |
+| Ctrl 0 | Fit the canvas to the window |
+| Shift B | Remove background |
+| F | Preview in the feed |
+| Ctrl E | Export |
+| Shift ? | All shortcuts |
+
+## Fonts
+
+Twenty-eight bundled families, all free to use in your thumbnails, plus
+Impact and Arial Black when your system has them:
+
+- **Made for Longitude:** Meridian, Meridian Slant (heavy rounded capitals for
+  thumbnails), Gridline and Gridline Dot (pixel and LED). Built by
+  `tools/fonts/build_original.py`.
+- **Thumbnail classics:** Anton, Bebas Neue, Montserrat, Oswald, Archivo
+  Black, Poppins, Luckiest Guy, Lilita One, Rubik.
+- **Meme:** Bangers, Comic Neue, Permanent Marker, and Impact and Arial
+  Black from your system.
+- **Display:** Bungee, Monoton, Black Ops One, Press Start 2P, Creepster,
+  Unbounded, Righteous, Russo One, Syne, Rubik Glitch.
+- **Clean:** Inter, Manrope.
+
+Licences and credits are in [docs/FONTS.md](docs/FONTS.md) and
+`web/fonts/LICENSES/`.
+
+## Background removal
+
+Runs entirely in your browser with
+[ONNX Runtime Web](https://onnxruntime.ai/), on the GPU when WebGPU is
+available. Your image never leaves your computer.
+
+| Mode | Model | Download | Licence |
+| --- | --- | --- | --- |
+| Fast (default) | IS-Net general use, int8 | about 70 MB once | Apache-2.0 |
+| Best | BiRefNet lite | about 150 MB once | MIT |
+| Magic | Flat-colour flood fill | none | MIT |
+
+Downloads are cached by the browser, so later sessions start straight away.
+To work fully offline, run `python tools/fetch_model.py` once; it stores the
+runtime and models in `web/vendor/`. Details and sources:
+[docs/BGREMOVE.md](docs/BGREMOVE.md).
+
+## Mods
+
+Longitude is built to be changed.
+
+- **Packs** are JSON files with themes, presets and colour palettes. They
+  never run code. Latitude theme packs import as they are.
+- **Code mods** are folders in `web/mods/`, listed in `web/mods/mods.json`.
+  A mod gets a small, versioned API to add commands, tools, inspector
+  sections, shapes, image filters, presets, fonts, themes and
+  background-removal providers. Everything it registers is removed when you
+  turn it off in Settings.
+
+Four example mods ship with the app: classic meme text, sticker shapes, a
+deep-fry filter and starter layouts. Start with
+[docs/MODDING.md](docs/MODDING.md).
+
+Mods are trusted local code, not a sandbox: only add mods whose source you
+have read.
+
+## Project layout
+
+```
+serve.py, Start Longitude.cmd   local server and Windows launcher
+web/                            the app (static files)
+  index.html, main.js           shell and boot
+  js/core/                      document model, history, rendering, assets, fonts
+  js/editor/                    canvas, selection, snapping, tools, text editing
+  js/ui/                        panels, pickers, dialogs, export, feed preview
+  js/features/                  background removal, compression, presets
+  js/mods/  mods/               mod loader and the example mods
+  fonts/  presets/  icons/
+tools/                          font build, model fetch, module checker
+tests/                          Deno unit tests
+docs/                           SPEC (architecture contract), modding, fonts, background removal
+```
+
+## Development
+
+There is no build. Edit a file and reload (add `?nosw` to the URL to bypass
+the offline cache while developing). With [Deno](https://deno.com/):
+
+```bash
+deno run --allow-read tools/check.mjs
+```
+
+```bash
+deno test --allow-read tests/
+```
+
+The first checks that every module links (syntax, paths, named exports);
+the second runs the unit tests. `docs/SPEC.md` describes the document model,
+the module boundaries and the design language.
+
+## Privacy
+
+No accounts, no analytics, no network calls except the optional one-time
+model download. Designs live in your browser's storage until you delete them
+or export them.
+
+## Licence
+
+MIT. Fonts are under the SIL Open Font License or Apache 2.0 (see
+`web/fonts/LICENSES/`). Third-party notices: [docs/THIRD-PARTY-NOTICES.md](docs/THIRD-PARTY-NOTICES.md).

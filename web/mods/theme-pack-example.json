@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "name": "Neon receipt",
+  "themes": [
+    {
+      "name": "Neon receipt",
+      "note": "After-hours ink: hot pink on violet black",
+      "scheme": "dark",
+      "texture": "scan",
+      "colors": {
+        "bg": "#0b0a10",
+        "panel": "#15121d",
+        "panel2": "#1f1a2b",
+        "line": "#3b3352",
+        "text": "#f5effa",
+        "muted": "#bcb2cc",
+        "faint": "#a69cba",
+        "accent": "#ff5fd2",
+        "highlight": "#7ef3ff",
+        "ink": "#2b0a23",
+        "green": "#9bf0b4",
+        "red": "#ff8f9c",
+        "amber": "#ffd68c"
+      }
+    },
+    {
+      "name": "Thermal paper",
+      "note": "Till-roll white with magenta ink",
+      "scheme": "light",
+      "texture": "grain",
+      "colors": {
+        "bg": "#e9e7e1",
+        "panel": "#f8f7f2",
+        "panel2": "#ebe9e2",
+        "line": "#cdc9bf",
+        "text": "#1c1b20",
+        "muted": "#56535e",
+        "faint": "#615e69",
+        "accent": "#b4157a",
+        "highlight": "#00727b",
+        "ink": "#fff6fb",
+        "green": "#2d7440",
+        "red": "#b1233a",
+        "amber": "#80560a"
+      }
+    }
+  ],
+  "templates": []
+}

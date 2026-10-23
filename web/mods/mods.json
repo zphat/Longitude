@@ -1,0 +1,8 @@
+{
+  "mods": [
+    { "id": "meme-classic", "entry": "meme-classic/index.js", "enabled": true },
+    { "id": "sticker-shapes", "entry": "sticker-shapes/index.js", "enabled": true },
+    { "id": "deep-fry", "entry": "deep-fry/index.js", "enabled": false },
+    { "id": "starter-layouts", "entry": "starter-layouts/index.js", "enabled": false }
+  ]
+}

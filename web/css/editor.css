@@ -1,0 +1,434 @@
+/* Editor stage: canvas, SVG overlay (selection, handles, guides, crop), live
+   pills, the empty-canvas hint, the status pill and the drop overlay.
+   On-canvas handles are white with an accent rim and a dark halo so they read
+   on any picture, the way design tools draw them. */
+
+.ed-host {
+  --ed-handle: #ffffff;
+  --ed-halo: var(--guide-halo);
+  overflow: hidden;
+  background: var(--workspace);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+.ed-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  touch-action: none;
+  z-index: 0;
+}
+
+.ed-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 2;
+}
+.ed-overlay * {
+  pointer-events: none;
+}
+
+/* Hover and selection */
+.ed-hover {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  opacity: 0.85;
+  stroke-linejoin: round;
+}
+.ed-sel {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.ed-sel.ed-halo {
+  stroke: var(--ed-halo);
+  stroke-width: 3.5;
+  opacity: 0.5;
+}
+.ed-sel.member {
+  stroke-width: 1;
+  opacity: 0.6;
+}
+.ed-sel.member.ed-halo {
+  opacity: 0.25;
+}
+.ed-sel.locked {
+  stroke: var(--muted);
+  stroke-dasharray: 5 4;
+}
+.ed-sel.locked.ed-halo {
+  stroke-dasharray: none;
+  stroke: var(--ed-halo);
+}
+.ed-sel.editing {
+  stroke-width: 1;
+  opacity: 0.7;
+}
+.ed-sel.arrow {
+  stroke-width: 1.25;
+  opacity: 0.7;
+}
+
+/* Handles */
+.ed-h-corner {
+  fill: var(--ed-handle);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}
+.ed-h-side-edge {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 7.5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}
+.ed-h-side {
+  fill: none;
+  stroke: var(--ed-handle);
+  stroke-width: 4.5;
+  stroke-linecap: round;
+}
+.ed-knob-stem {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.25;
+  opacity: 0.9;
+}
+.ed-knob circle {
+  fill: var(--accent);
+  stroke: var(--ed-handle);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+}
+.ed-knob-icon {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.ed-h-end {
+  fill: var(--ed-handle);
+  stroke: var(--accent);
+  stroke-width: 2;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+}
+.ed-h-bend {
+  fill: var(--ed-handle);
+  stroke: var(--accent);
+  stroke-width: 1.75;
+  stroke-dasharray: 2.5 2;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+}
+.ed-h-bend.curved {
+  fill: var(--accent);
+  stroke: var(--ed-handle);
+  stroke-dasharray: none;
+}
+.ed-g-handles.dragging {
+  opacity: 0.92;
+}
+
+/* Snap and spacing guides */
+.ed-guide {
+  fill: none;
+  stroke: var(--guide);
+  stroke-width: 1;
+}
+.ed-guide.canvas {
+  stroke-width: 1.25;
+}
+.ed-guide.ed-guide-halo {
+  stroke: var(--ed-halo);
+  stroke-width: 3;
+  opacity: 0.7;
+}
+.ed-space {
+  fill: none;
+  stroke: var(--space-guide);
+  stroke-width: 1;
+}
+.ed-space-halo {
+  fill: none;
+  stroke: var(--ed-halo);
+  stroke-width: 3;
+  opacity: 0.7;
+}
+
+/* Marquee */
+.ed-marquee {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 1;
+}
+
+/* Crop mode */
+.ed-crop-image {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.55);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+.ed-crop-grid {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.4);
+  stroke-width: 1;
+}
+.ed-crop-frame {
+  fill: none;
+  stroke: var(--ed-handle);
+  stroke-width: 1.5;
+}
+.ed-crop-frame-halo {
+  fill: none;
+  stroke: var(--ed-halo);
+  stroke-width: 3.5;
+  opacity: 0.6;
+}
+.ed-crop-bracket {
+  fill: none;
+  stroke: var(--ed-handle);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ed-crop-bracket-halo {
+  fill: none;
+  stroke: var(--ed-halo);
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.55;
+}
+.ed-crop-knob {
+  fill: var(--ed-handle);
+  stroke: var(--accent);
+  stroke-width: 2;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+}
+
+/* Live pills: size, angle, "Centre", gaps */
+.ed-pills {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 3;
+}
+.ed-pill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 3px 7px;
+  border-radius: 7px;
+  font-family: var(--f-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  color: var(--text);
+  background: var(--glass-strong);
+  border: 1px solid var(--line-soft);
+  box-shadow: 0 8px 22px -10px var(--shadow), 0 1px 3px var(--shadow);
+  animation: ed-fade var(--t-fast) var(--ease);
+  will-change: transform;
+}
+.ed-pill.accent {
+  font-family: var(--f-body);
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  background: var(--accent);
+  border-color: transparent;
+}
+.ed-pill.gold {
+  padding: 2px 6px;
+  font-size: 10.5px;
+  color: var(--ink);
+  background: var(--highlight);
+  border-color: transparent;
+}
+.ed-pill.muted {
+  font-family: var(--f-body);
+  letter-spacing: 0;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+@keyframes ed-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Status pill (tool hints, "Copied", crop help) */
+.ed-status {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--inset-bottom, 64px) + 4px);
+  z-index: 4;
+  max-width: min(520px, calc(100% - 32px));
+  padding: 7px 13px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--glass-strong);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--island-shadow);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 6px) scale(0.98);
+  transition: opacity var(--t) var(--ease), transform var(--t) var(--spring);
+}
+.ed-status.on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+/* Toasts use the same spot; the hint steps aside while one shows. */
+body:has(.toast-root .toast) .ed-status.on {
+  opacity: 0;
+  transform: translate(-50%, 6px) scale(0.98);
+}
+
+/* Empty-canvas hint, centred on the artboard */
+.ed-hint {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  max-width: 380px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.78);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--t) var(--ease), visibility 0s linear var(--t);
+}
+.ed-hint.on {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity var(--t) var(--ease);
+}
+.ed-hint.light {
+  color: rgba(0, 0, 0, 0.66);
+}
+.ed-hint-mark {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  border: 1.5px dashed currentColor;
+  opacity: 0.7;
+}
+.ed-hint-mark .i {
+  width: 24px;
+  height: 24px;
+}
+.ed-hint-text {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.9;
+  letter-spacing: -0.01em;
+}
+.ed-hint-keys {
+  display: inline-flex;
+  gap: 3px;
+  vertical-align: 1px;
+}
+.ed-hint .ed-hint-btn {
+  pointer-events: none;
+  color: inherit;
+  border-color: currentColor;
+  border-color: color-mix(in srgb, currentColor 32%, transparent);
+  min-height: 32px;
+  padding: 6px 14px;
+}
+.ed-hint.on .ed-hint-btn {
+  pointer-events: auto;
+}
+.ed-hint .ed-hint-btn:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.ed-hint.small {
+  gap: 8px;
+}
+.ed-hint.small .ed-hint-btn {
+  display: none;
+}
+.ed-hint.small .ed-hint-text {
+  font-size: 12px;
+  max-width: 240px;
+}
+.ed-hint.tiny .ed-hint-text {
+  display: none;
+}
+
+/* Drop overlay while files are dragged over the window */
+.ed-drop {
+  position: fixed;
+  inset: var(--gap);
+  z-index: 9000;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-lg);
+  border: 2px dashed var(--accent);
+  background: var(--accent-soft);
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.99);
+  transition: opacity var(--t-fast) var(--ease), transform var(--t) var(--spring);
+}
+.ed-drop.on {
+  opacity: 1;
+  transform: none;
+}
+.ed-drop-chip {
+  padding: 11px 20px;
+  border-radius: 99px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--accent);
+  box-shadow: 0 14px 44px -12px var(--accent-line);
+  transform: translateY(4px);
+  transition: transform var(--t) var(--spring);
+}
+.ed-drop.on .ed-drop-chip {
+  transform: none;
+}
+
+.ed-file-input {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en" data-theme="signal" data-scheme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Longitude</title>
+    <meta name="description" content="Make YouTube thumbnails and Spotify covers on your own computer. Free, open source, no account." />
+    <meta name="theme-color" content="#090b0d" />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="preload" href="fonts/ui/manrope.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="fonts/ui/syne.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="modulepreload" href="js/main.js" />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/controls.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="stylesheet" href="css/editor.css" />
+    <link rel="stylesheet" href="css/draw.css" />
+    <link rel="stylesheet" href="css/inspector.css" />
+    <link rel="stylesheet" href="css/export.css" />
+    <link rel="stylesheet" href="css/mods.css" />
+  </head>
+  <body class="booting">
+    <div id="app" class="app">
+      <div id="stage" aria-label="Canvas"></div>
+      <header id="topbar" class="topbar" data-tip-place="bottom"></header>
+      <nav id="rail" class="rail" aria-label="Tools" data-tip-place="right"></nav>
+      <aside id="panel" class="panel island" aria-label="Properties and layers" data-tip-place="left">
+        <div id="inspector" class="inspector-host"></div>
+        <div id="panel-splitter" class="panel-splitter"></div>
+        <div id="layers" class="layers-host"></div>
+      </aside>
+      <div id="zoombar" class="zoombar" data-tip-place="top"></div>
+    </div>
+    <div id="home" hidden></div>
+    <div id="toast-root" class="toast-root" role="status" aria-live="polite"></div>
+    <div id="menu-root" class="menu-root"></div>
+    <div id="modal-root" class="modal-root"></div>
+    <div id="tip-root" class="tip-root" aria-hidden="true"></div>
+
+    <div id="boot" class="boot" aria-hidden="true">
+      <svg class="boot-mark" viewBox="0 0 24 24" width="44" height="44">
+        <circle cx="12" cy="12" r="9.2" class="logo-globe" />
+        <path d="M2.8 12h18.4" class="logo-equator" />
+        <ellipse cx="12" cy="12" rx="3.9" ry="9.2" class="logo-meridian" />
+      </svg>
+    </div>
+
+    <div id="fatal" class="fatal" role="alert" hidden>
+      <div class="fatal-card">
+        <svg class="fatal-mark" viewBox="0 0 24 24" width="40" height="40" aria-hidden="true">
+          <circle cx="12" cy="12" r="9.2" class="logo-globe" />
+          <path d="M2.8 12h18.4" class="logo-equator" />
+          <ellipse cx="12" cy="12" rx="3.9" ry="9.2" class="logo-meridian" />
+        </svg>
+        <h1 class="fatal-title">Longitude could not start</h1>
+        <p class="fatal-text">Something went wrong while loading. Your saved designs are safe in this browser. Reloading usually fixes it. Safe mode starts without mods and without reopening your last design.</p>
+        <div class="fatal-actions">
+          <a class="btn primary" href="./">Reload</a>
+          <a class="btn ghost" href="./?safe">Start in safe mode</a>
+          <a class="btn ghost" href="./?nosw">Reload without the offline cache</a>
+        </div>
+        <details class="fatal-details">
+          <summary>Details for a bug report</summary>
+          <pre data-detail></pre>
+        </details>
+      </div>
+    </div>
+
+    <noscript>
+      <div class="fatal"><div class="fatal-card"><h1 class="fatal-title">Longitude needs JavaScript</h1><p class="fatal-text">Turn on JavaScript for this site, then reload.</p></div></div>
+    </noscript>
+
+    <script type="module">
+      (async () => {
+        // ?nosw has to work even when the cached app cannot start, so the
+        // offline cache goes before main.js loads.
+        if (new URLSearchParams(location.search).has("nosw") && "serviceWorker" in navigator) {
+          try {
+            for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
+            for (const k of await caches.keys()) if (/^longitude-(shell|data|next)-/.test(k)) await caches.delete(k);
+          } catch {}
+        }
+        await import("./js/main.js");
+      })().catch((err) => {
+        console.error(err);
+        document.getElementById("boot")?.remove();
+        const box = document.getElementById("fatal");
+        box.querySelector("[data-detail]").textContent = String((err && (err.stack || err.message)) || err);
+        box.hidden = false;
+      });
+    </script>
+  </body>
+</html>
