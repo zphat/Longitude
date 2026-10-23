@@ -1,5 +1,5 @@
-// Magic eraser (M). Click a colour on an image to remove it and the similar
-// colours touching it; Shift removes that colour everywhere in the image,
+// Magic eraser (M). Click a color on an image to remove it and the similar
+// colors touching it; Shift removes that color everywhere in the image,
 // Alt brings it back. Tolerance comes from prefs "magicTolerance" (0..100,
 // default 32; [ and ] change it). Each click is one undo step ("Magic
 // eraser") that stores a new mask, combined with the one already there.
@@ -9,7 +9,7 @@ import { toLocal, setAlphaMap, hitTest } from "../../core/geometry.js";
 import * as maskLib from "../../features/bgremove/mask.js";
 
 export const MAGIC_DEFAULT_TOLERANCE = 32;
-const HINT = "Click a colour to remove it · Shift: everywhere · Alt: bring back";
+const HINT = "Click a color to remove it · Shift: everywhere · Alt: bring back";
 
 export function magicTolerance(prefs) {
   const t = Number(prefs?.get?.("magicTolerance", MAGIC_DEFAULT_TOLERANCE));
@@ -36,7 +36,7 @@ export function imagePoint(layer, pt) {
 // visible, unlocked image (text or shapes above it do not get in the way).
 // To erase, a cutout counts only where it is still visible, so a click on
 // its cleared background reaches the image you can see underneath. To bring
-// colour back (restore), the transparent parts are the point: any image
+// color back (restore), the transparent parts are the point: any image
 // with a mask whose frame holds the point will do.
 export function imageAt(store, pt, { restore = false, assets = null } = {}) {
   const layers = store.layers();

@@ -26,7 +26,7 @@ export function classifyFile(file) {
 
 // Where a new image goes (SPEC 8): on an empty design an image within 3 % of
 // the canvas aspect fills it; otherwise it fits inside 70 % of the canvas,
-// centred or at the drop point. Small images are not blown up past 2x.
+// centered or at the drop point. Small images are not blown up past 2x.
 export function placeImage(doc, natW, natH, { at = null, index = 0, fill = false } = {}) {
   const W = doc.width;
   const H = doc.height;
@@ -155,7 +155,7 @@ export function createImporter(core) {
     });
   }
 
-  // files: File[] or FileList. at: doc point to centre on (drop point) or null.
+  // files: File[] or FileList. at: doc point to center on (drop point) or null.
   async function importFiles(files, { at = null } = {}) {
     const list = [...(files || [])].filter(Boolean);
     if (!list.length) return [];

@@ -1,6 +1,6 @@
-// Snapping (SPEC 1.4 and 8): magnetic alignment to the canvas edges and centre
-// lines and to other layers' edges and centres, equal spacing between
-// neighbours, and the guides that show what lined up. Everything is in doc px;
+// Snapping (SPEC 1.4 and 8): magnetic alignment to the canvas edges and center
+// lines and to other layers' edges and centers, equal spacing between
+// neighbors, and the guides that show what lined up. Everything is in doc px;
 // callers pass the threshold in doc px (SNAP_PX screen px / zoom).
 
 import { aabb, quadBounds, arrowPoints, defaultPad } from "../core/geometry.js";
@@ -83,9 +83,9 @@ function sides(axis) {
   return axis === "x" ? ["l", "r", "cx"] : ["t", "b", "cy"];
 }
 
-// Neighbours of box along one axis: boxes in the same row (or column) that
+// Neighbors of box along one axis: boxes in the same row (or column) that
 // sit wholly before or after it.
-function neighbours(box, boxes, axis) {
+function neighbors(box, boxes, axis) {
   const [lo, hi] = sides(axis);
   const row = boxes.filter((b) => overlapsAcross(box, b, axis));
   const mid = (box[lo] + box[hi]) / 2;
@@ -115,11 +115,11 @@ function nextOf(target, row, axis) {
 }
 
 // Positions of box's low edge that make it evenly spaced with its
-// neighbours: centred between two, or continuing a gap on either side.
+// neighbors: centered between two, or continuing a gap on either side.
 export function spacingCandidates(box, boxes, axis) {
   const [lo, hi] = sides(axis);
   const size = box[hi] - box[lo];
-  const { before, after, row } = neighbours(box, boxes, axis);
+  const { before, after, row } = neighbors(box, boxes, axis);
   const out = [];
   const A = before[0];
   const B = after[0];
@@ -171,7 +171,7 @@ export function snapPoint(pt, T, thr) {
 }
 
 // Guides for every target that lines up with the box (after snapping).
-// Each guide: { axis: "x" | "y", v, from, to, canvas, centre } where axis "x"
+// Each guide: { axis: "x" | "y", v, from, to, canvas, center } where axis "x"
 // is a vertical line at x = v running from y = from to y = to.
 export function alignGuides(box, T, eps = 0.01) {
   const out = [];
@@ -187,7 +187,7 @@ export function alignGuides(box, T, eps = 0.01) {
         const key = Math.round(t.v * 20);
         let g = byV.get(key);
         if (!g) {
-          g = { axis, v: t.v, from: box[clo], to: box[chi], canvas: false, centre: false };
+          g = { axis, v: t.v, from: box[clo], to: box[chi], canvas: false, center: false };
           byV.set(key, g);
           out.push(g);
         }
@@ -195,7 +195,7 @@ export function alignGuides(box, T, eps = 0.01) {
         g.to = Math.max(g.to, t.box[chi]);
         if (t.src === "canvas") {
           g.canvas = true;
-          if (i === 1 && t.kind === "center") g.centre = true;
+          if (i === 1 && t.kind === "center") g.center = true;
         }
       }
     }
@@ -213,7 +213,7 @@ export function spacingGuides(box, boxes, eps = 0.01) {
   const run = (axis) => {
     const [lo, hi] = sides(axis);
     const [clo, chi] = axis === "x" ? ["t", "b"] : ["l", "r"];
-    const { before, after, row } = neighbours(box, boxes, axis);
+    const { before, after, row } = neighbors(box, boxes, axis);
     const at = (a, b) => (Math.max(a[clo], b[clo]) + Math.min(a[chi], b[chi])) / 2;
     const seg = (a, b) => ({ axis, from: a[hi], to: b[lo], at: at(a, b), label: String(Math.round(b[lo] - a[hi])) });
     const A = before[0];

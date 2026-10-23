@@ -1,5 +1,5 @@
 // Fit an image layer's box to its cutout. After background removal the layer
-// still has the whole photo's box, so the selection, snapping and the Centre
+// still has the whole photo's box, so the selection, snapping and the Center
 // pill would follow the empty frame instead of the person. These helpers
 // shrink the crop to the mask's opaque area (plus a margin) and move and
 // resize the box so the visible pixels stay exactly where they are.
@@ -104,11 +104,11 @@ export function recrop(layer, crop) {
     x: (crop.x + crop.w / 2 - (c.x + c.w / 2)) * sx,
     y: (crop.y + crop.h / 2 - (c.y + c.h / 2)) * sy,
   };
-  const centre = fromLocal(layer, local);
+  const center = fromLocal(layer, local);
   return {
     crop: { x: crop.x, y: crop.y, w: crop.w, h: crop.h },
-    x: centre.x,
-    y: centre.y,
+    x: center.x,
+    y: center.y,
     w: crop.w * sx,
     h: crop.h * sy,
   };

@@ -19,7 +19,7 @@ function isWordStart(text, i) {
 }
 
 // Best alignment of query's characters, in order, inside text. Rewards word
-// starts and runs of consecutive characters, penalises gaps. Returns
+// starts and runs of consecutive characters, penalizes gaps. Returns
 // { score, indices } or null when the characters do not all appear.
 export function fuzzyMatch(query, text) {
   const q = String(query || "").toLowerCase();
@@ -244,7 +244,7 @@ export function createPalette(ctx) {
         group: "Themes",
         icon: t.scheme === "light" ? "sun" : "moon",
         hint: t.id === current ? "Current" : t.note || "",
-        keywords: "theme colour color appearance look dark light",
+        keywords: "theme color color appearance look dark light",
         queryOnly: true,
         run: () => ctx.commands.run("view.theme", { id: t.id }),
       });

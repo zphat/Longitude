@@ -207,7 +207,7 @@ Deno.test("settingsKey ignores settings that do not change the file", () => {
 Deno.test("outputLabel names the format and quality", () => {
   assert.equal(outputLabel({ type: "image/jpeg", quality: 0.84 }), "JPG · 84%");
   assert.equal(outputLabel({ type: "image/webp", quality: 0.9 }), "WebP · 90%");
-  assert.equal(outputLabel({ type: "image/png", colors: 256 }), "PNG · 256 colours");
+  assert.equal(outputLabel({ type: "image/png", colors: 256 }), "PNG · 256 colors");
   assert.equal(outputLabel({ type: "image/png", colors: null }), "PNG · lossless");
   assert.equal(outputLabel(null), "");
 });

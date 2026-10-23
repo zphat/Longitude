@@ -2,7 +2,7 @@
 // callout arrow, the stickers thumbnails use most.
 //
 // Shows the shapes registry: each shape draws itself as a Path2D in a box
-// centred on 0,0 and also describes its outline as points, which hit testing
+// centered on 0,0 and also describes its outline as points, which hit testing
 // and the shape picker use. One command per shape inserts it on the canvas.
 
 export const manifest = {
@@ -21,7 +21,7 @@ const ICONS = {
   "sticker-callout": '<path d="M3 9h10V5l8 7-8 7v-4H3z"/>',
 };
 
-// ---- geometry (local coordinates, box centred on 0,0) ----------------------
+// ---- geometry (local coordinates, box centered on 0,0) ----------------------
 
 function badgePoints(w, h, params) {
   const n = Math.min(h * (params.notch ?? 0.35), w * 0.3);
@@ -50,11 +50,11 @@ function arrowPoints(w, h, params) {
   ];
 }
 
-// Lucide's bolt, normalised to a 1 x 1 box.
+// Lucide's bolt, normalized to a 1 x 1 box.
 const BOLT = [[13, 2], [3, 14], [12, 14], [11, 22], [21, 10], [12, 10]].map(([x, y]) => ({ x: (x - 12) / 18, y: (y - 12) / 20 }));
 const boltPoints = (w, h) => BOLT.map((p) => ({ x: p.x * w, y: p.y * h }));
 
-// The heart as cubic curves in a 96 x 84 design box, centred.
+// The heart as cubic curves in a 96 x 84 design box, centered.
 const HEART = [
   [50, 88],
   [18, 66, 2, 48, 2, 30],

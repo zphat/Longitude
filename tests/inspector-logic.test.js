@@ -106,7 +106,7 @@ Deno.test("scaleLayer scales size-like props by type", () => {
   assert.equal(s.stroke.width, 12);
 });
 
-Deno.test("resizeDocContent keep: sizes stay, offsets from the centre stay", () => {
+Deno.test("resizeDocContent keep: sizes stay, offsets from the center stay", () => {
   const doc = createDoc();
   doc.layers.push(createLayer("shape", { x: 640, y: 360, w: 100, h: 100 }), createLayer("text", { x: 100, y: 100 }));
   resizeDocContent(doc, 1080, 1080, "keep", "square");
@@ -157,7 +157,7 @@ Deno.test("jobText", () => {
   assert.equal(jobText(null), "");
 });
 
-Deno.test("Panel: a drag is one undo step, a click is one labelled step", () => {
+Deno.test("Panel: a drag is one undo step, a click is one labeled step", () => {
   const store = setup();
   const [id] = store.add(createLayer("text", { size: 100 }));
   const p = new Panel({ store }, [id]);
@@ -258,11 +258,11 @@ Deno.test("Panel: edits every selected layer, doc mode edits the canvas", () => 
   assert.equal(p.every((l) => l.radius === 9), true);
 
   const docPanel = new Panel({ store }, [], { doc: true });
-  const bg = docPanel.patcher("Background colour", (v) => ({ background: { kind: "color", color: v } }));
+  const bg = docPanel.patcher("Background color", (v) => ({ background: { kind: "color", color: v } }));
   bg.input("#ff0000");
   bg.change("#00ff00");
   assert.deepEqual(store.doc.background, { kind: "color", color: "#00ff00" });
-  assert.equal(store.historyLabels().undo, "Background colour");
+  assert.equal(store.historyLabels().undo, "Background color");
 });
 
 Deno.test("resizeCanvas: one undo step, preset follows the size", async () => {

@@ -2,7 +2,7 @@
 
 Longitude ships its fonts with the app, so text looks the same on every
 machine and nothing is fetched from a font service. Every bundled font is
-under the SIL Open Font License 1.1 or the Apache License 2.0. Licence texts
+under the SIL Open Font License 1.1 or the Apache License 2.0. License texts
 are in `web/fonts/LICENSES/`, one file per family.
 
 ```
@@ -11,7 +11,7 @@ web/fonts/
   original/             fonts made for Longitude (built from tools/fonts/)
   <family>/             bundled fonts, subset to Latin
   ui/                   the app's own UI fonts (Manrope, Syne, Space Mono)
-  LICENSES/<family>.txt licence texts
+  LICENSES/<family>.txt license texts
 tools/fonts/
   build_original.py     builds the four original fonts
   meridian.py           Meridian glyph skeletons
@@ -28,7 +28,7 @@ tools/fonts/
 
 The font picker shows these groups, in this order.
 
-| Family | Group | Licence | Designer | Files |
+| Family | Group | License | Designer | Files |
 | --- | --- | --- | --- | --- |
 | Longitude Meridian | Original | OFL-1.1 | Longitude contributors | `original/LongitudeMeridian-Regular.woff2` |
 | Longitude Meridian Slant | Original | OFL-1.1 | Longitude contributors | `original/LongitudeMeridianSlant-Italic.woff2` |
@@ -82,7 +82,7 @@ the copyright "Longitude contributors". No name is reserved, so forks can
 keep the names.
 
 - **Longitude Meridian**: heavy, rounded, slightly condensed capitals for
-  thumbnails. Every glyph is a centre line stroked at 156 units (22% of the
+  thumbnails. Every glyph is a center line stroked at 156 units (22% of the
   cap height) with round caps and joins, so terminals and corners are all
   soft and the weight stays even. Rounds are squircles that overshoot by 12
   units. Lowercase letters type capitals. Covers ASCII, the accented Latin-1 letters
@@ -120,7 +120,7 @@ The build is deterministic: the same sources produce the same bytes. It:
    drops collinear points and degenerate contours.
 3. Places each glyph by its side bearings (Meridian) or on the pixel grid
    (Gridline), and writes cmap, hmtx, name (family, style, version 1.000,
-   OFL licence and URL), OS/2 (typo metrics 900 / -200, USE_TYPO_METRICS),
+   OFL license and URL), OS/2 (typo metrics 900 / -200, USE_TYPO_METRICS),
    post, head and a `.notdef` box. Meridian also gets a GPOS kern feature
    and a legacy `kern` table.
 4. Validates every glyph: no contour with fewer than three points or a
@@ -130,7 +130,7 @@ The build is deterministic: the same sources produce the same bytes. It:
    WOFF2 to `web/fonts/original/`, and writes the OFL texts.
 
 To change a Meridian letter, edit its function in `meridian.py` (a `Sk` path
-is a centre line: `.l()` draws a line, `.c(cx, cy, x, y)` a rounded corner
+is a center line: `.l()` draws a line, `.c(cx, cy, x, y)` a rounded corner
 through the corner point, `rbox()` a rounded box) and rebuild with
 `--specimen` to look at the result. To change a Gridline glyph, edit its rows
 in `gridline.txt`.
@@ -139,7 +139,7 @@ in `gridline.txt`.
 
 ```
 python tools/fonts/fetch_fonts.py      # downloads into tools/fonts/cache/ (git-ignored)
-python -P tools/fonts/build_bundled.py # subsets into web/fonts/, copies licences
+python -P tools/fonts/build_bundled.py # subsets into web/fonts/, copies licenses
 python -P tools/fonts/check_manifest.py
 ```
 
@@ -153,7 +153,7 @@ UI fonts keep their hinting.
 Six fonts reserve their name under the OFL (Creepster, Lilita One, Monoton,
 Press Start 2P, Righteous, Russo One). A subset would be a Modified Version,
 which may not carry the reserved name, so these are copied byte for byte as
-TTF instead. The build detects reserved names from the licence header and
+TTF instead. The build detects reserved names from the license header and
 refuses to subset them.
 
 `check_manifest.py` opens every file listed in `fonts.json` and checks that
@@ -167,7 +167,7 @@ OpenType Sanitizer, the same check browsers apply to web fonts.
 ### To Longitude itself
 
 1. Put the files in `web/fonts/<family>/` (WOFF2 preferred, TTF and OTF
-   work) and the licence text in `web/fonts/LICENSES/<family>.txt`. Only
+   work) and the license text in `web/fonts/LICENSES/<family>.txt`. Only
    OFL or Apache fonts, please.
 2. Add an entry to `web/fonts/fonts.json`, in the group you want:
 
@@ -189,7 +189,7 @@ OpenType Sanitizer, the same check browsers apply to web fonts.
 | `faces` | One entry per file: `file` (relative to `web/fonts/`), `weight`, `style` (`normal` or `italic`). A variable font has one face per style. Faces without a `file` describe a system font. |
 | `variable` | `{ "min": 100, "max": 900 }` for a variable weight axis, else `null`. |
 | `fallback` | Fonts to use for missing characters, as a CSS list without quotes. |
-| `license`, `credit` | SPDX licence id and the designer credit. |
+| `license`, `credit` | SPDX license id and the designer credit. |
 | `tags` | Search words ("pixel", "horror", "condensed"). |
 | `sample` | A short caps line in thumbnail voice, drawn in the picker. |
 | `source` | Optional. `"system"` for a font that must already be installed. |

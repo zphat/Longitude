@@ -10,7 +10,7 @@
 // A variant's sha256 is checked after download; set it to null when you point
 // a variant at a different file.
 //
-// Sources and licences: docs/BGREMOVE.md.
+// Sources and licenses: docs/BGREMOVE.md.
 
 export const BG_CONFIG = /* bgconfig:begin */ {
   "cacheName": "longitude-models-v1",

@@ -3,7 +3,7 @@ import { assert, assertEquals } from "./compress-assert.js";
 import { bitDepthFor, encodePng8Data, filterScanlines, quantize } from "../web/js/features/png8.js";
 import { crc32 } from "../web/js/features/zip.js";
 
-// ---- a minimal PNG decoder (indexed colour only) -----------------------
+// ---- a minimal PNG decoder (indexed color only) -----------------------
 
 async function inflate(bytes) {
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate"));
@@ -69,7 +69,7 @@ async function decodePng(bytes) {
   const width = hv.getUint32(0);
   const height = hv.getUint32(4);
   const depth = chunks[0].data[8];
-  assertEquals(chunks[0].data[9], 3, "colour type 3");
+  assertEquals(chunks[0].data[9], 3, "color type 3");
   const plte = chunks.find((c) => c.type === "PLTE").data;
   const trns = chunks.find((c) => c.type === "tRNS")?.data || null;
   const idats = chunks.filter((c) => c.type === "IDAT").map((c) => c.data);
@@ -112,20 +112,20 @@ function rng(seed) {
 
 function paletteImage(width, height, count, { alpha = false, seed = 1 } = {}) {
   const rand = rng(seed);
-  const colours = [];
+  const colors = [];
   const seen = new Set();
-  while (colours.length < count) {
-    const a = !alpha ? 255 : colours.length === 0 ? 0 : [255, 128, 64, 200][colours.length % 4];
+  while (colors.length < count) {
+    const a = !alpha ? 255 : colors.length === 0 ? 0 : [255, 128, 64, 200][colors.length % 4];
     const c = a === 0 ? [0, 0, 0, 0] : [(rand() * 256) | 0, (rand() * 256) | 0, (rand() * 256) | 0, a];
     const key = c.join(",");
     if (seen.has(key)) continue;
     seen.add(key);
-    colours.push(c);
+    colors.push(c);
   }
   const data = new Uint8Array(width * height * 4);
   for (let i = 0; i < width * height; i++) {
-    // Use every colour at least once.
-    const c = colours[i < count ? i : (rand() * count) | 0];
+    // Use every color at least once.
+    const c = colors[i < count ? i : (rand() * count) | 0];
     data.set(c, i * 4);
   }
   return { width, height, data };
@@ -176,7 +176,7 @@ Deno.test("bit depth drops for small palettes", () => {
 
 for (const count of [1, 2, 3, 4, 5, 16, 17, 200, 256]) {
   for (const alpha of [false, true]) {
-    Deno.test(`few colours round-trip exactly (${count} colours${alpha ? ", alpha" : ""})`, async () => {
+    Deno.test(`few colors round-trip exactly (${count} colors${alpha ? ", alpha" : ""})`, async () => {
       const img = paletteImage(37, 13, count, { alpha, seed: count * 7 + (alpha ? 1 : 0) });
       const out = await encodePng8Data(img, { colors: 256 });
       assert(out.exact, "lossless path");
@@ -220,7 +220,7 @@ function blockError(img, rgba, size = 4) {
   return sum / n;
 }
 
-Deno.test("many colours are reduced to the limit with small error", async () => {
+Deno.test("many colors are reduced to the limit with small error", async () => {
   const img = gradient(96, 64);
   for (const colors of [256, 64, 16]) {
     const results = {};
@@ -234,13 +234,13 @@ Deno.test("many colours are reduced to the limit with small error", async () => 
       results[dither] = { pixel: meanError(img.data, png.rgba), block: blockError(img, png.rgba) };
     }
     const limit = colors >= 256 ? 4 : colors >= 64 ? 8 : 16;
-    assert(results.false.pixel < limit, `mean error ${results.false.pixel.toFixed(2)} < ${limit} at ${colors} colours`);
-    assert(results.true.pixel < limit * 1.3, `dithered error ${results.true.pixel.toFixed(2)} at ${colors} colours`);
-    assert(results.true.block < results.false.block, `dithering lowers the blended error at ${colors} colours`);
+    assert(results.false.pixel < limit, `mean error ${results.false.pixel.toFixed(2)} < ${limit} at ${colors} colors`);
+    assert(results.true.pixel < limit * 1.3, `dithered error ${results.true.pixel.toFixed(2)} at ${colors} colors`);
+    assert(results.true.block < results.false.block, `dithering lowers the blended error at ${colors} colors`);
   }
 });
 
-Deno.test("transparent pixels stay transparent after quantising", async () => {
+Deno.test("transparent pixels stay transparent after quantizing", async () => {
   const img = gradient(60, 40, { holes: true });
   const out = await encodePng8Data(img, { colors: 32, dither: true });
   const png = await decodePng(out.bytes);

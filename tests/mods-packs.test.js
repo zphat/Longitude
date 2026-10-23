@@ -59,8 +59,8 @@ Deno.test("parsePack: plain errors for bad input", () => {
   assert.throws(() => parsePack({ version: 1, name: "x" }), /empty/);
   assert.throws(() => parsePack(longPack({ presets: [{ id: "x", label: "X", width: 5, height: 10 }] })), /width/);
   assert.throws(() => parsePack(longPack({ presets: {} })), /presets must be a list/);
-  assert.throws(() => parsePack(longPack({ palettes: [{ name: "P", colors: ["#zzz"] }] })), /not a hex colour/);
-  assert.throws(() => parsePack(longPack({ palettes: [{ name: "P", colors: [] }] })), /list of colours/);
+  assert.throws(() => parsePack(longPack({ palettes: [{ name: "P", colors: ["#zzz"] }] })), /not a hex color/);
+  assert.throws(() => parsePack(longPack({ palettes: [{ name: "P", colors: [] }] })), /list of colors/);
   assert.throws(() => parsePack(longPack({ fonts: [{ family: "F", faces: [{ file: "../F.woff2" }] }] })), /font file/);
   assert.throws(() => parsePack(longPack({ fonts: [{ family: "F", faces: [{ file: "https://x.test/F.woff2" }] }] })), /not a URL/);
   assert.throws(() => parsePack(longPack({ fonts: [{ family: "F", faces: [{ file: "f/F.exe" }] }] })), /\.woff2/);
@@ -78,16 +78,16 @@ Deno.test("readPack: files, text and objects; code is dropped", async () => {
   await assert.rejects(() => readPack(42), /Choose a pack/);
 });
 
-Deno.test("small helpers: ids, colours and text", () => {
+Deno.test("small helpers: ids, colors and text", () => {
   assert.equal(packId("Neon Receipt!"), "neon-receipt");
   assert.equal(packId("2025 pack"), "p-2025-pack");
   assert.equal(packId("!!!"), "p-pack");
   assert.ok(packId("x".repeat(80)).length <= 24);
   assert.equal(normHex("#ABC"), "#aabbcc");
   assert.equal(normHex("#12345"), null);
-  assert.equal(countsText({ themes: 2, presets: 1, palettes: 1, fonts: 0 }), "2 themes, 1 size preset and 1 colour palette");
+  assert.equal(countsText({ themes: 2, presets: 1, palettes: 1, fonts: 0 }), "2 themes, 1 size preset and 1 color palette");
   const text = summaryText({ pack: parsePack(longPack()), replaces: true, skipped: [] });
-  assert.match(text, /^Adds 1 theme, 1 size preset, 1 colour palette and 1 font\./);
+  assert.match(text, /^Adds 1 theme, 1 size preset, 1 color palette and 1 font\./);
   assert.match(text, /replaces/);
   assert.match(text, /never run code/);
 });

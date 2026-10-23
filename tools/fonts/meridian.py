@@ -1,6 +1,6 @@
 """Longitude Meridian: glyph skeletons.
 
-Heavy, rounded, slightly condensed caps. Every glyph is a centre line stroked
+Heavy, rounded, slightly condensed caps. Every glyph is a center line stroked
 at S units with round caps and joins, so corners and terminals are all round.
 Coordinates are font units: the skeleton runs from y=B to y=T so the stroked
 caps sit on 0 and 700. Round letters overshoot by OS. x starts wherever is
@@ -48,7 +48,7 @@ def o_loop(w, x0=0):
 
 
 def s_path(x0, y0, x1, y1, spine, top_inset=12, k=K):
-    """S centre line from the upper terminal to the lower one (untrimmed)."""
+    """S center line from the upper terminal to the lower one (untrimmed)."""
     wt = x1 - top_inset
     yt_mid = (y1 + spine) / 2
     yb_mid = (spine + y0) / 2
@@ -398,10 +398,10 @@ def _(g):
     st(g, Sk(200, T).l(200, T - 118))
 
 
-QY = CAP - DOT  # head centre of a closing quote
+QY = CAP - DOT  # head center of a closing quote
 
 
-QL, QTIP = 172, 24  # quote length (head centre to tip centre) and tip radius
+QL, QTIP = 172, 24  # quote length (head center to tip center) and tip radius
 
 
 def quote_right(g, x):
@@ -782,7 +782,7 @@ def _(g):
 
 
 # ---- accented capitals ----------------------------------------------------------
-# Built from the base letter's skeleton plus a mark centred over its ink.
+# Built from the base letter's skeleton plus a mark centered over its ink.
 
 def _sk_points(sk):
     yield sk.start
@@ -790,7 +790,7 @@ def _sk_points(sk):
         yield from seg[1:]
 
 
-def _ink_centre(g):
+def _ink_center(g):
     xs = [p[0] for sk, _ in g.strokes for p in _sk_points(sk)] + [p[0] for sk in g.fills for p in _sk_points(sk)]
     return (min(xs) + max(xs)) / 2
 
@@ -863,7 +863,7 @@ def _accented():
         g = Glyph(name, [cp], b.lsb, b.rsb, b.advance)
         g.strokes = list(b.strokes)
         g.fills = list(b.fills)
-        MARKS[mark][0](g, _ink_centre(b), base)
+        MARKS[mark][0](g, _ink_center(b), base)
         GLYPHS.append(g)
         ACCENT_BASE[name] = base
         lower = 0xFF if cp == 0x178 else cp + 0x20

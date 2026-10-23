@@ -90,10 +90,10 @@ function kindOf(layers) {
   return types.size === 1 ? [...types][0] : "mixed";
 }
 
-// Which paint the shape bar leads with (SPEC 10: "colour, width"), so the
-// first dot is always the colour you can see:
+// Which paint the shape bar leads with (SPEC 10: "color, width"), so the
+// first dot is always the color you can see:
 //   "outline"  every shape is an outline only (the highlight circle): one
-//              Colour swatch for the ring, no Fill dot to flood it by mistake
+//              Color swatch for the ring, no Fill dot to flood it by mistake
 //   "fill"     a fill shows: Fill, then Stroke
 //   "stroke"   nothing is filled: Stroke, then an "Add a fill" dot
 export function shapePaint(layers) {
@@ -154,7 +154,7 @@ export function mountQuickbar(stageEl, ctx) {
       parts.push(
         fontButton(p, { compact: true, placement: pickSide }),
         p.num("", { icon: "ins-size", tip: "Font size", undo: "Font size", get: (l) => l.size, set: (v) => ({ size: v }), min: 8, max: 1000, width: 78 }),
-        p.swatchButton({ get: (l) => (l.gradient.on ? l.gradient.from : l.color), set: (v) => ({ color: v, gradient: { on: false } }), tip: "Text colour", undo: "Text colour", placement: pickSide }),
+        p.swatchButton({ get: (l) => (l.gradient.on ? l.gradient.from : l.color), set: (v) => ({ color: v, gradient: { on: false } }), tip: "Text color", undo: "Text color", placement: pickSide }),
         p.iconToggle({ icon: "ins-stroke", tip: "Stroke", get: (l) => l.stroke.on, set: (b) => ({ stroke: { on: b } }), undo: "Text stroke" })
       );
     } else if (kind === "image") {
@@ -211,11 +211,11 @@ export function mountQuickbar(stageEl, ctx) {
       );
     } else if (kind === "shape") {
       const paint = shapePaint(layers);
-      // An off paint opens the picker on its stored colour, not white.
+      // An off paint opens the picker on its stored color, not white.
       const stroke = (tip, undo) =>
         p.swatchButton({ get: (l) => (l.stroke.on ? l.stroke.color : null), initial: (l) => l.stroke.color, set: (v) => ({ stroke: { on: true, color: v } }), tip, undo, placement: pickSide });
       const fill = (tip) =>
-        p.swatchButton({ get: (l) => (l.fill.on ? l.fill.color : null), initial: (l) => l.fill.color, set: (v) => ({ fill: { on: true, color: v } }), tip, undo: "Fill colour", placement: pickSide });
+        p.swatchButton({ get: (l) => (l.fill.on ? l.fill.color : null), initial: (l) => l.fill.color, set: (v) => ({ fill: { on: true, color: v } }), tip, undo: "Fill color", placement: pickSide });
       const width = p.num("", {
         icon: "ins-width",
         tip: "Stroke width",
@@ -227,17 +227,17 @@ export function mountQuickbar(stageEl, ctx) {
         max: 60,
         width: 72,
       });
-      if (paint === "outline") parts.push(stroke("Colour", layers.every((l) => l.shape === "ellipse") ? "Circle colour" : "Outline colour"), width);
-      else if (paint === "fill") parts.push(fill("Fill"), stroke("Stroke", "Stroke colour"), width);
-      else parts.push(stroke("Stroke", "Stroke colour"), fill("Add a fill"), width);
+      if (paint === "outline") parts.push(stroke("Color", layers.every((l) => l.shape === "ellipse") ? "Circle color" : "Outline color"), width);
+      else if (paint === "fill") parts.push(fill("Fill"), stroke("Stroke", "Stroke color"), width);
+      else parts.push(stroke("Stroke", "Stroke color"), fill("Add a fill"), width);
     } else if (kind === "arrow" || kind === "path") {
       parts.push(
-        p.swatchButton({ get: (l) => l.color, set: (v) => ({ color: v }), tip: "Colour", undo: kind === "arrow" ? "Arrow colour" : "Pen colour", placement: pickSide }),
+        p.swatchButton({ get: (l) => l.color, set: (v) => ({ color: v }), tip: "Color", undo: kind === "arrow" ? "Arrow color" : "Pen color", placement: pickSide }),
         p.num("", { icon: "ins-width", tip: "Width", undo: "Width", get: (l) => l.width, set: (v) => ({ width: v }), min: 1, max: kind === "arrow" ? 60 : 80, width: 72 })
       );
     }
-    // One click to dead centre, whatever is selected.
-    parts.push(p.cmd("align.center", { icon: "align-center", tip: layers.length > 1 ? "Centre the group on the canvas" : "Centre on the canvas" }));
+    // One click to dead center, whatever is selected.
+    parts.push(p.cmd("align.center", { icon: "align-center", tip: layers.length > 1 ? "Center the group on the canvas" : "Center on the canvas" }));
     const del = p.cmd("edit.delete", { icon: "trash", tip: "Delete" });
     del.classList.add("qb-danger");
     parts.push(sep(), p.cmd("layer.duplicate", { icon: "copy-plus", tip: "Duplicate" }), del);
@@ -313,7 +313,7 @@ export function mountQuickbar(stageEl, ctx) {
     const layers = store.selected();
     const s = layers.map((l) => l.id).join(",");
     // A layout change (a fill added to a ring) waits until no popover or
-    // field in the bar is in use, so a colour drag is never cut short.
+    // field in the bar is in use, so a color drag is never cut short.
     if (s !== sig || !panel || (layoutOf(layers) !== layout && !interacting())) build(layers);
     else panel.update();
     if (suppressed) return;

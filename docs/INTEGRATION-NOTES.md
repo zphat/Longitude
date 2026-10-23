@@ -21,7 +21,7 @@ here has been seen in a real browser yet.
   palette.
 - UI flows in the harness, all passing: preset card to design; rectangle,
   arrow and pen by dragging on the canvas; text tool, typing, Escape (one
-  "Add text" undo step); inspector sections for text; font picker and colour
+  "Add text" undo step); inspector sections for text; font picker and color
   picker from the inspector; canvas context menu; export dialog estimate
   ("424 KB · Under 2 MB") and Download with its toast; feed preview; quick
   tools compressing a file; every Settings tab; palette search; dropping the
@@ -53,7 +53,7 @@ The harness scripts are throwaway and live outside the repo, in
   `setMaskOverride`, `importFiles`, `copy`, `cut`, `paste`, `nudge`,
   `requestRender`, `canvas`, `host`).
 - `ctx.ui`: every function anyone calls exists (menus.js plus the ones
-  `main.js` adds: palette, Home, colour and font pickers, export, feed preview,
+  `main.js` adds: palette, Home, color and font pickers, export, feed preview,
   quick tools, settings).
 - Command ids: no id is run or referenced (`run("…")`, `data-cmd`, menus) that
   is not registered. Every id SPEC 7.1 lists is registered. Enter is shared by
@@ -77,12 +77,12 @@ The harness scripts are throwaway and live outside the repo, in
 | `web/js/editor/importer.js` | A dropped or picked `.json` file is sniffed: a theme or preset pack opens Settings on the Packs tab for review; a bare design JSON goes to `file.open`. | Request from mods; packs used to get "Longitude opens images, fonts and .longitude files." |
 | `web/js/main.js` | `ctx.on("canvas-settings", () => shell.togglePanel(true))`. | The canvas menu's "Canvas settings" cleared the selection, but nothing showed the panel when it was hidden or collapsed on a narrow window. |
 | `web/js/mods/loader.js` | `settings.shortcuts` is `hidden: true`. | Request from shell: the palette listed "Keyboard shortcuts" twice. `help.shortcuts` (Shift+/) stays. |
-| `web/js/features/presets.js` | `export.minWidth`, `minHeight` and `maxSide` pass through normalisation when present. | Request from export: the dialog prefers them over its built-in table. presets.json does not use them yet. |
+| `web/js/features/presets.js` | `export.minWidth`, `minHeight` and `maxSide` pass through normalization when present. | Request from export: the dialog prefers them over its built-in table. presets.json does not use them yet. |
 | `web/js/features/bgremove/index.js` | `confirmDownload()` uses the same consent words as the inspector and quick tools. | Request from export: one message everywhere ("Background removal downloads a N MB model once. It runs on this computer; your image is never uploaded."). No UI calls it yet; docs/BGREMOVE.md shows it as the way to ask. |
 | `tools/check.mjs` | Messages containing `SyntaxError` or `Expression expected` count as failures. | Request from mods: Deno reports a syntax error in a nested import as a TypeError, which the script only warned about. Confirmed with a deliberately broken module. |
 | `docs/THIRD-PARTY-NOTICES.md` | Added the Lucide icon notice (shell's text), the on-demand background removal downloads (onnxruntime-web MIT, IS-Net Apache-2.0, BiRefNet MIT), and closed the empty "Other" section. | Shell's request; the bgremove downloads were not listed. |
 
-Requests that were already done when I checked: autosave, text normaliser,
+Requests that were already done when I checked: autosave, text normalizer,
 font `load` re-measure and asset gc in `main.js`; `project.js` exporting every
 face of a custom family and importing with the family override; the service
 worker leaving `longitude-models-*`, `vendor/`, `.onnx`, `.wasm` and
@@ -134,13 +134,13 @@ use `http://localhost:8770/?nosw` in Edge with DevTools open.
 1. Boot: the console is clean, no "Some parts did not load" toast, the splash
    goes away, Home shows the preset cards drawn to scale, and the UI is in
    Manrope with the Syne wordmark.
-2. Pick "YouTube thumbnail": the artboard is centred with its shadow on the
+2. Pick "YouTube thumbnail": the artboard is centered with its shadow on the
    dot-grid workspace, the empty hint shows, and the zoom fits.
 3. Bring in media: drop a 16:9 JPG on the canvas (it fills the canvas, with a
    lime pulse), drop a portrait PNG (fits inside 70 %), paste a screenshot
    with Ctrl+V, use the Image button and I. Also drop on Home.
-4. Move, resize, rotate: snap guides and the "Centre" pill at the canvas
-   centre, Ctrl turns snapping off, Alt-drag duplicates, Shift locks an axis.
+4. Move, resize, rotate: snap guides and the "Center" pill at the canvas
+   center, Ctrl turns snapping off, Alt-drag duplicates, Shift locks an axis.
    Image corners keep the aspect, sides crop. Undo and redo show their labels
    in the top bar.
 5. Text: T, click, type, Escape. Check that the textarea caret and selection
@@ -149,7 +149,7 @@ use `http://localhost:8770/?nosw` in Edge with DevTools open.
    preview works, and that the stroke, second outline, pill, shadow and glow
    look right. Try Anton, Bebas Neue and the four Longitude originals.
 6. Export: Ctrl+E. The JPG fits under 2 MB, Download saves a file that opens,
-   Copy image pastes into another app, the 256-colour PNG is valid, and the
+   Copy image pastes into another app, the 256-color PNG is valid, and the
    before/after compare works.
 7. Reload: the last design comes back (IndexedDB) and Home's Recent shows its
    thumbnail. Rename, duplicate and delete from Recent.
@@ -199,11 +199,11 @@ Where things stand:
 - `deno test --allow-read tests/`: 580 passed, 0 failed (577 from the fixers
   plus 3 new: layout-aware key names, the slider/field key rule, and
   `loadMods(ctx, { start: false })`).
-- Fake-DOM harness: `flows.mjs` 0 failed (the context menu now lists Centre
+- Fake-DOM harness: `flows.mjs` 0 failed (the context menu now lists Center
   on canvas). `sweep.mjs`: 102 commands in seven selection states, the only
   console output is from the harness's fake image that is never stored, as
   before. New `round1.mjs` next to them (`deno run -A round1.mjs`, and
-  `--safe` for a `?safe` boot) checks this round's behaviour: 0 failed in both.
+  `--safe` for a `?safe` boot) checks this round's behavior: 0 failed in both.
 
 ### Fixed
 
@@ -211,10 +211,10 @@ Shared files (confirmed review findings):
 
 | Finding | Fix |
 | --- | --- |
-| [high] A focused range slider counted as typing, so after dragging any inspector slider Ctrl+Z, Ctrl+C/V/X, Delete and tool keys did nothing | `controls.js` `slider()`: a slider moved with the pointer blurs once the press ends (a window `pointerup`/`pointercancel` after its `pointerdown`); one reached with Tab keeps focus and its arrows. `dom.js`: new `isTextEntry()` (text-like inputs, textarea, contenteditable) and `fieldOwnsCombo(combo, target)`: every field keeps plain keys, only text entry keeps Ctrl/Cmd/Alt combos and F keys. `context.js` `match()` and `keyboard.js` `boundCommand()` use it, so Ctrl+Z, Ctrl+D or F2 reach the app with a slider, checkbox, select or colour well focused while arrows stay with the slider. `clipboard.js` `ours()` uses `isTextEntry`, so a paste with a slider focused adds the image. The global `isTyping` change first suggested was not used (arrow keys would have nudged the layer instead of moving the slider). `isTyping` now returns a strict boolean. |
+| [high] A focused range slider counted as typing, so after dragging any inspector slider Ctrl+Z, Ctrl+C/V/X, Delete and tool keys did nothing | `controls.js` `slider()`: a slider moved with the pointer blurs once the press ends (a window `pointerup`/`pointercancel` after its `pointerdown`); one reached with Tab keeps focus and its arrows. `dom.js`: new `isTextEntry()` (text-like inputs, textarea, contenteditable) and `fieldOwnsCombo(combo, target)`: every field keeps plain keys, only text entry keeps Ctrl/Cmd/Alt combos and F keys. `context.js` `match()` and `keyboard.js` `boundCommand()` use it, so Ctrl+Z, Ctrl+D or F2 reach the app with a slider, checkbox, select or color well focused while arrows stay with the slider. `clipboard.js` `ours()` uses `isTextEntry`, so a paste with a slider focused adds the image. The global `isTyping` change first suggested was not used (arrow keys would have nudged the layer instead of moving the slider). `isTyping` now returns a strict boolean. |
 | [medium] Letter shortcuts matched physical keys (QWERTZ Ctrl+Z redid, AZERTY lost Ctrl+Z/Ctrl+A, QWERTZ "-" opened the palette) | `context.js` `keyName()`: letters come from `e.key` when it is a Latin letter, else the physical key (Cyrillic, Greek still get Ctrl+Z). Digits stay physical (Shift+1 is still fit; AZERTY Ctrl+0 works). Bound punctuation (`- = / [ ] , . ; ' \`) comes from `e.key`, `?` and `_` name Shift+/ and Shift+-, then the old `e.code` fallbacks. QWERTZ Shift+7 ("/") stays Shift+7, not the palette. Tests cover QWERTZ, AZERTY, Cyrillic, US `?`, Shift+1, brackets. |
 | [low] Focus ring invisible on primary buttons and the selected segment | `tokens.css`: `.btn.primary:focus-visible` (and `:hover`) keep `var(--focus)` plus the glow. `controls.css`: `.ctl-seg .seg.on:focus-visible { box-shadow: var(--focus) }`. Targeted overrides, not a global outline. |
-| [low] Slider inputs unlabelled | `slider()` sets `aria-label` from the visible label on the range and the number field, and `aria-valuetext` (with the unit, "10 px") on the range. |
+| [low] Slider inputs unlabeled | `slider()` sets `aria-label` from the visible label on the range and the number field, and `aria-valuetext` (with the unit, "10 px") on the range. |
 
 Cross-area requests, by the area that asked:
 
@@ -252,11 +252,11 @@ Cross-area requests, by the area that asked:
   `"enabled"`. SPEC 14 lists `storageAsked`, `storageKept`, the rescue copies
   and the boot flag. Open issue 6 updated.
 - Inspector: popovers pass `onEscape` into their layer and menus.js asks it
-  first (font picker clears a typed search, colour picker reverts an edited
-  hex, before closing). `align()` reports a no-op ("Already centred" /
+  first (font picker clears a typed search, color picker reverts an edited
+  hex, before closing). `align()` reports a no-op ("Already centered" /
   "Already aligned" in the status pill plus a pulse); `flashStatus` is on the
   public editor. A press on the canvas blurs a focused field outside it so its
-  value commits first. The canvas context menu has Centre on canvas. SPEC 10
+  value commits first. The canvas context menu has Center on canvas. SPEC 10
   quick bar line and the Arrange line.
 - Export: `bg.removeFromImage` scales a Blob input to 4096 px on the long
   side (`maxSide` option, 0 keeps it). SPEC 11 and 12 (`capDims`,
@@ -290,12 +290,12 @@ Cross-area requests, by the area that asked:
   that exist); left.
 - Roving tabindex for the segmented control: optional, not done.
 
-### Behaviour changes to know about
+### Behavior changes to know about
 
 - Shortcuts follow the printed letter. On QWERTZ, Ctrl and the "+" key now
   zoom in (they used to send Bring forward, Mod+]), and "/" (Shift+7) does
   not open the palette; Ctrl+K does.
-- With a slider, checkbox, select or colour well focused, Ctrl/Cmd combos and
+- With a slider, checkbox, select or color well focused, Ctrl/Cmd combos and
   F keys go to the app; plain keys stay with the control.
 - During a canvas drag, keys other than undo, redo and Escape do nothing.
 - Refine on a trimmed cutout adds an undo step when it starts (box grows) and
@@ -319,7 +319,7 @@ Cross-area requests, by the area that asked:
    reach the app behind; Escape inside a sheet closes an open menu or popover
    first, then the sheet; focus goes back to the button that opened it. Quick
    tools from Home, then "Open in editor".
-5. Font picker: type a search, Escape clears it, Escape again closes. Colour
+5. Font picker: type a search, Escape clears it, Escape again closes. Color
    picker: edit the hex, Escape reverts, Escape again closes.
 6. While dragging a layer: Delete, Ctrl+D and T do nothing; Escape cancels the
    drag; Ctrl+Z ends and undoes it.
@@ -337,7 +337,7 @@ Cross-area requests, by the area that asked:
     note; turn one off, Restart normally, it stays off.
 12. Open a `.longitude` file with a broken image entry: the warning toast.
 13. Insert a burst on the Spotify podcast cover (3000 x 3000): about 33 px of
-    outline. Centre on canvas twice: "Already centred" and a pulse. The canvas
-    context menu has Centre on canvas.
+    outline. Center on canvas twice: "Already centered" and a pulse. The canvas
+    context menu has Center on canvas.
 14. A Settings > Fonts or font picker visit retries fonts that failed earlier
     (go offline, open the picker, come back online, open it again).

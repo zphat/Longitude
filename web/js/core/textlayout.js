@@ -1,9 +1,9 @@
-// Text layout: font strings, measuring, wrapping and the store normaliser
+// Text layout: font strings, measuring, wrapping and the store normalizer
 // that keeps text layer boxes hugging their text. Layouts are cached by the
 // props that affect them; the cache is dropped whenever fonts change (a font
 // face loads, or store.remeasure() runs).
 //
-// Box model, in content space (box centred on 0,0):
+// Box model, in content space (box centered on 0,0):
 //   content block = the lines (first line ascent to last line descent)
 //   pad = room for stroke, second outline and the background pill
 //   box (w, h) = content + 2 * pad   (wrap "fixed": w is the layer's own w)
@@ -283,7 +283,7 @@ function layoutKey(layer, font, spacing, pad) {
   ].join("\u0001");
 }
 
-// Layout in content space with the box centred on 0,0. Each line's x is its
+// Layout in content space with the box centered on 0,0. Each line's x is its
 // left edge after alignment and y is its baseline. width/height are the box
 // size (same as measureBox).
 export function layoutText(layer, fonts) {
@@ -401,10 +401,10 @@ export function measureBox(layer) {
 
 const round2 = (v) => Math.round(v * 100) / 100;
 
-// Keeps text boxes in sync with their text. New layers keep their centre.
-// Otherwise the horizontal anchor follows the alignment (left edge, centre,
+// Keeps text boxes in sync with their text. New layers keep their center.
+// Otherwise the horizontal anchor follows the alignment (left edge, center,
 // right edge) and the vertical anchor is the top while typing or reflowing
-// and the centre for style changes, all in the layer's rotated frame.
+// and the center for style changes, all in the layer's rotated frame.
 export function textNormalizer(layer, doc, prev) {
   if (layer.type !== "text") return undefined;
   const m = measureBox(layer);
@@ -425,7 +425,7 @@ export function textNormalizer(layer, doc, prev) {
   return { w, h, x: layer.x + sx * c - sy * s, y: layer.y + sx * s + sy * c };
 }
 
-// Registers the text normaliser on a store and re-measures once. Returns a
+// Registers the text normalizer on a store and re-measures once. Returns a
 // dispose function. Pass the FontRegistry when there is one.
 export function installTextNormalizer(store, fonts) {
   if (fonts) useFonts(fonts);

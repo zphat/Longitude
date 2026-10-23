@@ -48,7 +48,7 @@ const cleanDocName = (v, fallback) => {
 // Shallow merge of props into a layer; nested plain objects (stroke, shadow,
 // crop, adjust, params, ...) merge one level deep. Returns the same layer when
 // nothing actually changes. id and type never change, and keys the layer does
-// not have are ignored (every normalised layer has all of its fields).
+// not have are ignored (every normalized layer has all of its fields).
 export function mergeLayer(layer, props) {
   let out = null;
   for (const k in props) {
@@ -483,7 +483,7 @@ export class Store extends EventTarget {
     this._emitHistory();
   }
 
-  // ---- normalisers ----------------------------------------------------------
+  // ---- normalizers ----------------------------------------------------------
 
   // fn(layer, doc, prev) -> props | undefined. prev is the layer before this
   // change (undefined for new layers, the layer itself on remeasure/undo).
@@ -496,7 +496,7 @@ export class Store extends EventTarget {
     };
   }
 
-  // Re-run normalisers (for example after a font finishes loading). Not an
+  // Re-run normalizers (for example after a font finishes loading). Not an
   // undo step.
   remeasure(ids) {
     this.dispatchEvent(new CustomEvent("remeasure", { detail: { ids: ids == null ? null : toIds(ids) } }));

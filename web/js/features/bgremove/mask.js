@@ -9,7 +9,7 @@
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const LITTLE_ENDIAN = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
 
-// ---- colour distance (OKLab) ------------------------------------------------
+// ---- color distance (OKLab) ------------------------------------------------
 
 const LINEAR = new Float32Array(256);
 for (let i = 0; i < 256; i++) {
@@ -37,8 +37,8 @@ export function toleranceToDistance(tolerance) {
   return 0.004 + t ** 1.5 * 0.8;
 }
 
-// Distance from pixel i to a target colour. Colour distances are memoised in a
-// small direct-mapped cache because flat backgrounds repeat a few colours.
+// Distance from pixel i to a target color. Color distances are memoized in a
+// small direct-mapped cache because flat backgrounds repeat a few colors.
 function makeDistance(image, lab, alpha) {
   const d = image.data;
   const tags = new Int32Array(4096).fill(-1);
@@ -67,7 +67,7 @@ function makeDistance(image, lab, alpha) {
 
 // Selection strength 0..255 for every pixel whose distance is within thr
 // (fully) or within the soft band above it (partly, for anti-aliased edges).
-// contiguous: grow from the seeds through fully matching 4-neighbours only.
+// contiguous: grow from the seeds through fully matching 4-neighbors only.
 function floodSelect(image, dist, seeds, thr, contiguous, forceSeeds = false) {
   const { width: w, height: h } = image;
   const n = w * h;
@@ -124,7 +124,7 @@ function averageLab(image, cx, cy, r = 1) {
   return count ? sum.map((v) => v / count) : [0, 0, 0];
 }
 
-// Magic eraser core: remove the colour under (x, y). Returns the new keep-alpha
+// Magic eraser core: remove the color under (x, y). Returns the new keep-alpha
 // (base * (1 - selection)). tolerance 0..100, feather in px.
 export function magicAlpha(image, { x = 0, y = 0, tolerance = 32, contiguous = true, feather = 1, base = null } = {}) {
   const { width: w, height: h, data } = image;
@@ -151,7 +151,7 @@ function keepFromSelection(sel, feather, base) {
   return { width: sel.width, height: sel.height, data: out };
 }
 
-// The dominant colour around the image border, and how much of the border it
+// The dominant color around the image border, and how much of the border it
 // covers. Used by the "Magic (flat backgrounds)" provider.
 export function estimateBorder(image) {
   const { width: w, height: h, data } = image;
@@ -181,7 +181,7 @@ export function estimateBorder(image) {
   const opaque = labs.length / 3;
   if (!total || transparent / total > 0.6 || !opaque) return { lab: [1, 0, 0], coverage: 0, spread: 0, transparent: true };
 
-  // Mode of a coarse OKLab histogram, then refine the centre on its inliers.
+  // Mode of a coarse OKLab histogram, then refine the center on its inliers.
   const bins = new Map();
   let best = -1;
   let bestCount = 0;
@@ -194,26 +194,26 @@ export function estimateBorder(image) {
       best = key;
     }
   }
-  let centre = [0, 0, 0];
+  let center = [0, 0, 0];
   let count = 0;
   for (let i = 0; i < labs.length; i += 3) {
     const key = (Math.floor(labs[i] / 0.05) * 64 + Math.floor((labs[i + 1] + 0.5) / 0.05)) * 64 + Math.floor((labs[i + 2] + 0.5) / 0.05);
     if (key !== best) continue;
-    centre[0] += labs[i];
-    centre[1] += labs[i + 1];
-    centre[2] += labs[i + 2];
+    center[0] += labs[i];
+    center[1] += labs[i + 1];
+    center[2] += labs[i + 2];
     count++;
   }
-  centre = centre.map((v) => v / count);
+  center = center.map((v) => v / count);
   const near = 0.08;
   let dists = [];
   for (let pass = 0; pass < 2; pass++) {
     const sum = [0, 0, 0];
     dists = [];
     for (let i = 0; i < labs.length; i += 3) {
-      const dl = labs[i] - centre[0];
-      const da = labs[i + 1] - centre[1];
-      const db = labs[i + 2] - centre[2];
+      const dl = labs[i] - center[0];
+      const da = labs[i + 1] - center[1];
+      const db = labs[i + 2] - center[2];
       const d = Math.sqrt(dl * dl + da * da + db * db);
       if (d >= near) continue;
       dists.push(d);
@@ -221,11 +221,11 @@ export function estimateBorder(image) {
       sum[1] += labs[i + 1];
       sum[2] += labs[i + 2];
     }
-    if (dists.length) centre = sum.map((v) => v / dists.length);
+    if (dists.length) center = sum.map((v) => v / dists.length);
   }
   dists.sort((a, b) => a - b);
   const spread = dists.length ? dists[Math.min(dists.length - 1, Math.floor(dists.length * 0.9))] : 0;
-  return { lab: centre, coverage: dists.length / opaque, spread, transparent: false };
+  return { lab: center, coverage: dists.length / opaque, spread, transparent: false };
 }
 
 // Remove a flat background that touches the edges. Throws an Error with
@@ -234,7 +234,7 @@ export function edgeMagicAlpha(image, { tolerance = null, feather = 1, minCovera
   const { width: w, height: h } = image;
   const est = estimateBorder(image);
   if (est.transparent) throw Object.assign(Error("This image already has a transparent background."), { code: "already-transparent" });
-  if (est.coverage < minCoverage) throw Object.assign(Error("The edges are not one flat colour. Try Fast or Best."), { code: "not-flat" });
+  if (est.coverage < minCoverage) throw Object.assign(Error("The edges are not one flat color. Try Fast or Best."), { code: "not-flat" });
   const thr = tolerance === null || tolerance === undefined ? clamp(est.spread * 2.5 + 0.03, 0.05, 0.2) : toleranceToDistance(tolerance);
   const dist = makeDistance(image, est.lab, 255);
   const seeds = [];
@@ -257,7 +257,7 @@ function boxesForGauss(sigma, n) {
   return sizes;
 }
 
-// Box blur of n samples at offset + i*stride, edge-normalised, src -> dst.
+// Box blur of n samples at offset + i*stride, edge-normalized, src -> dst.
 function boxLine(src, dst, offset, stride, n, r, prefix) {
   prefix[0] = 0;
   for (let i = 0; i < n; i++) prefix[i + 1] = prefix[i] + src[offset + i * stride];
@@ -534,21 +534,21 @@ const isPixels = (s) => s && s.data && typeof s.width === "number" && typeof s.h
 // kept: { cache: true }. At most two images, none over READ_CACHE_PIXELS, and
 // all dropped after READ_CACHE_IDLE ms without a read, so a big photo's
 // pixels are not held for the rest of the session.
-const recentReads = [];
+const recenterads = [];
 const READ_CACHE_PIXELS = 16e6;
 const READ_CACHE_IDLE = 15000;
 let readCacheTimer = 0;
 
 function touchReadCache() {
   clearTimeout(readCacheTimer);
-  readCacheTimer = recentReads.length ? setTimeout(clearReadCache, READ_CACHE_IDLE) : 0;
+  readCacheTimer = recenterads.length ? setTimeout(clearReadCache, READ_CACHE_IDLE) : 0;
 }
 
 // Forget the pixels kept by readPixels(source, { cache: true }).
 export function clearReadCache() {
   clearTimeout(readCacheTimer);
   readCacheTimer = 0;
-  recentReads.length = 0;
+  recenterads.length = 0;
 }
 
 // RGBA pixels of an ImageBitmap, image, canvas or ImageData-like object.
@@ -563,10 +563,10 @@ export function readPixels(source, { cache = false } = {}) {
   const immutable = (typeof ImageBitmap !== "undefined" && source instanceof ImageBitmap)
     || (typeof HTMLImageElement !== "undefined" && source instanceof HTMLImageElement);
   const keep = cache && immutable && width * height <= READ_CACHE_PIXELS;
-  const at = keep ? recentReads.findIndex((r) => r.source === source) : -1;
+  const at = keep ? recenterads.findIndex((r) => r.source === source) : -1;
   if (at >= 0) {
-    const [hit] = recentReads.splice(at, 1);
-    recentReads.unshift(hit);
+    const [hit] = recenterads.splice(at, 1);
+    recenterads.unshift(hit);
     touchReadCache();
     return hit.pixels;
   }
@@ -574,8 +574,8 @@ export function readPixels(source, { cache = false } = {}) {
   g.drawImage(source, 0, 0, width, height);
   const pixels = g.getImageData(0, 0, width, height);
   if (keep) {
-    recentReads.unshift({ source, pixels });
-    recentReads.length = Math.min(recentReads.length, 2);
+    recenterads.unshift({ source, pixels });
+    recenterads.length = Math.min(recenterads.length, 2);
     touchReadCache();
   }
   return pixels;

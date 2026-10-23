@@ -1,5 +1,5 @@
 // Canvas helpers and layer effects used by the renderer: canvases and scratch
-// buffers, colours, CSS-style gradients, image adjustments, masks, sticker
+// buffers, colors, CSS-style gradients, image adjustments, masks, sticker
 // outlines, glow and drop shadow. Effect sizes are in doc px and take k, the
 // device pixels per doc pixel, so every zoom and export scale looks the same.
 
@@ -135,7 +135,7 @@ export function supportsFilter() {
   return filterSupport;
 }
 
-// ---- colours -----------------------------------------------------------------
+// ---- colors -----------------------------------------------------------------
 
 export function parseColor(hex) {
   let s = String(hex || "").trim().replace(/^#/, "");
@@ -152,7 +152,7 @@ export function rgba(hex, alpha = 1) {
 }
 
 // A linear gradient across a box with CSS angle semantics: 0 points up, 90
-// right, 180 down; the end colours land exactly on the box corners.
+// right, 180 down; the end colors land exactly on the box corners.
 export function linearGradient(ctx, x, y, w, h, angle, from, to) {
   const r = ((Number(angle) || 0) * Math.PI) / 180;
   const dx = Math.sin(r);
@@ -215,14 +215,14 @@ export function applyAdjust(ctx, adjust, k = 1) {
   return true;
 }
 
-// Warmth as a soft-light colour wash: warm orange or cool blue.
+// Warmth as a soft-light color wash: warm orange or cool blue.
 export function warmthTint(a) {
   const v = Number(a?.warmth) || 0;
   if (!v) return null;
   return { color: v > 0 ? "#ff9b3d" : "#3d8bff", alpha: Math.min(1, (Math.abs(v) / 100) * 0.55), mode: "soft-light" };
 }
 
-// 3x4 colour matrices (rows r, g, b; columns r, g, b, offset 0..255).
+// 3x4 color matrices (rows r, g, b; columns r, g, b, offset 0..255).
 const IDENTITY = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0];
 
 function compose(m2, m1) {
@@ -294,7 +294,7 @@ export function applyColorMatrix(imageData, m) {
 // ---- masks -------------------------------------------------------------------
 
 // The cropped part of src with mask applied as alpha (opaque = keep), scaled
-// so its longest side is at most maxSide. crop is normalised to each source.
+// so its longest side is at most maxSide. crop is normalized to each source.
 export function applyMask(src, mask, { crop = { x: 0, y: 0, w: 1, h: 1 }, maxSide = Infinity, out = null } = {}) {
   const sw = Math.max(1, crop.w * src.width);
   const sh = Math.max(1, crop.h * src.height);
@@ -388,7 +388,7 @@ export function drawSilhouette(ctx, source, x, y, color, sigma) {
   ctx.restore();
 }
 
-// Glow: a wide halo plus a tighter core in the glow colour.
+// Glow: a wide halo plus a tighter core in the glow color.
 export function drawGlow(ctx, source, x, y, glow, k = 1) {
   if (!glow?.on || !(glow.opacity > 0) || !source.width || !source.height) return;
   const color = rgba(glow.color, glow.opacity);

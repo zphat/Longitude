@@ -1,5 +1,5 @@
-// UI themes. The colour keys match Latitude's theme packs exactly, so a
-// Latitude pack (version 1) imports into Longitude unchanged. Themes colour the
+// UI themes. The color keys match Latitude's theme packs exactly, so a
+// Latitude pack (version 1) imports into Longitude unchanged. Themes color the
 // app, never the user's design.
 
 export const COLOR_KEYS = ["bg", "panel", "panel2", "line", "text", "muted", "faint", "accent", "highlight", "ink", "green", "red", "amber"];
@@ -114,7 +114,7 @@ function mix(a, b, t) {
   return "#" + c.map((v) => v.toString(16).padStart(2, "0")).join("");
 }
 
-// Everything the CSS reads. Derived tokens keep packs down to 13 colours.
+// Everything the CSS reads. Derived tokens keep packs down to 13 colors.
 export function themeVars(theme) {
   const c = theme.colors;
   const dark = theme.scheme !== "light";
@@ -155,7 +155,7 @@ export function validateTheme(t, i = 0) {
   if (!name) throw Error(`Theme ${i + 1} needs a name.`);
   const colors = {};
   for (const k of COLOR_KEYS) {
-    if (!HEX.test(t?.colors?.[k] || "")) throw Error(`Theme ${i + 1}: ${k} must be a six-digit hex colour.`);
+    if (!HEX.test(t?.colors?.[k] || "")) throw Error(`Theme ${i + 1}: ${k} must be a six-digit hex color.`);
     colors[k] = t.colors[k].toLowerCase();
   }
   return {

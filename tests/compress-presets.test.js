@@ -60,7 +60,7 @@ Deno.test("guides match the platform layouts", async () => {
   }
   const all = safes[2];
   assert(Math.abs(all.w * 2560 - 1546) < 5 && Math.abs(all.h * 1440 - 423) < 3, "all-devices area is about 1546 x 423");
-  assert(Math.abs(all.x + all.w / 2 - 0.5) < 1e-3 && Math.abs(all.y + all.h / 2 - 0.5) < 1e-3, "centred");
+  assert(Math.abs(all.x + all.w / 2 - 0.5) < 1e-3 && Math.abs(all.y + all.h / 2 - 0.5) < 1e-3, "centered");
 
   for (const id of ["yt-avatar", "sp-avatar"]) {
     const c = presets.get(id).guides.find((g) => g.kind === "circle");

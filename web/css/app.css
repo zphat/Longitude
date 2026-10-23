@@ -1,6 +1,6 @@
 /* Longitude app shell: layout, top bar, rail, panel, zoom island, home,
-   palette, menus, popovers, dialogs, toasts, tooltips. Colours come from the
-   theme tokens in tokens.css; nothing here hard-codes a UI colour.
+   palette, menus, popovers, dialogs, toasts, tooltips. Colors come from the
+   theme tokens in tokens.css; nothing here hard-codes a UI color.
 
    Stacking: canvas 0, chrome 10, home 40, feature sheets (export, quick
    tools, settings) 900, then the shared layers so they sit above any sheet

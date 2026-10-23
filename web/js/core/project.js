@@ -104,7 +104,7 @@ export function importWarning(doc, name = doc?.name || "the design") {
 }
 
 // Reads a .longitude file (or a bare doc JSON), restores its images and custom
-// fonts and returns the normalised doc with a fresh id, so opening a file
+// fonts and returns the normalized doc with a fresh id, so opening a file
 // never overwrites a project already in this browser. Images and fonts that
 // fail to restore are skipped; importReport(doc) counts them.
 export async function importProject(fileOrBlob, assets, fonts) {

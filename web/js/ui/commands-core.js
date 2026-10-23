@@ -45,7 +45,7 @@ export function alignDeltas(boxes, mode, target) {
 }
 
 // Equal gaps between boxes along an axis ("h" or "v"). The outermost edges stay
-// put; boxes keep their order by centre. Fewer than three boxes do not move.
+// put; boxes keep their order by center. Fewer than three boxes do not move.
 export function distributeDeltas(boxes, axis = "h") {
   const out = boxes.map(() => ({ dx: 0, dy: 0 }));
   if (boxes.length < 3) return out;
@@ -66,7 +66,7 @@ export function distributeDeltas(boxes, axis = "h") {
   return out;
 }
 
-// Normalised crop that makes an image of natW x natH cover a w x h box.
+// Normalized crop that makes an image of natW x natH cover a w x h box.
 export function coverCrop(natW, natH, w, h) {
   const ia = natW / natH;
   const ba = w / h;
@@ -631,15 +631,15 @@ function align(ctx, mode) {
   if (mode === "center" && layers.length > 1) {
     const u = unionBox(boxes);
     const d = { dx: doc.width / 2 - u.cx, dy: doc.height / 2 - u.cy };
-    moved = applyDeltas(ctx, layers, boxes.map(() => d), "Centre on canvas");
+    moved = applyDeltas(ctx, layers, boxes.map(() => d), "Center on canvas");
   } else {
     const target = all.length > 1 && mode !== "center" ? unionBox(all.map(aabb)) : canvasBox(doc);
-    moved = applyDeltas(ctx, layers, alignDeltas(boxes, mode, target), mode === "center" ? "Centre on canvas" : "Align");
+    moved = applyDeltas(ctx, layers, alignDeltas(boxes, mode, target), mode === "center" ? "Center on canvas" : "Align");
   }
   // Nothing moved: say so, so the click does not look ignored.
   if (!moved) {
     ctx.editor?.flash?.(layers.map((l) => l.id));
-    const msg = mode === "center" ? "Already centred" : "Already aligned";
+    const msg = mode === "center" ? "Already centered" : "Already aligned";
     if (ctx.editor?.flashStatus) ctx.editor.flashStatus(msg);
     else ctx.ui.toast?.(msg, { kind: "info", id: "align-noop" });
   }
@@ -660,7 +660,7 @@ function flip(ctx, axis) {
     ctx.store.patch(layers[0].id, { [key]: !layers[0][key] }, { label });
     return;
   }
-  // Several layers mirror as a group around their shared centre.
+  // Several layers mirror as a group around their shared center.
   const u = unionBox(layers.map(aabb));
   ctx.store.patch(layers.map((l) => l.id), (l) => ({
     [key]: !l[key],
@@ -931,9 +931,9 @@ export function registerCoreCommands(ctx) {
 
   // ---- align
   const alignDefs = [
-    ["align.center", "Centre on canvas", "align-center", ["Shift+C"], "center middle both"],
-    ["align.center-h", "Align horizontal centres", "align-center-h", null, "center middle"],
-    ["align.center-v", "Align vertical centres", "align-center-v", null, "center middle"],
+    ["align.center", "Center on canvas", "align-center", ["Shift+C"], "center middle both"],
+    ["align.center-h", "Align horizontal centers", "align-center-h", null, "center middle"],
+    ["align.center-v", "Align vertical centers", "align-center-v", null, "center middle"],
     ["align.left", "Align left", "align-left", null, "edge"],
     ["align.right", "Align right", "align-right", null, "edge"],
     ["align.top", "Align top", "align-top", null, "edge"],
@@ -971,10 +971,10 @@ export function registerCoreCommands(ctx) {
   reg({ id: "view.actual", title: "Actual size", group: "View", icon: "zoom-in", keys: ["Mod+1", "Shift+0"], keywords: "zoom 100% real pixels", when: has, run: (ctx) => ctx.editor?.zoomToActual?.() });
   reg({ id: "view.zoom-in", title: "Zoom in", group: "View", icon: "zoom-in", keys: ["Mod+=", "="], when: has, run: (ctx) => ctx.editor?.zoomBy?.(1.25) });
   reg({ id: "view.zoom-out", title: "Zoom out", group: "View", icon: "zoom-out", keys: ["Mod+-", "-"], when: has, run: (ctx) => ctx.editor?.zoomBy?.(0.8) });
-  reg({ id: "view.snapping", title: "Snapping on or off", group: "View", icon: "magnet", keywords: "snap guides magnet centre", when: has, run: (ctx) => toggleSnap(ctx) });
+  reg({ id: "view.snapping", title: "Snapping on or off", group: "View", icon: "magnet", keywords: "snap guides magnet center", when: has, run: (ctx) => toggleSnap(ctx) });
   reg({ id: "view.safe-zones", title: "Safe zones on or off", group: "View", icon: "safe-zone", keys: ["Mod+;"], keywords: "guides badge timestamp overlay ui", when: has, run: (ctx) => toggleOverlay(ctx, "safeZones", "safe", true, "Safe zones") });
   reg({ id: "view.grid", title: "Grid on or off", group: "View", icon: "grid", keys: ["Mod+'"], keywords: "thirds rule composition", when: has, run: (ctx) => toggleOverlay(ctx, "grid", "grid", false, "Grid") });
-  reg({ id: "view.theme", title: "Switch theme", group: "View", icon: "palette", keywords: "theme dark light colours appearance", home: true, run: (ctx, args) => cycleTheme(ctx, args) });
+  reg({ id: "view.theme", title: "Switch theme", group: "View", icon: "palette", keywords: "theme dark light colors appearance", home: true, run: (ctx, args) => cycleTheme(ctx, args) });
   reg({ id: "view.ui", title: "Hide or show the interface", group: "View", icon: "maximize", keys: ["Mod+\\"], keywords: "focus chrome panels clean", when: has, run: (ctx) => ctx.emit("shell:toggle-ui", {}) });
   reg({ id: "view.panel", title: "Show or hide the side panel", group: "View", icon: "panel-right", keywords: "inspector layers properties", when: has, run: (ctx) => ctx.emit("shell:toggle-panel", {}) });
 

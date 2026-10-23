@@ -32,7 +32,7 @@ function linkSignal(controller, signal) {
 }
 
 // The model sees the image squeezed to size x size. Transparent areas become
-// mid grey so they read as plain background.
+// mid gray so they read as plain background.
 function modelInput(source, size) {
   const c = makeCanvas(size, size);
   const g = c.getContext("2d", { willReadFrequently: true });
@@ -199,7 +199,7 @@ export function createBgService(ctx) {
   const magicProvider = {
     id: "magic",
     label: "Magic (flat backgrounds)",
-    note: "For flat colour backgrounds and screenshots. No download.",
+    note: "For flat color backgrounds and screenshots. No download.",
     kind: "local",
     sizeMB: 0,
     license: "MIT",
@@ -283,7 +283,7 @@ export function createBgService(ctx) {
 
   // The crop the layer had before its box was fitted to the cutout, or null.
   // Without a record from this session (after a reload), a crop that is
-  // exactly what the trim makes of the whole photo is recognised too.
+  // exactly what the trim makes of the whole photo is recognized too.
   function originalCrop(layer) {
     const rec = trimRecord(layer);
     if (rec) return rec.crop;
@@ -372,7 +372,7 @@ export function createBgService(ctx) {
         const now = ctx.store.get(layerId);
         if (!now || now.asset !== layer.asset) throw Object.assign(Error("The image changed before its background was removed."), { code: "layer" });
         // The box shrinks to the cutout in the same step, so the selection,
-        // snapping and the Centre pill follow the subject, not the old frame.
+        // snapping and the Center pill follow the subject, not the old frame.
         const box = cutoutProps(layerId, mask);
         ctx.store.patch(layerId, { mask: maskId, ...box }, { label: "Remove background" });
         ctx.editor?.flash?.([layerId]);

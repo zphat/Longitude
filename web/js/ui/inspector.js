@@ -2,9 +2,9 @@
 // rebuilt only when the selection changes; every other store change updates
 // the controls in place so focus, scroll and drags are never interrupted.
 //
-// Edits: sliders, scrubs and colour drags open one store gesture on the first
+// Edits: sliders, scrubs and color drags open one store gesture on the first
 // input and commit on release (one undo step per drag). Discrete changes are a
-// single labelled patch. Numeric fields commit on Enter or blur.
+// single labeled patch. Numeric fields commit on Enter or blur.
 //
 // Also registers the inspector's commands and ctx.ui.openColorPicker /
 // ctx.ui.openFontPicker. Panel, fontButton and the shared flows are exported
@@ -163,7 +163,7 @@ export function fontSwitchProps(fonts, layer, family) {
   return { font: family, weight, italic: !!layer.italic && (!next || !!next.italic) };
 }
 
-// A layer that covers the whole canvas (a backdrop photo or colour block).
+// A layer that covers the whole canvas (a backdrop photo or color block).
 export function isBackdrop(layer, width, height, tol = 0.01) {
   if (!layer || (layer.type !== "image" && layer.type !== "shape") || layer.rotation) return false;
   const ex = width * tol;
@@ -202,8 +202,8 @@ export function scaleLayer(l, k) {
 }
 
 // Resizes a doc in place. "scale": layers scale to fit the new size around
-// the centre (backdrops cover it); "keep": layers keep their size and their
-// offset from the centre.
+// the center (backdrops cover it); "keep": layers keep their size and their
+// offset from the center.
 export function resizeDocContent(doc, width, height, mode = "keep", preset) {
   const w0 = doc.width;
   const h0 = doc.height;
@@ -289,7 +289,7 @@ function providerShort(label) {
 
 function downloadMessage(info) {
   if (!info) return "Background removal runs on this computer; your image is never uploaded.";
-  if (info.kind === "local" || info.id === "magic") return "Magic works best on flat colour backgrounds and screenshots. Nothing to download, and it runs on this computer.";
+  if (info.kind === "local" || info.id === "magic") return "Magic works best on flat color backgrounds and screenshots. Nothing to download, and it runs on this computer.";
   if (info.cached) return `${providerShort(info.label)} is ready. It runs on this computer; your image is never uploaded.`;
   const mb = info.downloadMB || info.sizeMB || 0;
   return `Background removal downloads a ${mb} MB model once. It runs on this computer; your image is never uploaded.`;
@@ -322,7 +322,7 @@ async function chooseProvider(ctx, preferred) {
     const paint = () => {
       const info = infos.get(choice);
       msg.textContent = downloadMessage(info);
-      note.textContent = [info?.note, info?.license && `Licence: ${info.license}`].filter(Boolean).join("  ·  ");
+      note.textContent = [info?.note, info?.license && `License: ${info.license}`].filter(Boolean).join("  ·  ");
     };
     const seg = segmented({
       options: provs.map((p) => ({ value: p.id, label: providerShort(p.label), tip: p.note || null })),
@@ -739,7 +739,7 @@ export class Panel {
     return this.bindValue(ctl, o, pt);
   }
 
-  // Opens the colour picker for a getter/setter pair. o.initial(l) is where
+  // Opens the color picker for a getter/setter pair. o.initial(l) is where
   // it starts when get() reads nothing (a paint that is off).
   // hook(open) tells the owner (the quick bar) a popover opened or closed.
   pickerFor(anchor, o, pt, done) {
@@ -766,9 +766,9 @@ export class Panel {
 
   // A swatch alone (quick bar) or a swatch with a hex field.
   swatchButton(o) {
-    const pt = this.patcher(o.undo || o.tip || "Colour", o.set);
+    const pt = this.patcher(o.undo || o.tip || "Color", o.set);
     const pop = popoverToggle((done) => this.pickerFor(sw, o, pt, done));
-    const sw = swatch({ value: "#ffffff", tip: o.tip || "Colour", size: o.size, onClick: () => pop.toggle() });
+    const sw = swatch({ value: "#ffffff", tip: o.tip || "Color", size: o.size, onClick: () => pop.toggle() });
     this.onCleanup(() => pop.close());
     const upd = () => {
       const r = this.read(o.get);
@@ -785,7 +785,7 @@ export class Panel {
     const sw = this.swatchButton(o);
     const pt = sw.pt;
     const alpha = o.alpha !== false;
-    const input = h("input", { type: "text", class: "insp-hex num", spellcheck: "false", autocomplete: "off", maxlength: 9, "aria-label": `${o.tip || "Colour"} hex` });
+    const input = h("input", { type: "text", class: "insp-hex num", spellcheck: "false", autocomplete: "off", maxlength: 9, "aria-label": `${o.tip || "Color"} hex` });
     const show = () => {
       if (document.activeElement === input) return;
       const r = this.read(o.get);
@@ -824,12 +824,12 @@ export class Panel {
     return h("div", { class: "insp-color" }, sw, h("label", { class: "insp-hexfield" }, h("span", { class: "insp-hash" }, "#"), input), o.after || null);
   }
 
-  // Two colour stops on a gradient bar plus an angle field.
+  // Two color stops on a gradient bar plus an angle field.
   gradient(o) {
-    const from = this.swatchButton({ get: o.from.get, set: o.from.set, tip: "Start colour", undo: o.undo || "Gradient", alpha: o.alpha });
-    const to = this.swatchButton({ get: o.to.get, set: o.to.set, tip: "End colour", undo: o.undo || "Gradient", alpha: o.alpha });
-    const bar = h("button", { type: "button", class: "insp-grad-bar", "data-tip": "Swap colours", "aria-label": "Swap colours" }, icon("arrow-right-left", { size: "sm" }));
-    bar.addEventListener("click", () => this.patch(o.swap, "Swap gradient colours"));
+    const from = this.swatchButton({ get: o.from.get, set: o.from.set, tip: "Start color", undo: o.undo || "Gradient", alpha: o.alpha });
+    const to = this.swatchButton({ get: o.to.get, set: o.to.set, tip: "End color", undo: o.undo || "Gradient", alpha: o.alpha });
+    const bar = h("button", { type: "button", class: "insp-grad-bar", "data-tip": "Swap colors", "aria-label": "Swap colors" }, icon("arrow-right-left", { size: "sm" }));
+    bar.addEventListener("click", () => this.patch(o.swap, "Swap gradient colors"));
     const paint = () => {
       const ls = this.layers();
       if (!ls.length) return;
@@ -1066,7 +1066,7 @@ function textSections(p) {
   const align = p.seg({
     options: [
       { value: "left", icon: "text-align-left", label: "Align left" },
-      { value: "center", icon: "text-align-center", label: "Centre" },
+      { value: "center", icon: "text-align-center", label: "Center" },
       { value: "right", icon: "text-align-right", label: "Align right" },
     ],
     get: (l) => l.align,
@@ -1124,8 +1124,8 @@ function textSections(p) {
   main.body.append(fontButton(p), h("div", { class: "insp-text-row" }, size, align, italic, upper), weight);
   out.push(sec(main, 10));
 
-  const colour = p.section("text-color", "Colour");
-  colour.body.append(
+  const color = p.section("text-color", "Color");
+  color.body.append(
     p.seg({
       options: [
         { value: "solid", label: "Solid" },
@@ -1141,7 +1141,7 @@ function textSections(p) {
       () => (p.read((l) => l.gradient.on).value ? "g" : "s"),
       (sp, k) =>
         k === "s"
-          ? sp.color({ get: (l) => l.color, set: (v) => ({ color: v }), tip: "Text colour", undo: "Text colour" })
+          ? sp.color({ get: (l) => l.color, set: (v) => ({ color: v }), tip: "Text color", undo: "Text color" })
           : sp.gradient({
               from: { get: (l) => l.gradient.from, set: (v) => ({ gradient: { from: v } }) },
               to: { get: (l) => l.gradient.to, set: (v) => ({ gradient: { to: v } }) },
@@ -1151,25 +1151,25 @@ function textSections(p) {
             })
     )
   );
-  out.push(sec(colour, 11));
+  out.push(sec(color, 11));
 
   const stroke = p.section("text-stroke", "Stroke", { toggle: { get: (l) => l.stroke.on, set: (b) => ({ stroke: { on: b } }), undo: "Text stroke" } });
   stroke.body.append(
-    p.color({ get: (l) => l.stroke.color, set: (v) => ({ stroke: { color: v } }), tip: "Stroke colour", undo: "Stroke colour" }),
+    p.color({ get: (l) => l.stroke.color, set: (v) => ({ stroke: { color: v } }), tip: "Stroke color", undo: "Stroke color" }),
     p.range("Width", { get: (l) => l.stroke.width, set: (v) => ({ stroke: { width: v } }), min: 0, max: 60, step: 1, unit: " px", undo: "Stroke width", def: 10 })
   );
   out.push(sec(stroke, 12));
 
   const stroke2 = p.section("text-stroke2", "Outline 2", { open: false, toggle: { get: (l) => l.stroke2.on, set: (b) => ({ stroke2: { on: b } }), undo: "Second outline" } });
   stroke2.body.append(
-    p.color({ get: (l) => l.stroke2.color, set: (v) => ({ stroke2: { color: v } }), tip: "Outline colour", undo: "Outline colour" }),
+    p.color({ get: (l) => l.stroke2.color, set: (v) => ({ stroke2: { color: v } }), tip: "Outline color", undo: "Outline color" }),
     p.range("Width", { get: (l) => l.stroke2.width, set: (v) => ({ stroke2: { width: v } }), min: 0, max: 60, step: 1, unit: " px", undo: "Outline width", def: 10 })
   );
   out.push(sec(stroke2, 13));
 
   const pill = p.section("text-bg", "Background", { open: false, toggle: { get: (l) => l.bg.on, set: (b) => ({ bg: { on: b } }), undo: "Text background" } });
   pill.body.append(
-    p.color({ get: (l) => l.bg.color, set: (v) => ({ bg: { color: v } }), tip: "Background colour", undo: "Background colour" }),
+    p.color({ get: (l) => l.bg.color, set: (v) => ({ bg: { color: v } }), tip: "Background color", undo: "Background color" }),
     p.range("Opacity", { get: (l) => Math.round(l.bg.opacity * 100), set: (v) => ({ bg: { opacity: v / 100 } }), min: 0, max: 100, unit: "%", undo: "Background opacity", def: 100 }),
     field(
       "Padding",
@@ -1299,7 +1299,7 @@ function toolsBlock(sp, tool) {
   const magic = button({
     label: tool === "magic" ? "Done" : "Magic eraser",
     icon: "wand",
-    tip: "Click a colour on the image to remove it",
+    tip: "Click a color on the image to remove it",
     kbd: ctx.commands?.keysLabel?.("tool.magic") || "M",
     onClick: () => runTool(ctx, tool === "magic" ? "select" : "magic"),
   });
@@ -1384,12 +1384,12 @@ function magicControls(sp) {
     step: 1,
     value: ctx.prefs?.get?.("magicTolerance", 32) ?? 32,
     defaultValue: 32,
-    tip: "How similar a colour must be to go with it",
+    tip: "How similar a color must be to go with it",
     onInput: (v) => ctx.prefs?.set?.("magicTolerance", v),
     onChange: (v) => ctx.prefs?.set?.("magicTolerance", v),
   });
   sp.onUpdate(() => tol.set(ctx.prefs?.get?.("magicTolerance", 32) ?? 32));
-  return h("div", { class: "insp-subpanel" }, tol, note("Click a colour to remove it. Shift removes it everywhere, Alt brings it back. [ and ] change the tolerance."));
+  return h("div", { class: "insp-subpanel" }, tol, note("Click a color to remove it. Shift removes it everywhere, Alt brings it back. [ and ] change the tolerance."));
 }
 
 function filterControls(p) {
@@ -1528,7 +1528,7 @@ function imageSections(p) {
 
   const outline = p.section("image-outline", "Outline", { open: false, toggle: { get: (l) => l.outline.on, set: (b) => ({ outline: { on: b } }), undo: "Sticker outline" } });
   outline.body.append(
-    p.color({ get: (l) => l.outline.color, set: (v) => ({ outline: { color: v } }), tip: "Outline colour", undo: "Outline colour" }),
+    p.color({ get: (l) => l.outline.color, set: (v) => ({ outline: { color: v } }), tip: "Outline color", undo: "Outline color" }),
     p.range("Width", { get: (l) => l.outline.width, set: (v) => ({ outline: { width: v } }), min: 1, max: 80, unit: " px", undo: "Outline width", def: 14 }),
     note("Follows the edge of a cutout, like a sticker.")
   );
@@ -1625,12 +1625,12 @@ function shapeSections(p) {
   out.push(sec(main, 10));
 
   const fill = p.section("shape-fill", "Fill", { toggle: { get: (l) => l.fill.on, set: (b) => ({ fill: { on: b } }), undo: "Fill" } });
-  fill.body.append(p.color({ get: (l) => l.fill.color, set: (v) => ({ fill: { color: v } }), tip: "Fill colour", undo: "Fill colour" }));
+  fill.body.append(p.color({ get: (l) => l.fill.color, set: (v) => ({ fill: { color: v } }), tip: "Fill color", undo: "Fill color" }));
   out.push(sec(fill, 11));
 
   const stroke = p.section("shape-stroke", "Stroke", { toggle: { get: (l) => l.stroke.on, set: (b) => ({ stroke: { on: b } }), undo: "Stroke" } });
   stroke.body.append(
-    p.color({ get: (l) => l.stroke.color, set: (v) => ({ stroke: { color: v } }), tip: "Stroke colour", undo: "Stroke colour" }),
+    p.color({ get: (l) => l.stroke.color, set: (v) => ({ stroke: { color: v } }), tip: "Stroke color", undo: "Stroke color" }),
     p.range("Width", { get: (l) => l.stroke.width, set: (v) => ({ stroke: { width: v } }), min: 1, max: 60, unit: " px", undo: "Stroke width", def: 8 }),
     p.toggleRow("Dashed", { get: (l) => l.stroke.dash, set: (b) => ({ stroke: { dash: b } }), undo: "Dashed stroke" })
   );
@@ -1665,7 +1665,7 @@ function arrowSections(p) {
   updStraight();
   p.onUpdate(updStraight);
   main.body.append(
-    p.color({ get: (l) => l.color, set: (v) => ({ color: v }), tip: "Arrow colour", undo: "Arrow colour" }),
+    p.color({ get: (l) => l.color, set: (v) => ({ color: v }), tip: "Arrow color", undo: "Arrow color" }),
     p.range("Width", { get: (l) => l.width, set: (v) => ({ width: v }), min: 1, max: 60, unit: " px", undo: "Arrow width", def: 14 }),
     field("Head", p.seg({ options: heads, get: (l) => l.head, set: (v) => ({ head: v }), undo: "Arrowhead", full: true })),
     field("Tail", p.seg({ options: tails, get: (l) => l.tail, set: (v) => ({ tail: v }), undo: "Arrow tail", full: true })),
@@ -1680,7 +1680,7 @@ function arrowSections(p) {
 function pathSections(p) {
   const main = p.section("path", "Drawing");
   main.body.append(
-    p.color({ get: (l) => l.color, set: (v) => ({ color: v }), tip: "Pen colour", undo: "Pen colour" }),
+    p.color({ get: (l) => l.color, set: (v) => ({ color: v }), tip: "Pen color", undo: "Pen color" }),
     p.range("Width", { get: (l) => l.width, set: (v) => ({ width: v }), min: 1, max: 80, unit: " px", undo: "Pen width", def: 10 }),
     p.range("Smoothing", { get: (l) => Math.round(l.smoothing * 100), set: (v) => ({ smoothing: v / 100 }), min: 0, max: 100, unit: "%", undo: "Smoothing", def: 50 })
   );
@@ -1696,7 +1696,7 @@ function shadowAngle(l) {
 function effectSections(p) {
   const shadow = p.section("shadow", "Shadow", { open: false, toggle: { get: (l) => l.shadow.on, set: (b) => ({ shadow: { on: b } }), undo: "Shadow" } });
   shadow.body.append(
-    p.color({ get: (l) => l.shadow.color, set: (v) => ({ shadow: { color: v } }), tip: "Shadow colour", undo: "Shadow colour", alpha: false }),
+    p.color({ get: (l) => l.shadow.color, set: (v) => ({ shadow: { color: v } }), tip: "Shadow color", undo: "Shadow color", alpha: false }),
     p.range("Opacity", { get: (l) => Math.round(l.shadow.opacity * 100), set: (v) => ({ shadow: { opacity: v / 100 } }), min: 0, max: 100, unit: "%", undo: "Shadow opacity", def: 60 }),
     p.range("Blur", { get: (l) => l.shadow.blur, set: (v) => ({ shadow: { blur: v } }), min: 0, max: 200, unit: " px", undo: "Shadow blur", def: 24 }),
     grid2(
@@ -1730,7 +1730,7 @@ function effectSections(p) {
   );
   const glow = p.section("glow", "Glow", { open: false, toggle: { get: (l) => l.glow.on, set: (b) => ({ glow: { on: b } }), undo: "Glow" } });
   glow.body.append(
-    p.color({ get: (l) => l.glow.color, set: (v) => ({ glow: { color: v } }), tip: "Glow colour", undo: "Glow colour", alpha: false }),
+    p.color({ get: (l) => l.glow.color, set: (v) => ({ glow: { color: v } }), tip: "Glow color", undo: "Glow color", alpha: false }),
     p.range("Opacity", { get: (l) => Math.round(l.glow.opacity * 100), set: (v) => ({ glow: { opacity: v / 100 } }), min: 0, max: 100, unit: "%", undo: "Glow opacity", def: 90 }),
     p.range("Size", { get: (l) => l.glow.size, set: (v) => ({ glow: { size: v } }), min: 0, max: 200, unit: " px", undo: "Glow size", def: 28 })
   );
@@ -1809,10 +1809,10 @@ function arrangeSection(p, order = 80) {
 
   const aligns = [
     ["align.left", "align-left", "Align left"],
-    ["align.center-h", "align-center-h", "Centre horizontally"],
+    ["align.center-h", "align-center-h", "Center horizontally"],
     ["align.right", "align-right", "Align right"],
     ["align.top", "align-top", "Align top"],
-    ["align.center-v", "align-center-v", "Centre vertically"],
+    ["align.center-v", "align-center-v", "Center vertically"],
     ["align.bottom", "align-bottom", "Align bottom"],
   ].map(([id, ic, tip]) => p.cmd(id, { icon: ic, tip: p.ids.length > 1 ? tip : `${tip} on the canvas` }));
   const dist = p.ids.length > 2
@@ -1836,14 +1836,14 @@ function arrangeSection(p, order = 80) {
     p.cmd("layer.back", { icon: "send-back", tip: "Send to back", enabled: () => !atBottom() }),
   ];
 
-  // Dead centre in one click comes first; the six edge and axis aligns follow.
-  const centre = p.cmd("align.center", { icon: "align-center", tip: p.ids.length > 1 ? "Centre the group on the canvas" : "Centre on the canvas" });
+  // Dead center in one click comes first; the six edge and axis aligns follow.
+  const center = p.cmd("align.center", { icon: "align-center", tip: p.ids.length > 1 ? "Center the group on the canvas" : "Center on the canvas" });
 
   s.body.append(
     grid2(x, y),
     h("div", { class: ["insp-wh", link && "linked"] }, w, link, hgt),
     h("div", { class: "insp-rot" }, rot, ...flips),
-    toolbar(centre, divider(), ...aligns.slice(0, 3), divider(), ...aligns.slice(3)),
+    toolbar(center, divider(), ...aligns.slice(0, 3), divider(), ...aligns.slice(3)),
     toolbar(...orders, dist.length ? divider() : null, ...dist)
   );
   return sec(s, order);
@@ -1968,7 +1968,7 @@ function canvasSections(p) {
   bgSec.body.append(
     p.seg({
       options: [
-        { value: "color", label: "Colour" },
+        { value: "color", label: "Color" },
         { value: "gradient", label: "Gradient" },
         { value: "transparent", label: "Transparent" },
       ],
@@ -1983,7 +1983,7 @@ function canvasSections(p) {
     p.dyn(
       () => ctx.store.doc.background.kind,
       (sp, kind) => {
-        if (kind === "color") return sp.color({ get: (d) => d.background.color, set: (v) => ({ background: { kind: "color", color: v } }), tip: "Background colour", undo: "Background colour" });
+        if (kind === "color") return sp.color({ get: (d) => d.background.color, set: (v) => ({ background: { kind: "color", color: v } }), tip: "Background color", undo: "Background color" });
         if (kind === "gradient")
           return sp.gradient({
             from: { get: (d) => d.background.from, set: (v) => ({ background: { from: v } }) },
@@ -2015,7 +2015,7 @@ function canvasSections(p) {
   };
   view.body.append(
     viewToggle("Safe zones", "view.safe-zones", "safeZones", "Show where the platform covers the image"),
-    viewToggle("Snapping", "view.snapping", "snap", "Snap to the centre, edges and other layers")
+    viewToggle("Snapping", "view.snapping", "snap", "Snap to the center, edges and other layers")
   );
   out.push(sec(view, 12));
   return out;
@@ -2075,7 +2075,7 @@ async function askResizeMode(ctx) {
     };
     dlg = ctx.ui.dialog({
       title: "Resize canvas",
-      body: h("p", { class: "insp-dlg-msg" }, "Scale the layers to fit the new size, or keep their size and their place from the centre."),
+      body: h("p", { class: "insp-dlg-msg" }, "Scale the layers to fit the new size, or keep their size and their place from the center."),
       actions: [
         { label: "Keep positions", run: () => finish("keep") },
         { label: "Scale content", kind: "primary", run: () => finish("scale") },

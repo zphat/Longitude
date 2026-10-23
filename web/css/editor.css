@@ -220,7 +220,7 @@
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
 }
 
-/* Live pills: size, angle, "Centre", gaps */
+/* Live pills: size, angle, "Center", gaps */
 .ed-pills {
   position: absolute;
   inset: 0;
@@ -310,7 +310,7 @@ body:has(.toast-root .toast) .ed-status.on {
   transform: translate(-50%, 6px) scale(0.98);
 }
 
-/* Empty-canvas hint, centred on the artboard */
+/* Empty-canvas hint, centered on the artboard */
 .ed-hint {
   position: absolute;
   left: 0;

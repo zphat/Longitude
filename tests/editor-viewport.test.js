@@ -22,7 +22,7 @@ Deno.test("zoomAround keeps the anchored doc point still", () => {
   near(next.panY + before.y * next.zoom, anchor.y);
 });
 
-Deno.test("fitView centres the artboard in the free area", () => {
+Deno.test("fitView centers the artboard in the free area", () => {
   const v = fitView(1280, 720, 1600, 1000, { left: 70, right: 300, top: 60, bottom: 70 }, { pad: 40 });
   const w = 1280 * v.zoom;
   const h = 720 * v.zoom;

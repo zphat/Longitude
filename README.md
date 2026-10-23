@@ -24,7 +24,7 @@ python serve.py --open
 ```
 
 Then open <http://localhost:8770>. Chrome and Edge are the main targets;
-Firefox works except the colour eyedropper. In Edge or Chrome you can install
+Firefox works except the color eyedropper. In Edge or Chrome you can install
 it as an app (the install icon in the address bar) so it opens like any other
 program.
 
@@ -39,21 +39,21 @@ the background-removal model, once, when you first ask for it.
 - **Layers.** Move, resize, rotate, flip, reorder, lock, hide, rename,
   duplicate. Image sides crop, image corners scale. Shift-click or drag a box
   to select several and align or distribute them.
-- **Snap guides.** Layers pull to the canvas centre, its edges and every other
-  layer's edges and centre. When something is centred you get a full-length
-  lime line and a "Centre" label. Hold Ctrl to move freely.
-- **Text that reads at thumbnail size.** Live font previews, size, colour or
-  gradient, stroke and stroke colour, a second outline, shadow, glow, a
+- **Snap guides.** Layers pull to the canvas center, its edges and every other
+  layer's edges and center. When something is centered you get a full-length
+  lime line and a "Center" label. Hold Ctrl to move freely.
+- **Text that reads at thumbnail size.** Live font previews, size, color or
+  gradient, stroke and stroke color, a second outline, shadow, glow, a
   background pill, letter spacing and line height. Edit the text right on the
   canvas.
 - **Draw.** Highlight circle (`C`), arrows you can bend (`A`), rectangles and
   shapes, and a pressure-aware pen (`P`). Draw a rough circle, line, arrow or
   box with the pen and hold still for half a second: it becomes a clean one.
 - **Background removal on your computer.** One click on an image. Then refine
-  the edge with an erase/restore brush (`E`), or click away a flat colour with
+  the edge with an erase/restore brush (`E`), or click away a flat color with
   the magic eraser (`M`). Add a sticker outline to the cutout.
 - **Export and compression.** PNG, JPG or WebP at 0.5x to 3x, a quality
-  slider, "fit under 2 MB" for YouTube, and a 256-colour PNG option that
+  slider, "fit under 2 MB" for YouTube, and a 256-color PNG option that
   shrinks flat graphics a lot. Copy to the clipboard or download.
 - **Preview in the feed.** See your design at real size in a mock YouTube home
   grid, search results, up-next column and phone, or a Spotify library, in
@@ -82,7 +82,7 @@ the background-removal model, once, when you first ask for it.
 | Ctrl K or `/` | Command palette |
 | Ctrl Z / Ctrl Shift Z | Undo / redo |
 | Ctrl D, Delete | Duplicate, delete |
-| Shift C | Centre the selection on the canvas |
+| Shift C | Center the selection on the canvas |
 | Arrow keys (Shift for 10 px) | Nudge |
 | Ctrl ] / Ctrl [ | Bring forward / send backward |
 | Ctrl 0 | Fit the canvas to the window |
@@ -107,7 +107,7 @@ Impact and Arial Black when your system has them:
   Unbounded, Righteous, Russo One, Syne, Rubik Glitch.
 - **Clean:** Inter, Manrope.
 
-Licences and credits are in [docs/FONTS.md](docs/FONTS.md) and
+Licenses and credits are in [docs/FONTS.md](docs/FONTS.md) and
 `web/fonts/LICENSES/`.
 
 ## Background removal
@@ -116,11 +116,11 @@ Runs entirely in your browser with
 [ONNX Runtime Web](https://onnxruntime.ai/), on the GPU when WebGPU is
 available. Your image never leaves your computer.
 
-| Mode | Model | Download | Licence |
+| Mode | Model | Download | License |
 | --- | --- | --- | --- |
 | Fast (default) | IS-Net general use, int8 | about 70 MB once | Apache-2.0 |
 | Best | BiRefNet lite | about 150 MB once | MIT |
-| Magic | Flat-colour flood fill | none | MIT |
+| Magic | Flat-color flood fill | none | MIT |
 
 Downloads are cached by the browser, so later sessions start straight away.
 To work fully offline, run `python tools/fetch_model.py` once; it stores the
@@ -131,7 +131,7 @@ runtime and models in `web/vendor/`. Details and sources:
 
 Longitude is built to be changed.
 
-- **Packs** are JSON files with themes, presets and colour palettes. They
+- **Packs** are JSON files with themes, presets and color palettes. They
   never run code. Latitude theme packs import as they are.
 - **Code mods** are folders in `web/mods/`, listed in `web/mods/mods.json`.
   A mod gets a small, versioned API to add commands, tools, inspector
@@ -186,7 +186,7 @@ No accounts, no analytics, no network calls except the optional one-time
 model download. Designs live in your browser's storage until you delete them
 or export them.
 
-## Licence
+## License
 
 MIT. Fonts are under the SIL Open Font License or Apache 2.0 (see
 `web/fonts/LICENSES/`). Third-party notices: [docs/THIRD-PARTY-NOTICES.md](docs/THIRD-PARTY-NOTICES.md).

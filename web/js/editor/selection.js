@@ -1,6 +1,6 @@
 // Screen-space overlay over the canvas: hover outlines, the selection box
 // with handles and rotation knob, arrow end and bend handles, the marquee,
-// snap and spacing guides, and the live pills (size, angle, "Centre", gaps).
+// snap and spacing guides, and the live pills (size, angle, "Center", gaps).
 // Handle hit testing lives here too, so what you see is exactly what you grab.
 
 import { svg, h } from "../ui/dom.js";
@@ -332,13 +332,13 @@ export function createSelectionOverlay(core) {
       items.push({ text: "Locked", x: (rect.l + rect.r) / 2, y: rect.b + 10, cls: "ed-pill muted", anchor: "top" });
     }
     for (const gd of S.guides || []) {
-      if (!gd.centre) continue;
+      if (!gd.center) continue;
       if (gd.axis === "x") {
         const top = L({ x: gd.v, y: 0 });
-        items.push({ text: "Centre", x: top.x, y: Math.max(top.y + 10, 10), cls: "ed-pill accent", anchor: "top" });
+        items.push({ text: "Center", x: top.x, y: Math.max(top.y + 10, 10), cls: "ed-pill accent", anchor: "top" });
       } else {
         const left = L({ x: 0, y: gd.v });
-        items.push({ text: "Centre", x: Math.max(left.x + 10, 10), y: left.y, cls: "ed-pill accent", anchor: "left-mid" });
+        items.push({ text: "Center", x: Math.max(left.x + 10, 10), y: left.y, cls: "ed-pill accent", anchor: "left-mid" });
       }
     }
     for (const s of S.spacing || []) {

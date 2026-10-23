@@ -3,7 +3,7 @@
 // images, which are built lazily from a decoded mask when a canvas exists.
 //
 // Two local frames:
-//   content space (layerMatrix / toLocal): box centred on 0,0, includes flips.
+//   content space (layerMatrix / toLocal): box centered on 0,0, includes flips.
 //     This is the frame the renderer draws in and that path/arrow points use.
 //   box space (boxMatrix / toBox): same but without flips, for handles.
 
@@ -370,7 +370,7 @@ function tAtLength(table, len) {
   return ts[i - 1] + ((len - ls[i - 1]) / span) * (ts[i] - ts[i - 1]);
 }
 
-// Shrinks a triangle toward its incentre by r, so filling it and stroking it
+// Shrinks a triangle toward its incenter by r, so filling it and stroking it
 // with a round join of width 2r gives back the original outline with soft
 // corners (the visible tip stays on the arrow's end point).
 function insetTriangle(pts, r) {
@@ -747,7 +747,7 @@ export function defaultPad(layer) {
 }
 
 // Fit a new box around doc-space points ({x,y,p?} or [x,y,p?]) keeping the
-// layer's rotation and flips. Returns the box and the points normalised to it
+// layer's rotation and flips. Returns the box and the points normalized to it
 // ([u, v] or [u, v, p] when the input had pressure).
 export function refitPoints(layer, docPoints, pad = defaultPad(layer)) {
   const rot = layer?.rotation || 0;
@@ -789,7 +789,7 @@ export function refitPoints(layer, docPoints, pad = defaultPad(layer)) {
   return { x: cx + mid.x, y: cy + mid.y, w, h, points };
 }
 
-// Normalised points -> doc space ({ x, y } plus p when present).
+// Normalized points -> doc space ({ x, y } plus p when present).
 export function pointsToDoc(layer, normPoints) {
   return (normPoints || []).map((n) => {
     const u = Array.isArray(n) ? n[0] : n.x;

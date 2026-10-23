@@ -1,4 +1,4 @@
-// Icon set: 24x24 stroke icons (Lucide style, ISC licence for paths taken from
+// Icon set: 24x24 stroke icons (Lucide style, ISC license for paths taken from
 // Lucide). icon(name) never throws; unknown names render a small dot so a
 // missing icon is visible but harmless. The shell owns the full set; mods add
 // their own with registerIcons().
@@ -128,7 +128,7 @@ const ICONS = {
   "line-height": '<path d="M3 6h11"/><path d="M3 12h11"/><path d="M3 18h11"/><path d="m18 8 2-3 2 3"/><path d="m18 16 2 3 2-3"/><path d="M20 5v14"/>',
   font: '<path d="M21 14h-5"/><path d="M16 16v-3.5a2.5 2.5 0 0 1 5 0V16"/><path d="M4.5 13h6"/><path d="m3 16 4.5-9 4.5 9"/>',
 
-  // ---- colour and effects
+  // ---- color and effects
   droplet: '<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',
   stroke: '<rect x="3" y="3" width="18" height="18" rx="4"/><rect x="7.5" y="7.5" width="9" height="9" rx="1.5"/>',
   shadow: '<rect x="3" y="3" width="13" height="13" rx="2"/><path d="M8 21h11a2 2 0 0 0 2-2V8"/>',

@@ -4,7 +4,7 @@
 // or a click outside applies. One undo step per crop session ("Crop").
 //
 // The maths works in the layer's content space as it was when crop mode
-// started (box centred on 0,0, flips included): F is the frame (the layer
+// started (box centered on 0,0, flips included): F is the frame (the layer
 // box) and I the whole picture, so layer.crop = F relative to I.
 
 import { fromLocal, toLocal } from "../core/geometry.js";

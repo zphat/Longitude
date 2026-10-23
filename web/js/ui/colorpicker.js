@@ -1,5 +1,5 @@
-// Colour picker popover: saturation/value square, hue and alpha sliders, hex
-// field, eyedropper, document colours, thumbnail staples, recent colours and
+// Color picker popover: saturation/value square, hue and alpha sliders, hex
+// field, eyedropper, document colors, thumbnail staples, recent colors and
 // saved palettes. The conversions are pure functions (tested in
 // tests/inspector-color.test.js); the UI is built on demand.
 //
@@ -96,7 +96,7 @@ export function hsvaToHex({ h: hue, s, v, a = 1 }, { alpha = true } = {}) {
   return toHex({ ...hsvToRgb(hue, s, v), a }, { alpha });
 }
 
-// Same colour, ignoring case and a fully opaque alpha byte.
+// Same color, ignoring case and a fully opaque alpha byte.
 export function sameColor(a, b) {
   const x = normalizeHex(a || "");
   const y = normalizeHex(b || "");
@@ -111,7 +111,7 @@ export function pushRecent(list, color, max = RECENT_MAX) {
   return [c, ...prev.filter((x) => x !== c)].slice(0, max);
 }
 
-// Colours a design already uses, most used first.
+// Colors a design already uses, most used first.
 export function docColors(doc, max = 12) {
   const counts = new Map();
   const add = (c) => {
@@ -232,7 +232,7 @@ function swatchGroup(title, colors, onPick, extra) {
   return h("div", { class: "cp-group" }, h("div", { class: "cp-group-head" }, h("span", { class: "micro" }, title), extra), h("div", { class: "cp-swatches" }, colors.map((c) => swatchButton(c, null, onPick))));
 }
 
-// Drag on el and report the pointer position normalised to el's box.
+// Drag on el and report the pointer position normalized to el's box.
 function track(el, fn, onEnd) {
   el.addEventListener("pointerdown", (e) => {
     if (e.button !== 0) return;
@@ -289,7 +289,7 @@ export function openColorPicker(anchorEl, { value = "#ffffff", alpha = true, onI
   const setHex = (hex, { input = true, change = true } = {}) => {
     const next = hexToHsva(hex);
     if (!next) return;
-    // Keep the hue when the new colour is grey or black.
+    // Keep the hue when the new color is gray or black.
     if (next.s === 0 || next.v === 0) next.h = st.h;
     Object.assign(st, next);
     if (!alpha) st.a = 1;
@@ -354,7 +354,7 @@ export function openColorPicker(anchorEl, { value = "#ffffff", alpha = true, onI
   });
 
   // Before / after preview: click the left half to go back.
-  const prevOld = h("button", { type: "button", class: "cp-prev-old", "data-tip": "Original colour", "aria-label": "Back to the original colour" });
+  const prevOld = h("button", { type: "button", class: "cp-prev-old", "data-tip": "Original color", "aria-label": "Back to the original color" });
   prevOld.style.setProperty("--c", original);
   prevOld.addEventListener("click", () => setHex(original));
   const prevNew = h("span", { class: "cp-prev-new" });
@@ -364,7 +364,7 @@ export function openColorPicker(anchorEl, { value = "#ffffff", alpha = true, onI
   const dropper = hasDropper
     ? iconButton({
         icon: "pipette",
-        tip: "Pick a colour from the screen",
+        tip: "Pick a color from the screen",
         size: "sm",
         onClick: async () => {
           try {
@@ -376,7 +376,7 @@ export function openColorPicker(anchorEl, { value = "#ffffff", alpha = true, onI
     : null;
 
   // Hex and alpha fields
-  const hexInput = h("input", { type: "text", class: "cp-hex num", spellcheck: "false", autocomplete: "off", maxlength: 9, "aria-label": "Hex colour" });
+  const hexInput = h("input", { type: "text", class: "cp-hex num", spellcheck: "false", autocomplete: "off", maxlength: 9, "aria-label": "Hex color" });
   const commitHex = () => {
     const n = normalizeHex(hexInput.value, { alpha });
     if (n && n !== current) setHex(n);
@@ -431,7 +431,7 @@ export function openColorPicker(anchorEl, { value = "#ffffff", alpha = true, onI
 
   const root = h(
     "div",
-    { class: ["cp", !alpha && "no-alpha"], "aria-label": title || "Colour" },
+    { class: ["cp", !alpha && "no-alpha"], "aria-label": title || "Color" },
     sv,
     h("div", { class: "cp-controls" }, dropper, h("div", { class: "cp-bars" }, hue, alpha ? alphaBar : null), preview),
     h("div", { class: "cp-fields" }, h("label", { class: "cp-hex-wrap" }, h("span", { class: "cp-hash" }, "#"), hexInput), alphaNum),
@@ -477,7 +477,7 @@ export function openColorPicker(anchorEl, { value = "#ffffff", alpha = true, onI
   const pop = showPopover(ctx, anchorEl, root, {
     placement,
     className: "cp-pop",
-    // Escape in a hex field that was typed in puts the colour back; the next
+    // Escape in a hex field that was typed in puts the color back; the next
     // Escape closes. (Closing with a half-typed value would commit it on blur.)
     onEscape: (e) => {
       if (e.target !== hexInput || hexInput.value.toUpperCase() === current.slice(1).toUpperCase()) return false;

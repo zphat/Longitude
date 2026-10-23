@@ -18,7 +18,7 @@ import { magicTool, hasMagicTarget } from "./magic.js";
 
 export const DRAW_TOOL_IDS = ["text", "rect", "ellipse", "circle", "arrow", "pen", "refine", "magic"];
 
-// Last-used colours and widths per creation tool (prefs "toolColors").
+// Last-used colors and widths per creation tool (prefs "toolColors").
 // Widths are doc px on a 1280 px canvas; a remembered width also stores the
 // docScale it was set at, so it keeps its look on bigger or smaller canvases.
 export const TOOL_DEFAULTS = {
@@ -336,7 +336,7 @@ export function createKit(ctx, editor) {
   return kit;
 }
 
-// Remember colours, widths and text styles from committed edits, so the next
+// Remember colors, widths and text styles from committed edits, so the next
 // object of that kind looks like the last one the user touched.
 function rememberFrom(kit, layer) {
   if (!layer) return;
@@ -386,7 +386,7 @@ export function registerDrawTools(ctx, editor) {
       title: "Magic eraser",
       keys: ["M"],
       icon: "wand",
-      keywords: "remove colour color background flat erase",
+      keywords: "remove color color background flat erase",
       when: (c) => hasMagicTarget(c.store),
       run: setTool("magic"),
     },

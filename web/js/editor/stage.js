@@ -2,7 +2,7 @@
 // the artboard with its soft shadow and a checkerboard under transparent
 // backgrounds, the design itself through core's render cache, the parts of
 // selected layers that hang off the artboard (ghosted), preset guides, the
-// thirds grid and centre lines, crop mode, and the time-based effects (the
+// thirds grid and center lines, crop mode, and the time-based effects (the
 // background-removal scan and the lime pulse on new layers).
 
 import { renderDoc } from "../core/render.js";
@@ -295,7 +295,7 @@ export function createStage(core) {
     g.restore();
   }
 
-  function drawCentre(art, dpr) {
+  function drawCenter(art, dpr) {
     const x = Math.round(art.x + art.w / 2) + 0.5;
     const y = Math.round(art.y + art.h / 2) + 0.5;
     g.save();
@@ -458,7 +458,7 @@ export function createStage(core) {
     g.clip();
     if (S.overlays.safe) drawPresetGuides(art, dpr);
     if (S.overlays.grid) drawGrid(art, dpr);
-    if (S.overlays.center) drawCentre(art, dpr);
+    if (S.overlays.center) drawCenter(art, dpr);
     g.restore();
 
     core.crop.drawCanvas(g);

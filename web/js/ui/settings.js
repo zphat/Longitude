@@ -359,11 +359,11 @@ function themeGroup(ctx, env) {
   env.d(ctx.on("theme", ({ id } = {}) => {
     for (const [tid, card] of cards) card.setActive(tid === id);
   }));
-  return group("Theme", "Themes colour Longitude itself, never your designs.", grid);
+  return group("Theme", "Themes color Longitude itself, never your designs.", grid);
 }
 
 const CANVAS_PREFS = [
-  { key: "snap", fallback: true, label: "Snap to guides", text: "Layers pull to the centre, the edges and other layers while you drag. Hold Ctrl to move freely." },
+  { key: "snap", fallback: true, label: "Snap to guides", text: "Layers pull to the center, the edges and other layers while you drag. Hold Ctrl to move freely." },
   { key: "safeZones", fallback: true, overlay: "safe", label: "Safe zones", text: "Shows what YouTube and Spotify cover, like the video length badge." },
   { key: "grid", fallback: false, overlay: "grid", label: "Rule-of-thirds grid", text: "Splits the canvas in thirds, for placing faces and big text." },
 ];
@@ -825,7 +825,7 @@ function reviewPanel(preview, { onCancel, onAdd }) {
   }
   if (pack.palettes.length) {
     parts.push(
-      h("div", { class: "pack-review-label micro" }, "Colour palettes"),
+      h("div", { class: "pack-review-label micro" }, "Color palettes"),
       h("div", { class: "set-list" }, pack.palettes.map((p) => simpleRow(p.name, null, swatches(p.colors))))
     );
   }
@@ -848,7 +848,7 @@ function reviewPanel(preview, { onCancel, onAdd }) {
 function packsTab(ctx, env) {
   const el = h("div", { class: "set-stack" });
   el.append(
-    h("p", { class: "set-lead" }, "Packs add themes, size presets, colour palettes and fonts. They are plain JSON files and never run code. Theme packs from Latitude work too.")
+    h("p", { class: "set-lead" }, "Packs add themes, size presets, color palettes and fonts. They are plain JSON files and never run code. Theme packs from Latitude work too.")
   );
 
   const input = h("input", { type: "file", accept: ".json,application/json", hidden: true });
@@ -1013,7 +1013,7 @@ function gestureRows() {
     ["Select several layers", [kbd(isMac ? "⇧" : "Shift"), " + click, or drag a box"]],
     ["Move without snapping", ["Hold ", kbd("Ctrl"), " while dragging"]],
     ["Keep or free the proportions", ["Hold ", kbd(isMac ? "⇧" : "Shift"), " while resizing"]],
-    ["Resize from the centre", ["Hold ", kbd(isMac ? "⌥" : "Alt"), " while resizing"]],
+    ["Resize from the center", ["Hold ", kbd(isMac ? "⌥" : "Alt"), " while resizing"]],
     ["Rotate in 15° steps", ["Hold ", kbd(isMac ? "⇧" : "Shift"), " while rotating"]],
     ["Turn a pen stroke into a clean shape", ["Hold still at the end of the stroke"]],
   ];
@@ -1112,7 +1112,7 @@ function aboutTab(ctx) {
         h("a", { class: "about-sib", href: LINKS.sundial, target: "_blank", rel: "noopener noreferrer" }, h("span", { class: "about-sib-name" }, "Sundial"), h("span", { class: "set-row-sub" }, "Planner"), icon("external-link", { size: "sm", class: "set-ext" }))
       )
     ),
-    group("Licence", null, h("p", { class: "set-note" }, "Longitude is free and open source under the MIT licence. Use it, change it, share it. Fonts and models keep their own licences, listed below.")),
+    group("License", null, h("p", { class: "set-note" }, "Longitude is free and open source under the MIT license. Use it, change it, share it. Fonts and models keep their own licenses, listed below.")),
     credits(ctx)
   );
   return el;
@@ -1120,13 +1120,13 @@ function aboutTab(ctx) {
 
 function credits(ctx) {
   const rows = [];
-  const line = (name, by, licence, href) =>
+  const line = (name, by, license, href) =>
     h(
       "div",
       { class: "credit" },
       href ? h("a", { href, target: "_blank", rel: "noopener noreferrer" }, name) : h("span", { class: "credit-name" }, name),
       by ? h("span", { class: "credit-by" }, by) : null,
-      licence ? h("span", { class: "credit-lic num" }, licence) : null
+      license ? h("span", { class: "credit-lic num" }, license) : null
     );
   rows.push(h("div", { class: "pack-review-label micro" }, "Interface"));
   rows.push(line("Manrope", "Mikhail Sharanda", "OFL-1.1"), line("Syne", "Bonjour Monde", "OFL-1.1"), line("Space Mono", "Colophon Foundry", "OFL-1.1"), line("Lucide icons", "Lucide contributors", "ISC"));
@@ -1141,5 +1141,5 @@ function credits(ctx) {
     for (const m of Object.values(cfg.models || {})) rows.push(line(m.label, null, m.license, m.source));
     if (cfg.ort) rows.push(line("ONNX Runtime Web", "Microsoft", cfg.ort.license, cfg.ort.source));
   }
-  return h("details", { class: "about-credits" }, h("summary", null, "Credits and licences"), h("div", { class: "credit-list" }, rows));
+  return h("details", { class: "about-credits" }, h("summary", null, "Credits and licenses"), h("div", { class: "credit-list" }, rows));
 }

@@ -1,5 +1,5 @@
 // Export dialog (SPEC 12): live preview with a before/after compare, format,
-// scale, quality, "fit under", 256-colour PNG, a live file size, download and
+// scale, quality, "fit under", 256-color PNG, a live file size, download and
 // copy. registerExportCommands() also wires the feed preview and quick tools.
 
 import { h, on, debounce, disposer } from "./dom.js";
@@ -233,7 +233,7 @@ export function settingsKey(settings, dims) {
 export function outputLabel(result) {
   if (!result) return "";
   const type = result.type || result.settings?.type;
-  if (type === "image/png") return result.colors ? `PNG · ${result.colors} colours` : "PNG · lossless";
+  if (type === "image/png") return result.colors ? `PNG · ${result.colors} colors` : "PNG · lossless";
   return `${labelFor(type)} · ${Math.round((result.quality ?? 0.92) * 100)}%`;
 }
 
@@ -409,7 +409,7 @@ export function openExportDialog(ctx, opts = {}) {
     onChange: (v) => set({ fitMB: v }),
   });
   const fitRow = switchRow("Fit under", s.fit, (b) => set({ fit: b }), fitMB, "Lower the quality until the file fits");
-  const png8Row = switchRow("Smaller PNG (256 colours)", s.png8, (b) => set({ png8: b }), null, "A 256-colour palette. Often 60 to 80% smaller.");
+  const png8Row = switchRow("Smaller PNG (256 colors)", s.png8, (b) => set({ png8: b }), null, "A 256-color palette. Often 60 to 80% smaller.");
 
   const nameInput = h("input", { type: "text", class: "xp-name-input", spellcheck: "false", autocomplete: "off", "aria-label": "File name" });
   const nameExt = h("span", { class: "xp-name-ext num" });
@@ -778,7 +778,7 @@ export function registerExportCommands(ctx) {
     title: "Compress images",
     group: "Tools",
     icon: "minimize-2",
-    keywords: "shrink smaller file size optimise optimize jpg png webp batch",
+    keywords: "shrink smaller file size optimize optimize jpg png webp batch",
     run: (c, args) => openQuickTool("compress", c, args || {}),
   });
   reg({

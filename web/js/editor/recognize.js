@@ -10,7 +10,7 @@
 //   kind null:      nothing fits well enough (params null)
 //
 // Every test is relative to the stroke's own size, so the same stroke is
-// recognised at any zoom.
+// recognized at any zoom.
 
 const DEG = 180 / Math.PI;
 const SAMPLES = 96;
@@ -132,7 +132,7 @@ function unit(dx, dy) {
 
 // ---- line --------------------------------------------------------------------
 
-// Lines within 4 degrees of horizontal or vertical are levelled around their
+// Lines within 4 degrees of horizontal or vertical are leveled around their
 // midpoint, since that is nearly always what a hand-drawn underline means.
 function levelLine(a, b) {
   const ang = Math.atan2(b.y - a.y, b.x - a.x) * DEG;

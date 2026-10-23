@@ -12,7 +12,7 @@ Families (SIL Open Font License 1.1, Copyright Longitude contributors):
 Needs fontTools, skia-pathops and brotli:
   pip install --user fonttools skia-pathops brotli
 Writes WOFF2 files to web/fonts/original/, TTF files and specimens to
-tools/fonts/out/ (git-ignored) and licence texts to web/fonts/LICENSES/.
+tools/fonts/out/ (git-ignored) and license texts to web/fonts/LICENSES/.
 The output is deterministic: same sources, same bytes.
 """
 
@@ -527,7 +527,7 @@ def gridline_specs():
     return specs
 
 
-# ---- licence -------------------------------------------------------------------------
+# ---- license -------------------------------------------------------------------------
 
 OFL_TEXT = """Copyright {year} Longitude contributors
 
@@ -627,7 +627,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 LICENSE_SLUGS = ["longitude-meridian", "longitude-meridian-slant", "longitude-gridline", "longitude-gridline-dot"]
 
 
-def write_licences():
+def write_licenses():
     OUT_LIC.mkdir(parents=True, exist_ok=True)
     for slug in LICENSE_SLUGS:
         (OUT_LIC / f"{slug}.txt").write_text(OFL_TEXT.format(year=YEAR), encoding="utf-8", newline="\n")
@@ -652,7 +652,7 @@ def main():
             failed = True
         print(f"{stem:<34} {ncmap:4d} chars  {woff2.stat().st_size / 1024:6.1f} KB  -> {woff2.relative_to(ROOT)}")
         built.append(ttf)
-    write_licences()
+    write_licenses()
     if args.specimen:
         import specimen
         for ttf in built:

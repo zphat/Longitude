@@ -1,6 +1,6 @@
 // Shape tools: rectangle (R), ellipse (O) and the highlight circle (C), the
 // red ring every thumbnail needs. Drag from a corner; Shift keeps it square,
-// Alt draws from the centre. A click makes a default-sized shape centred at
+// Alt draws from the center. A click makes a default-sized shape centered at
 // the point. The shape is a real layer from the first drag step, so the
 // preview is exactly what you get; the whole drag is one undo step.
 

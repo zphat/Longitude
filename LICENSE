@@ -20,6 +20,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-Fonts in web/fonts/ are under their own licences (SIL Open Font License 1.1 or
+Fonts in web/fonts/ are under their own licenses (SIL Open Font License 1.1 or
 Apache 2.0); see web/fonts/LICENSES/. The background-removal model is
-downloaded on first use and is under its own licence; see docs/BGREMOVE.md.
+downloaded on first use and is under its own license; see docs/BGREMOVE.md.

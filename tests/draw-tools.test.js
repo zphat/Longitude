@@ -165,7 +165,7 @@ Deno.test("text.edit runs on exactly one unlocked text layer", () => {
 
 // ---- shapes -----------------------------------------------------------------------
 
-Deno.test("dragBox handles corners, squares and centre drags", () => {
+Deno.test("dragBox handles corners, squares and center drags", () => {
   assert.deepEqual(dragBox({ x: 100, y: 100 }, { x: 300, y: 250 }), { x: 200, y: 175, w: 200, h: 150 });
   assert.deepEqual(dragBox({ x: 100, y: 100 }, { x: 0, y: 40 }), { x: 50, y: 70, w: 100, h: 60 });
   assert.deepEqual(dragBox({ x: 100, y: 100 }, { x: 300, y: 150 }, { square: true }), { x: 200, y: 200, w: 200, h: 200 });
@@ -193,7 +193,7 @@ Deno.test("dragging the rectangle tool makes one filled rectangle in one undo st
   dispose();
 });
 
-Deno.test("Shift draws a circle, Alt draws from the centre", () => {
+Deno.test("Shift draws a circle, Alt draws from the center", () => {
   const { store, api, tool, dispose } = setup();
   dragWith(tool("ellipse"), api, [100, 100], [260, 180], { shiftKey: true });
   let l = store.layers()[0];
@@ -233,7 +233,7 @@ Deno.test("Escape during a drag leaves nothing behind", () => {
   dispose();
 });
 
-Deno.test("shapes use the remembered colour and width", () => {
+Deno.test("shapes use the remembered color and width", () => {
   const { store, api, tool, dispose } = setup({ prefs: { toolColors: { circle: { color: "#FFE14D", width: 20 } } } });
   const t = tool("circle");
   t.pointerDown(ev(100, 100), api);
@@ -454,7 +454,7 @@ Deno.test("left-aligned text starts at the click", () => {
   dispose();
 });
 
-Deno.test("insert.text centres new text on the canvas", () => {
+Deno.test("insert.text centers new text on the canvas", () => {
   const { ctx, store, edits, dispose } = setup();
   ctx.commands.run("insert.text");
   const l = store.layers()[0];
@@ -466,7 +466,7 @@ Deno.test("insert.text centres new text on the canvas", () => {
 
 // ---- remembered styles ----------------------------------------------------------------------
 
-Deno.test("committed edits update the remembered colours and text style", () => {
+Deno.test("committed edits update the remembered colors and text style", () => {
   const arrow = createLayer("arrow", {});
   const text = createLayer("text", { text: "Hello" });
   const { ctx, store, dispose } = setup({ layers: [arrow, text] });
@@ -565,7 +565,7 @@ Deno.test("the magic eraser reaches the image under a cutout's cleared area", ()
   const kept = { x: 780, y: 360 };
   assert.equal(imageAt(store, cleared).id, back.id, "the photo you can see, not the selected cutout");
   assert.equal(imageAt(store, kept).id, cut.id, "the person is still picked where it is visible");
-  assert.equal(imageAt(store, cleared, { restore: true }).id, cut.id, "Alt brings colour back to the cutout");
+  assert.equal(imageAt(store, cleared, { restore: true }).id, cut.id, "Alt brings color back to the cutout");
   assert.equal(imageAt(store, { x: 100, y: 100 }, { restore: true }), null, "nothing to bring back on a plain image");
   dispose();
 });
@@ -730,12 +730,12 @@ Deno.test("a narrow text drag is a click, not a box one letter wide", () => {
 
 // ---- add text in view ----------------------------------------------------------------------
 
-Deno.test("Add text lands in view when the canvas centre is scrolled away", () => {
+Deno.test("Add text lands in view when the canvas center is scrolled away", () => {
   const { ctx, store, edits, dispose } = setup();
   const kit = createKit(ctx, ctx.editor);
-  assert.deepEqual(insertPoint(kit), { x: 640, y: 360 }, "no viewport: the centre");
+  assert.deepEqual(insertPoint(kit), { x: 640, y: 360 }, "no viewport: the center");
   ctx.editor.getViewport = () => ({ zoom: 0.5, panX: 100, panY: 50, width: 1000, height: 600 });
-  assert.deepEqual(insertPoint(kit), { x: 640, y: 360 }, "centre on screen: the centre");
+  assert.deepEqual(insertPoint(kit), { x: 640, y: 360 }, "center on screen: the center");
   // 300% on the top-left corner.
   ctx.editor.getViewport = () => ({ zoom: 3, panX: 0, panY: 0, width: 900, height: 600 });
   assert.deepEqual(insertPoint(kit), { x: 150, y: 100 });

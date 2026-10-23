@@ -1,14 +1,14 @@
-// 256-colour (or fewer) PNG: palette quantisation plus a small PNG encoder.
+// 256-color (or fewer) PNG: palette quantization plus a small PNG encoder.
 //
-// Pipeline: exact palette when the image already has few colours (lossless),
+// Pipeline: exact palette when the image already has few colors (lossless),
 // otherwise a 19-bit histogram -> variance-split median cut -> a few k-means
-// passes -> nearest-colour mapping with optional serpentine Floyd-Steinberg
+// passes -> nearest-color mapping with optional serpentine Floyd-Steinberg
 // dithering. The core works on plain { width, height, data } so it runs
 // anywhere (tests run it in Deno); only encodePng8() needs a canvas.
 
 import { crc32 } from "./zip.js";
 
-// Eye sensitivity: green matters most, blue least. Colours are compared
+// Eye sensitivity: green matters most, blue least. Colors are compared
 // premultiplied by alpha, so nearly transparent pixels cost little. Points are
 // stored pre-scaled by sqrt(weight) so plain Euclidean distance is weighted.
 const WEIGHTS = [0.5, 1.0, 0.45, 0.8];
@@ -47,9 +47,9 @@ function checkImage(image) {
   return { width, height, data };
 }
 
-// ---- quantisation -------------------------------------------------------
+// ---- quantization -------------------------------------------------------
 
-// Lossless path: null when the image has more than `limit` distinct colours.
+// Lossless path: null when the image has more than `limit` distinct colors.
 function exactPalette(img, limit) {
   const { data } = img;
   const n = img.width * img.height;
@@ -84,7 +84,7 @@ function exactPalette(img, limit) {
   return { palette, indices };
 }
 
-// 5 bits per colour channel + 4 bits alpha. Buckets keep exact premultiplied
+// 5 bits per color channel + 4 bits alpha. Buckets keep exact premultiplied
 // sums, so a bucket's representative is the true mean of its pixels.
 async function histogram(img, tick) {
   const { data } = img;
@@ -225,7 +225,7 @@ function nearest(pal, k, v0, v1, v2, v3) {
   return best;
 }
 
-// Lloyd iterations over the histogram buckets: moves each palette colour to
+// Lloyd iterations over the histogram buckets: moves each palette color to
 // the mean of the pixels that actually map to it.
 async function refine(h, pal, tick) {
   const k = pal.length / 4;
@@ -277,7 +277,7 @@ async function mapPixels(img, palW, palU, transparentIndex, dither, tick) {
   const { width: w, height: h, data } = img;
   const k = palW.length / 4;
   const out = new Uint8Array(w * h);
-  // 6 bits per premultiplied colour channel + 4 bits alpha.
+  // 6 bits per premultiplied color channel + 4 bits alpha.
   const cache = new Int16Array(1 << 22).fill(-1);
   const look = (r, g, b, a) => {
     const key = ((r >> 2) << 16) | ((g >> 2) << 10) | ((b >> 2) << 4) | (a >> 4);
@@ -508,7 +508,7 @@ const SIGNATURE = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
 // { width, height, palette: RGBA Uint8Array, indices } -> PNG bytes.
 export async function encodeIndexedPng({ width, height, palette, indices }) {
   const count = palette.length / 4;
-  if (!Number.isInteger(count) || count < 1 || count > 256) throw Error("png8: the palette needs 1 to 256 colours.");
+  if (!Number.isInteger(count) || count < 1 || count > 256) throw Error("png8: the palette needs 1 to 256 colors.");
   if (!indices || indices.length < width * height) throw Error("png8: the index data is incomplete.");
   const depth = bitDepthFor(count);
 
@@ -517,7 +517,7 @@ export async function encodeIndexedPng({ width, height, palette, indices }) {
   hv.setUint32(0, width);
   hv.setUint32(4, height);
   ihdr[8] = depth;
-  ihdr[9] = 3; // colour type: indexed
+  ihdr[9] = 3; // color type: indexed
   ihdr[10] = 0; // deflate
   ihdr[11] = 0; // adaptive filtering
   ihdr[12] = 0; // no interlace
@@ -593,7 +593,7 @@ export function readPixels(source) {
   return ctx2d.getImageData(0, 0, w, h);
 }
 
-// Canvas -> indexed PNG Blob with at most `colors` colours.
+// Canvas -> indexed PNG Blob with at most `colors` colors.
 export async function encodePng8(canvas, { colors = 256, dither = true } = {}) {
   const { bytes } = await encodePng8Data(readPixels(canvas), { colors, dither });
   return new Blob([bytes], { type: "image/png" });

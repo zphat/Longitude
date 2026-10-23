@@ -56,24 +56,24 @@ export function bigEnoughBox(kit, box, zoom = 1) {
   return box.w >= minW && box.w * (Number(zoom) || 1) >= MIN_BOX_SCREEN;
 }
 
-// Where insert.text puts new text: the canvas centre, or the middle of what
-// is on screen when the centre is scrolled out of view (zoomed in).
+// Where insert.text puts new text: the canvas center, or the middle of what
+// is on screen when the center is scrolled out of view (zoomed in).
 export function insertPoint(kit) {
   const doc = kit.store.doc || { width: 1280, height: 720 };
-  const centre = { x: doc.width / 2, y: doc.height / 2 };
+  const center = { x: doc.width / 2, y: doc.height / 2 };
   let v = null;
   try {
     v = kit.editor?.getViewport?.();
   } catch {
     v = null;
   }
-  if (!v || !(v.zoom > 0) || !(v.width > 0) || !(v.height > 0)) return centre;
+  if (!v || !(v.zoom > 0) || !(v.width > 0) || !(v.height > 0)) return center;
   const l = -v.panX / v.zoom;
   const t = -v.panY / v.zoom;
   const r = (v.width - v.panX) / v.zoom;
   const b = (v.height - v.panY) / v.zoom;
-  if (![l, t, r, b].every(Number.isFinite)) return centre;
-  if (centre.x >= l && centre.x <= r && centre.y >= t && centre.y <= b) return centre;
+  if (![l, t, r, b].every(Number.isFinite)) return center;
+  if (center.x >= l && center.x <= r && center.y >= t && center.y <= b) return center;
   const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
   return { x: clamp((l + r) / 2, 0, doc.width), y: clamp((t + b) / 2, 0, doc.height) };
 }

@@ -38,7 +38,7 @@ Deno.test("distributeDeltas: equal gaps, outer boxes stay", () => {
   assert.ok(d.every((x) => x.dy === 0));
 });
 
-Deno.test("distributeDeltas: order follows centres, not input order", () => {
+Deno.test("distributeDeltas: order follows centers, not input order", () => {
   const boxes = [box(500, 0, 100, 10), box(0, 0, 100, 10), box(400, 0, 10, 10)];
   const d = distributeDeltas(boxes, "h");
   // sorted: [1] 0..100, [2] 400..410, [0] 500..600; gap = (600 - 210) / 2 = 195

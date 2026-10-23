@@ -143,7 +143,7 @@ Deno.test("normalizeLayer: rotation lands in (-180, 180]", () => {
   assert.ok(Object.is(normAngle(-360), 0));
 });
 
-Deno.test("normalizeLayer: colours accept #rgb, #rrggbb, #rrggbbaa only", () => {
+Deno.test("normalizeLayer: colors accept #rgb, #rrggbb, #rrggbbaa only", () => {
   assert.ok(isColor("#abc") && isColor("#A1B2C3") && isColor("#a1b2c3d4"));
   assert.ok(!isColor("#abcd") && !isColor("red") && !isColor("#12345") && !isColor("rgb(0,0,0)") && !isColor(null));
   const l = normalizeLayer({ type: "shape", fill: { color: "#ABC" }, stroke: { color: "blue" }, shadow: { color: "#11223344" } });

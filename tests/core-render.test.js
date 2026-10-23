@@ -303,7 +303,7 @@ Deno.test("effects helpers", () => {
   const m = fx.adjustMatrix({ saturation: -100 });
   const img = { data: new Uint8ClampedArray([255, 0, 0, 255]) };
   fx.applyColorMatrix(img, m);
-  assert.ok(Math.abs(img.data[0] - img.data[1]) <= 1 && Math.abs(img.data[1] - img.data[2]) <= 1, "fully desaturated is grey");
+  assert.ok(Math.abs(img.data[0] - img.data[1]) <= 1 && Math.abs(img.data[1] - img.data[2]) <= 1, "fully desaturated is gray");
   const r1 = fx.mulberry32(fx.hashString("lyr_x"));
   const r2 = fx.mulberry32(fx.hashString("lyr_x"));
   assert.equal(r1(), r2(), "seeded randomness repeats");

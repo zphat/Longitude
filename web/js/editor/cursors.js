@@ -24,7 +24,7 @@ export function resizeCursor(deg) {
 }
 
 // Curved double arrow that wraps a corner pointing at `deg` (direction from
-// the layer centre to the corner, y down).
+// the layer center to the corner, y down).
 export function rotateCursor(deg) {
   const a = (((Math.round(deg / 5) * 5 + 135) % 360) + 360) % 360;
   const key = `o${a}`;

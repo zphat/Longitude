@@ -1,4 +1,4 @@
-// Tests for web/js/core/store.js (and the text normaliser from textlayout.js)
+// Tests for web/js/core/store.js (and the text normalizer from textlayout.js)
 //   deno test --allow-read tests/core-store.test.js
 
 import assert from "node:assert/strict";
@@ -60,7 +60,7 @@ Deno.test("patch: shallow merge, nested one level, new objects only for changed 
   assert.equal(before[0].x, 100, "old layer object not mutated");
 });
 
-Deno.test("patch: function form, rotation normalised, id/type/unknown keys ignored", () => {
+Deno.test("patch: function form, rotation normalized, id/type/unknown keys ignored", () => {
   const { store, ids } = setup(2);
   store.patch(ids, (l) => ({ x: l.x + 1, rotation: 270, id: "hijack", type: "text", bogus: 1 }));
   for (const id of ids) {
@@ -350,7 +350,7 @@ Deno.test("update: mutator on a working copy; unchanged layers keep identity", (
   assert.equal(store.get(ids[2]), undefined);
   assert.equal(store.doc.name, "Renamed");
   assert.equal(store.layers()[2].type, "text");
-  assert.equal(store.layers()[2].font, "Anton", "added layers are normalised");
+  assert.equal(store.layers()[2].font, "Anton", "added layers are normalized");
   assert.equal(store.update(() => {}), false);
   store.undo();
   assert.equal(store.layers().length, 3);
@@ -381,7 +381,7 @@ Deno.test("setDocProps and setDoc", () => {
   assert.equal(store.doc.name, "Other");
 });
 
-Deno.test("normalisers run on changed layers with the previous layer", () => {
+Deno.test("normalizers run on changed layers with the previous layer", () => {
   const { store, ids } = setup(2);
   const seen = [];
   const off = store.addNormalizer((layer, doc, prev) => {
@@ -391,7 +391,7 @@ Deno.test("normalisers run on changed layers with the previous layer", () => {
   store.patch(ids[0], { x: 5 });
   assert.deepEqual(seen, [[ids[0], 100]]);
   assert.equal(store.get(ids[0]).h, 360);
-  assert.equal(store.get(ids[1]).h, 240, "untouched layers are not normalised");
+  assert.equal(store.get(ids[1]).h, 240, "untouched layers are not normalized");
   const [added] = store.add(createLayer("shape", { w: 50, h: 10 }));
   assert.equal(store.get(added).h, 50);
   assert.equal(seen.at(-1)[1], undefined, "new layers have no previous layer");
@@ -404,7 +404,7 @@ Deno.test("normalisers run on changed layers with the previous layer", () => {
   assert.equal(store.get(ids[0]).h, 360);
 });
 
-Deno.test("normalisers: a throwing normaliser does not break the store", () => {
+Deno.test("normalizers: a throwing normalizer does not break the store", () => {
   const { store, ids } = setup(1);
   const err = console.error;
   console.error = () => {};
@@ -419,14 +419,14 @@ Deno.test("normalisers: a throwing normaliser does not break the store", () => {
   }
 });
 
-Deno.test("text normaliser: boxes follow the text, anchored by alignment", () => {
+Deno.test("text normalizer: boxes follow the text, anchored by alignment", () => {
   const store = new Store();
   installTextNormalizer(store);
   const [id] = store.add(createLayer("text", { text: "Hi", x: 500, y: 300, align: "left" }));
   let l = store.get(id);
   const box = measureBox(l);
   assert.equal(l.w, Math.round(box.w * 100) / 100);
-  assert.equal(l.x, 500, "a new layer keeps its centre");
+  assert.equal(l.x, 500, "a new layer keeps its center");
   const left = l.x - l.w / 2;
   const top = l.y - l.h / 2;
   store.patch(id, { text: "Hello there" });
@@ -444,17 +444,17 @@ Deno.test("text normaliser: boxes follow the text, anchored by alignment", () =>
   store.patch(id, { size: 200 });
   l = store.get(id);
   assert.ok(Math.abs(l.x + l.w / 2 - right) < 0.02, "right edge stays for right-aligned text");
-  assert.ok(Math.abs(l.y - cy) < 0.02, "style changes keep the vertical centre");
+  assert.ok(Math.abs(l.y - cy) < 0.02, "style changes keep the vertical center");
 
   store.patch(id, { align: "center" });
   l = store.get(id);
   const cx = l.x;
   store.patch(id, { letterSpacing: 300, stroke: { width: 30 } });
   l = store.get(id);
-  assert.ok(Math.abs(l.x - cx) < 0.02, "centre-aligned text keeps its centre");
+  assert.ok(Math.abs(l.x - cx) < 0.02, "center-aligned text keeps its center");
 });
 
-Deno.test("text normaliser: anchors in the rotated frame, fixed wrap keeps w", () => {
+Deno.test("text normalizer: anchors in the rotated frame, fixed wrap keeps w", () => {
   const store = new Store();
   installTextNormalizer(store);
   const [id] = store.add(createLayer("text", { text: "A", x: 0, y: 0, align: "left", rotation: 90 }));

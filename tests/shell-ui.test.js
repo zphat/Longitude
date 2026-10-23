@@ -12,7 +12,7 @@ import { fieldOwnsCombo, isTextEntry } from "../web/js/ui/dom.js";
 
 const vp = { w: 1000, h: 800 };
 
-Deno.test("placeFloating: below the anchor, centred", () => {
+Deno.test("placeFloating: below the anchor, centered", () => {
   const p = placeFloating({ x: 400, y: 100, w: 100, h: 30 }, { w: 200, h: 100 }, vp, { placement: "bottom", gap: 8 });
   assert.deepEqual([p.x, p.y, p.side], [350, 138, "bottom"]);
 });
@@ -130,7 +130,7 @@ Deno.test("boundCommand: finds the binding whether or not it can run, with the t
 
 Deno.test("normalizeEvent: letters and punctuation as printed, digits by position", () => {
   const ev = (key, code, init = {}) => ({ key, code, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...init });
-  // QWERTZ: the key labelled Z has code KeyY.
+  // QWERTZ: the key labeled Z has code KeyY.
   assert.equal(normalizeEvent(ev("z", "KeyY", { ctrlKey: true })), "Mod+Z");
   assert.equal(normalizeEvent(ev("y", "KeyZ", { ctrlKey: true })), "Mod+Y");
   assert.equal(normalizeEvent(ev("Z", "KeyY", { ctrlKey: true, shiftKey: true })), "Mod+Shift+Z");

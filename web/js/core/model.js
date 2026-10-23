@@ -1,7 +1,7 @@
 // Document model: defaults, factories and validation. Anything that comes from
 // outside (files, clipboard, mods, old autosaves) goes through normalizeDoc or
-// normalizeLayer before it reaches the store. Normalising never throws for a
-// problem it can repair: bad numbers are clamped, bad colours fall back to the
+// normalizeLayer before it reaches the store. Normalizing never throws for a
+// problem it can repair: bad numbers are clamped, bad colors fall back to the
 // default, unknown fields are dropped and missing ids are created.
 
 export const LAYER_TYPES = ["image", "text", "shape", "path", "arrow"];
@@ -13,15 +13,15 @@ export const BLEND_MODES = [
   { id: "overlay", label: "Overlay" },
   { id: "darken", label: "Darken" },
   { id: "lighten", label: "Lighten" },
-  { id: "color-dodge", label: "Colour dodge" },
-  { id: "color-burn", label: "Colour burn" },
+  { id: "color-dodge", label: "Color dodge" },
+  { id: "color-burn", label: "Color burn" },
   { id: "hard-light", label: "Hard light" },
   { id: "soft-light", label: "Soft light" },
   { id: "difference", label: "Difference" },
   { id: "exclusion", label: "Exclusion" },
   { id: "hue", label: "Hue" },
   { id: "saturation", label: "Saturation" },
-  { id: "color", label: "Colour" },
+  { id: "color", label: "Color" },
   { id: "luminosity", label: "Luminosity" },
 ];
 
@@ -199,7 +199,7 @@ export function clampNum(v, min, max, fallback) {
   return Math.min(max, Math.max(min, n));
 }
 
-// Degrees normalised to (-180, 180].
+// Degrees normalized to (-180, 180].
 export function normAngle(deg) {
   if (!Number.isFinite(deg)) return 0;
   let a = deg % 360;

@@ -9,7 +9,7 @@ Longitude is a lightweight, open-source, local-first image editor for YouTube
 and Spotify thumbnails and covers. It is the sibling of Latitude (screen
 recorder) and Sundial (planner) and shares their look: graphite surfaces, one
 acid-lime accent (#D1FF4A), sun-gold (#FFC56B) as the only second signal
-colour. No accounts, no fees, no stock library, no telemetry. Everything runs
+color. No accounts, no fees, no stock library, no telemetry. Everything runs
 in the browser on the user's machine; images never leave it.
 
 ## 1. What the user must be able to do (acceptance list)
@@ -22,11 +22,11 @@ in the browser on the user's machine; images never leave it.
    frame), AVIF, BMP, SVG.
 3. Layer, move, resize, rotate, flip, reorder, duplicate, delete, lock, hide,
    rename. Multi-select (Shift-click, marquee). Align and distribute.
-4. Snap guides that make "is it centred?" obvious: magnetic snapping to the
-   canvas centre lines, canvas edges and other layers' edges/centres, with
-   bright full-length guide lines and a "Centre" label when centred.
+4. Snap guides that make "is it centered?" obvious: magnetic snapping to the
+   canvas center lines, canvas edges and other layers' edges/centers, with
+   bright full-length guide lines and a "Center" label when centered.
 5. Text: inline editing on canvas, font picker with live previews, size,
-   colour (solid or gradient), stroke + stroke colour, second outline, shadow,
+   color (solid or gradient), stroke + stroke color, second outline, shadow,
    glow, background pill, letter spacing, line height, alignment, uppercase.
 6. Draw: freehand pen, highlight circle, arrow (straight or bent),
    rectangle/shapes. Holding still at the end of a pen stroke turns a rough
@@ -37,7 +37,7 @@ in the browser on the user's machine; images never leave it.
    (brightness, contrast, saturation, warmth, hue, blur), sticker outline,
    shadow, glow.
 8. Export: PNG / JPEG / WebP, scale, quality, "fit under N MB" (YouTube's 2 MB
-   limit preset), 256-colour lossy PNG, live file size, copy to clipboard.
+   limit preset), 256-color lossy PNG, live file size, copy to clipboard.
 9. Preview in feed: see the thumbnail at real size in a mock YouTube grid,
    sidebar and phone (dark + light), or a Spotify list.
 10. Autosave to the browser (IndexedDB). Save/open portable `.longitude`
@@ -80,7 +80,7 @@ web/css/tokens.css             PROVIDED (themes, base elements)
 web/css/controls.css           PROVIDED
 web/css/app.css                shell (layout: top bar, rail, stage, panels, home, palette, menus, toasts, dialogs, tooltips)
 web/css/editor.css             editor (text edit overlay, cursors, stage overlays)
-web/css/inspector.css          inspector (inspector, layers, colour picker, font picker)
+web/css/inspector.css          inspector (inspector, layers, color picker, font picker)
 web/css/export.css             export (export dialog, quick tools, feed preview)
 web/css/mods.css               mods (settings dialog)
 web/js/ui/dom.js               PROVIDED
@@ -137,8 +137,8 @@ tests/**                       whoever owns the module under test (name tests af
 
 ## 4. Document model (core/model.js)
 
-Units are document pixels. `x, y` is the CENTRE of the layer box. `w, h` is the
-unrotated box size. `rotation` is degrees clockwise, normalised to (-180, 180].
+Units are document pixels. `x, y` is the CENTER of the layer box. `w, h` is the
+unrotated box size. `rotation` is degrees clockwise, normalized to (-180, 180].
 Layers are drawn bottom (index 0) to top.
 
 ```js
@@ -169,7 +169,7 @@ LayerBase = {
 ImageLayer = LayerBase & {
   type: "image",
   asset: "ast_…", natW, natH,           // natural pixel size of the asset
-  crop: { x: 0, y: 0, w: 1, h: 1 },      // normalised region of the natural image shown in the box
+  crop: { x: 0, y: 0, w: 1, h: 1 },      // normalized region of the natural image shown in the box
   mask: null | "ast_…",                  // alpha mask, same natural size; opaque = keep
   frame: "rect" | "ellipse", radius: 0,  // corner radius in doc px (rect frame)
   adjust: { brightness: 0, contrast: 0, saturation: 0, warmth: 0, hue: 0, blur: 0 },
@@ -207,14 +207,14 @@ ShapeLayer = LayerBase & {
 
 PathLayer = LayerBase & {                // freehand pen
   type: "path",
-  points: [[u, v, p], …],                // normalised to the box (0..1); p = pressure 0..1
+  points: [[u, v, p], …],                // normalized to the box (0..1); p = pressure 0..1
   color: "#ff2d2d", width: 10,           // width in doc px (does not scale with the box)
   smoothing: 0.5,
 }
 
 ArrowLayer = LayerBase & {
   type: "arrow",
-  a: [u, v], b: [u, v], c: null | [u, v],   // tail, tip, optional quadratic control; normalised to the box
+  a: [u, v], b: [u, v], c: null | [u, v],   // tail, tip, optional quadratic control; normalized to the box
   color: "#ff2d2d", width: 14,
   head: "triangle" | "line" | "none",
   tail: "none" | "triangle" | "line" | "dot",
@@ -285,9 +285,9 @@ within 900 ms (sliders, nudges, typing). `transient: true` changes are not
 recorded (used inside begin/commit). Locked layers can be patched by the store;
 tools must refuse to move locked layers.
 
-The text normaliser (registered by core in `render.js` or `textlayout.js` init)
+The text normalizer (registered by core in `render.js` or `textlayout.js` init)
 re-measures text layers whenever text-affecting props change and updates `w,h`
-keeping the anchor: left edge for `align:left`, right edge for `right`, centre
+keeping the anchor: left edge for `align:left`, right edge for `right`, center
 for `center` (in the layer's rotated frame).
 
 ## 5. Core modules
@@ -332,7 +332,7 @@ class ProjectStore {
 // Matrices are geometry.js's own 2D affine type with DOMMatrix-style fields a..f
 // (so ctx.transform(m.a, m.b, m.c, m.d, m.e, m.f) works) plus multiply/invert/apply.
 // Do not depend on DOMMatrix: tests run in Deno, which lacks it. Points are {x, y}.
-layerMatrix(layer) -> Mat                    // local (box centred at 0,0) -> doc
+layerMatrix(layer) -> Mat                    // local (box centered at 0,0) -> doc
 toLocal(layer, pt) -> pt                     // doc -> local
 corners(layer) -> [pt, pt, pt, pt]           // doc space, clockwise from top-left
 aabb(layer) -> { x, y, w, h, l, t, r, b, cx, cy }   // axis-aligned bounds in doc space (box, not effects)
@@ -340,7 +340,7 @@ unionBox(boxes) -> same shape
 hitTest(layer, pt, { tol = 6, assets }) -> bool   // see 5.2.1
 pickLayer(doc, pt, { tol, assets, includeLocked = false, includeHidden = false }) -> layer | null   // topmost
 layersInRect(doc, rect) -> Layer[]           // for marquee: fully or partly inside, unlocked, visible
-refitPoints(layer, docPoints, pad) -> { x, y, w, h, points }   // for path/arrow: new box + normalised points, keeps rotation
+refitPoints(layer, docPoints, pad) -> { x, y, w, h, points }   // for path/arrow: new box + normalized points, keeps rotation
 pointsToDoc(layer, normPoints) -> docPoints
 rotatePoint(pt, center, deg) ; dist(a, b) ; clamp(v, a, b) ; snapAngle(deg, step)
 quadPoint(a, c, b, t) ; distToQuad(pt, a, c, b) ; distToPolyline(pt, pts)
@@ -358,9 +358,9 @@ tolerance / zoom).
 ```js
 fontString(layer, size = layer.size) -> CSS font shorthand ('italic 700 140px "Anton", sans-serif')
 layoutText(layer, fonts?) -> { lines: [{ text, width, x, y }], width, height, ascent, descent, lineHeightPx, pad }
-   // in local coords, box centred; x per line already includes alignment; y is the baseline
+   // in local coords, box centered; x per line already includes alignment; y is the baseline
 measureBox(layer) -> { w, h }     // what w/h should be for this text layer (includes stroke/stroke2/bg padding)
-installTextNormalizer(store)      // registers the normaliser described in 4.2
+installTextNormalizer(store)      // registers the normalizer described in 4.2
 ```
 Use one shared OffscreenCanvas (or canvas) for measuring. Use
 `ctx.letterSpacing` when supported, else per-glyph fallback.
@@ -370,8 +370,8 @@ Use one shared OffscreenCanvas (or canvas) for measuring. Use
 ```js
 // shapes.js
 export const shapes   // registry (createRegistry from app/context.js), items:
-  { id, label, icon, path(w, h, params, layer) -> Path2D (local coords, box centred at 0,0), defaults?: {fill, stroke, params} }
-// built-ins: rect (honours layer.radius), ellipse, triangle, star, burst, bubble (speech bubble)
+  { id, label, icon, path(w, h, params, layer) -> Path2D (local coords, box centered at 0,0), defaults?: {fill, stroke, params} }
+// built-ins: rect (honors layer.radius), ellipse, triangle, star, burst, bubble (speech bubble)
 
 // filters.js
 export const filters  // registry, items:
@@ -395,7 +395,7 @@ createRenderCache() -> cache   // per-layer composite cache keyed by layer id + 
 effects.js: helpers used by render: `withShadow`, `drawGlow`, `stickerOutline(canvas, width, color)` (stamp the
 alpha silhouette around a circle of offsets, 16–48 stamps by width),
 `applyAdjust(ctx, adjust)` (canvas `filter` string; warmth via a sepia/hue
-mix or a colour overlay when `filter` is unsupported), `applyMask(src, mask)`.
+mix or a color overlay when `filter` is unsupported), `applyMask(src, mask)`.
 Text effects order (bottom to top): glow, shadow, bg pill, stroke2, stroke,
 fill. Stroke is drawn with `lineJoin = "round"`, `lineWidth = 2*width` under
 the fill so it sits outside the glyph. stroke2 uses `2*(stroke.width+stroke2.width)`.
@@ -511,7 +511,7 @@ Command ids by owner (implement yours, call others' by id):
 - editor: `tool.select` (V), `tool.hand` (H), `tool.text` (T), `tool.rect` (R), `tool.ellipse` (O),
   `tool.circle` (C — highlight circle: ellipse, no fill, red stroke), `tool.arrow` (A), `tool.pen` (P),
   `tool.refine` (E — refine cutout brush, needs a masked image), `tool.magic` (M — magic eraser on an image),
-  `insert.image` (I — file picker), `insert.text` (adds "Your text" centred), `image.crop` (Enter on an image / double-click),
+  `insert.image` (I — file picker), `insert.text` (adds "Your text" centered), `image.crop` (Enter on an image / double-click),
   `text.edit` (Enter on text / double-click).
 - inspector: `image.remove-bg` (Shift+B), `image.restore`, `image.outline` (toggle), `text.stroke` (toggle),
   `text.uppercase`, `canvas.resize`.
@@ -567,7 +567,7 @@ editor = {
   host, canvas, overlaySvg
 }
 ```
-- Workspace: full-window canvas behind the floating UI; artboard centred with
+- Workspace: full-window canvas behind the floating UI; artboard centered with
   a soft shadow; subtle dot grid + film grain on the workspace; checkerboard
   inside the artboard when the background is transparent.
 - Interaction: wheel pans, Ctrl/Cmd+wheel and pinch zoom at the cursor, Space
@@ -577,24 +577,24 @@ editor = {
   hover outline on the layer under the pointer. Text: corners scale the font
   size, left/right sides set a fixed wrap width, no top/bottom handles. Image:
   corners keep aspect (Shift frees), sides crop. Shapes and paths: free resize
-  (Shift keeps aspect). Alt resizes from the centre. Arrows: endpoint dots
+  (Shift keeps aspect). Alt resizes from the center. Arrows: endpoint dots
   plus a bend handle at the midpoint, no box handles. Multi-select: union
   box, move + corner scale.
 - Snapping (snapping.js): see section 1 item 4. Threshold 6 screen px; Ctrl
   held disables it; pref `snap` toggles it. Rotation snaps to 45° multiples
   within 3°, Shift snaps to 15°. Guides are lime with a dark 1 px halo; a
-  centred layer gets full-length guides and a "Centre" pill.
+  centered layer gets full-length guides and a "Center" pill.
 - Creation tools: drag to create; click without drag creates a default-sized
-  object at the point. Defaults remember the last colour used per tool (prefs).
+  object at the point. Defaults remember the last color used per tool (prefs).
   Remembered tool widths and the last text style are stored with the docScale
   of the canvas they were set on (`toolColors[tool].docScale`,
   `lastTextStyle.docScale`; missing means 1) and scale to the current canvas.
 - Pen: smooth, pressure-aware strokes. Hold still ~450 ms at the end of a
-  stroke to recognise ellipse/circle, line, arrow (line with a hook at the end),
+  stroke to recognize ellipse/circle, line, arrow (line with a hook at the end),
   rectangle and convert to the clean layer type.
 - Paste/drop: images become image layers. If the doc has no layers and the
   image aspect is within 3 % of the doc's, it fills the canvas; otherwise it
-  fits inside 70 % of the canvas, centred (or at the drop point).
+  fits inside 70 % of the canvas, centered (or at the drop point).
   `.longitude` files open as projects (confirm if the current one has layers);
   font files go to `ctx.fonts.addCustom`.
 - Internal clipboard: copy writes layers as JSON (`application/x-longitude` in
@@ -608,7 +608,7 @@ editor = {
 - Refine mode (`tool.refine`): brush that paints the selected image's mask
   (erase / restore toggle with X, `[` `]` brush size, Shift for a straight
   line). One undo entry per stroke. Uses bgremove's `paintMask`.
-- Magic eraser (`tool.magic`): click on a colour to remove it (tolerance in
+- Magic eraser (`tool.magic`): click on a color to remove it (tolerance in
   the quick bar), uses bgremove's `magicMask`.
 
 ## 9. Shell (layout and chrome)
@@ -616,19 +616,19 @@ editor = {
 Floating islands over a full-bleed workspace (Figma UI3 / Arc feel):
 - Top bar island (left): logo mark + "Longitude" wordmark (Syne), editable
   project name, preset chip ("YouTube thumbnail · 1280 × 720"), saved state.
-- Top bar island (centre): search pill "Search or run a command  Ctrl K".
+- Top bar island (center): search pill "Search or run a command  Ctrl K".
 - Top bar island (right): undo/redo, Preview (F), Export (lime primary).
 - Left rail island: Select, Hand, Text, Image, Shapes (flyout), Circle, Arrow,
   Pen; then Refine/Magic only when relevant; bottom: Settings.
 - Right island: inspector (scrolls) above a resizable layers panel.
-- Bottom-centre island: zoom −/value/+, Fit, safe zones toggle, snapping
+- Bottom-center island: zoom −/value/+, Fit, safe zones toggle, snapping
   toggle, grid toggle.
 - Home: full-screen overlay with presets grid (cards drawn to scale), recent
   projects with thumbnails, quick tools, drop zone. Esc closes when a
   project is open.
 - Tooltips: `data-tip="Text"` plus optional `data-kbd="T"` on any element;
   one tooltip system in menus.js.
-- Toasts bottom-centre above the zoom island; `ctx.ui.toast(msg, { kind:
+- Toasts bottom-center above the zoom island; `ctx.ui.toast(msg, { kind:
   "info"|"ok"|"warn"|"error", action: { label, run }, timeout })`.
 - Dialog: `ctx.ui.dialog({ title, body: Node, actions: [{ label, kind, run }], wide, onClose }) -> { close, el }`.
 - `ctx.ui.popover(anchorEl, contentNode, { placement, onClose }) -> { close, el }`.
@@ -639,25 +639,25 @@ Floating islands over a full-bleed workspace (Figma UI3 / Arc feel):
 
 Contextual sections by selection; numeric fields are scrubbable (drag the
 label). Section order:
-- Nothing selected: Canvas (preset, width, height, background colour /
+- Nothing selected: Canvas (preset, width, height, background color /
   gradient / transparent, safe zones toggle).
 - Text: Font (picker with live hover preview), size, weight, italic,
-  align, uppercase; Colour (solid / gradient); Stroke; Outline 2; Background;
+  align, uppercase; Color (solid / gradient); Stroke; Outline 2; Background;
   Spacing (letter, line); Effects (shadow, glow); Layer.
 - Image: big "Remove background" button (progress ring while running, then
   "Refine" + "Restore original"), Magic eraser, Crop, Frame (rect radius /
   ellipse), Adjust (sliders + reset), Outline, Effects, Layer.
 - Shape: shape picker, Fill, Stroke, Radius, Effects, Layer.
-- Arrow: colour, width, head, tail, sketch, straighten; Effects, Layer.
-- Path: colour, width; Effects, Layer.
+- Arrow: color, width, head, tail, sketch, straighten; Effects, Layer.
+- Path: color, width; Effects, Layer.
 - Multi: Align & distribute, opacity, Layer order.
 - Always last: Arrange (X, Y, W, H, rotation; align to canvas buttons with `align.center` first; order buttons) and Layer (opacity, blend, lock).
 Mod sections from `ctx.inspector` registry: `{ id, title, order, when(layers, ctx) -> bool, render(body, layers, ctx) -> optional cleanup }`.
 
-Colour picker popover: saturation/value square, hue + alpha sliders, hex
-field, EyeDropper button (when supported), document colours, thumbnail
+Color picker popover: saturation/value square, hue + alpha sliders, hex
+field, EyeDropper button (when supported), document colors, thumbnail
 staples (#FFFFFF #000000 #FFE14D #FF2D2D #D1FF4A #2DE2E6 #7B61FF #FF7A1A),
-recent colours (prefs `recentColors`, 10).
+recent colors (prefs `recentColors`, 10).
 
 Font picker popover: search, category tabs (Original, Classics, Meme,
 Display, Clean, System, Yours), each family rendered in itself, hover
@@ -665,11 +665,11 @@ previews on the selected text layer (transient patch, restored on leave),
 "Add a font file" at the bottom.
 
 Quick bar: a small floating island above the selection (below when near the
-top): text → font, size, colour, stroke toggle; image → Remove background,
+top): text → font, size, color, stroke toggle; image → Remove background,
 Crop, Flip, Outline; shape → the visible paint first (outline-only shapes such
-as the highlight circle get one Colour swatch for the outline; filled shapes
+as the highlight circle get one Color swatch for the outline; filled shapes
 get Fill then Stroke; otherwise Stroke then Add a fill), width; arrow/path →
-colour, width; every selection → Centre on canvas, then Duplicate and Delete.
+color, width; every selection → Center on canvas, then Duplicate and Delete.
 Hidden while dragging.
 
 Layers panel: top → bottom list with thumbnail, name (double-click rename),
@@ -694,7 +694,7 @@ export function paintMask(maskCanvas, from, to, { radius, hardness, mode: "erase
 export function featherMask(mask, px) ; export function growMask(mask, px) ; export function maskToCutout(source, mask) -> canvas
 export function maskAlphaMap(maskCanvas, maxSide = 256) -> { w, h, data: Uint8Array }   // for hit testing
 ```
-Model choice: permissive licence only (MIT/Apache/BSD). Download on first use
+Model choice: permissive license only (MIT/Apache/BSD). Download on first use
 with a confirm dialog that states the size and that nothing is uploaded;
 cache in Cache Storage; progress events; WebGPU when available, else WASM.
 The model and runtime URLs live in one config object so a fork or mod can
@@ -736,18 +736,18 @@ Preset schema (`web/presets/presets.json`):
 ] }
 ```
 Guide kinds: `badge` (rounded dark rect with label), `safe` (dashed rect,
-label), `circle` (cx, cy, r normalised to width; label), `bar` (filled strip),
-`zone` (hatched area that UI covers, label). All coordinates normalised 0..1.
+label), `circle` (cx, cy, r normalized to width; label), `bar` (filled strip),
+`zone` (hatched area that UI covers, label). All coordinates normalized 0..1.
 
 Export dialog: live preview, format segmented control, scale (0.5x, 1x, 2x,
 custom), quality, "Fit under" toggle + MB field (defaults from the preset),
-256-colour PNG toggle, estimated size updates live (debounced), filename,
+256-color PNG toggle, estimated size updates live (debounced), filename,
 Download, Copy. Remembers settings per preset.
 
 ## 13. Mods
 
 - JSON packs (no code): themes (Latitude-compatible format, see
-  `ui/theme.js`), presets, colour palettes, font lists pointing at files in
+  `ui/theme.js`), presets, color palettes, font lists pointing at files in
   `web/mods/<pack>/`. Imported through Settings, stored in IndexedDB `kv`.
 - Code mods: listed in `web/mods/mods.json` as
   `{ "mods": [{ "id": "meme-classic", "entry": "meme-classic/index.js", "enabled": true }] }`.
@@ -789,11 +789,11 @@ future. Fewer, better controls. Every pixel intentional.
   faint dot grid, film grain). All chrome floats above it in rounded
   `.island` panels (glass, 18 px radius, soft shadow) with `--gap` (10 px)
   from the window edges. The artboard is the brightest thing on screen.
-- Colour: graphite neutrals, ONE accent (`--accent`, acid lime) for the
+- Color: graphite neutrals, ONE accent (`--accent`, acid lime) for the
   current tool, the primary action, focus, selection and snap guides.
   `--highlight` (sun-gold) only for "pay attention" moments (spacing guides,
   unsaved, model downloading). Red only for destructive actions and errors.
-  Never introduce new hard-coded UI colours; use the tokens.
+  Never introduce new hard-coded UI colors; use the tokens.
 - Type: Manrope for UI (12-13 px, weights 500-700), Syne for the wordmark and
   big empty-state headings, Space Mono for numbers (sizes, zoom, file size).
   Micro labels: `.micro` (10 px caps, tracked).
@@ -805,7 +805,7 @@ future. Fewer, better controls. Every pixel intentional.
 - Feedback is immediate and spatial: hover outlines on canvas, live size
   pills, magnetic snaps with guides, a shimmer scan over an image while its
   background is removed, a brief lime pulse on newly added layers.
-- Empty states teach: an empty canvas shows a centred hint ("Drop images,
+- Empty states teach: an empty canvas shows a centered hint ("Drop images,
   paste with Ctrl V, or press T for text") that fades once there is a layer.
 - Progressive disclosure: the inspector shows only what applies to the
   selection; effect sections (stroke, shadow, glow, outline) are collapsed
@@ -814,4 +814,4 @@ future. Fewer, better controls. Every pixel intentional.
   the shortcut; the command palette is one keystroke away.
 - Accessibility: visible focus rings (`:focus-visible`), `aria-label` on icon
   buttons (controls.js does this from `tip`), 4.5:1 text contrast, hit
-  targets >= 28 px, no information carried by colour alone.
+  targets >= 28 px, no information carried by color alone.

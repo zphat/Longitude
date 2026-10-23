@@ -113,7 +113,7 @@ function cubic(x) {
   return 0;
 }
 
-// Per output index: first source index, tap count and normalised weights.
+// Per output index: first source index, tap count and normalized weights.
 // When shrinking, the kernel widens so every source pixel contributes.
 function resampleTable(srcLen, dstLen) {
   const scale = srcLen / dstLen;
@@ -124,13 +124,13 @@ function resampleTable(srcLen, dstLen) {
   const weights = new Float32Array(dstLen * taps);
   const filterScale = Math.max(1, scale);
   for (let i = 0; i < dstLen; i++) {
-    const centre = (i + 0.5) * scale;
-    const a = Math.max(0, Math.floor(centre - support));
-    const b = Math.min(srcLen, Math.ceil(centre + support));
+    const center = (i + 0.5) * scale;
+    const a = Math.max(0, Math.floor(center - support));
+    const b = Math.min(srcLen, Math.ceil(center + support));
     let sum = 0;
     let n = 0;
     for (let j = a; j < b && n < taps; j++, n++) {
-      const w = cubic((j + 0.5 - centre) / filterScale);
+      const w = cubic((j + 0.5 - center) / filterScale);
       weights[i * taps + n] = w;
       sum += w;
     }

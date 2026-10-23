@@ -172,7 +172,7 @@ const GESTURES = [
   ["Pan the canvas", "Space + drag, or scroll"],
   ["Zoom at the pointer", `${MOD} + scroll, or pinch`],
   ["Skip snapping while dragging", `Hold ${MOD}`],
-  ["Resize from the centre", `Hold ${ALT}`],
+  ["Resize from the center", `Hold ${ALT}`],
   ["Keep proportions or free them", "Hold Shift"],
   ["Rotate in 15° steps", "Shift while rotating"],
   ["Add to the selection", "Shift + click"],

@@ -6,7 +6,7 @@
 // Rules (SPEC 8): text corners scale the font size, text sides set a fixed
 // wrap width; image corners keep the aspect (Shift frees it) and image sides
 // crop; shapes and paths resize freely (Shift keeps the aspect); Alt resizes
-// from the centre. Handles live in the layer's box frame (rotation, no flips).
+// from the center. Handles live in the layer's box frame (rotation, no flips).
 
 import { toBox, boxMatrix, snapAngle, normAngle, refitArrow, arrowPoints, quadThrough, dist } from "../core/geometry.js";
 import { measureBox } from "../core/textlayout.js";
@@ -41,10 +41,10 @@ export function handlesFor(layer) {
   return ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
 }
 
-// Resize a w x h box centred on 0,0 by dragging `handle`. grab and q are the
+// Resize a w x h box centered on 0,0 by dragging `handle`. grab and q are the
 // pointer at the start and now, in the box frame. snapX/snapY receive the
 // dragged edge positions (box frame) and return { i, d } (index of the edge
-// that snapped and the offset to add) or null. Returns the new size and centre.
+// that snapped and the offset to add) or null. Returns the new size and center.
 export function resizeBox(w, h, handle, grab, q, opts = {}) {
   const { keepAspect = false, fromCenter = false, minW = 1, minH = 1, maxW = Infinity, maxH = Infinity, snapX = null, snapY = null } = opts;
   const [hx, hy] = HANDLES[handle] || [0, 0];
@@ -135,7 +135,7 @@ function measured(layer, props) {
   return { w: round2(m.w), h: round2(m.h) };
 }
 
-// Everything about a layer scaled by s around its own centre (group scaling).
+// Everything about a layer scaled by s around its own center (group scaling).
 export function scaleLayerProps(layer, s) {
   const fx = scaleEffects(layer, s);
   switch (layer.type) {
@@ -260,20 +260,20 @@ export function resizeLayer(layer, handle, grabDoc, pDoc, opts = {}) {
 // Scale several layers by a corner of their union box `box` ({ l, t, r, b }).
 // Always keeps the aspect. Returns { props: Map(id -> props), scale, box }.
 export function scaleGroup(layers, box, handle, grabDoc, pDoc, opts = {}) {
-  const centre = { x: (box.l + box.r) / 2, y: (box.t + box.b) / 2 };
+  const center = { x: (box.l + box.r) / 2, y: (box.t + box.b) / 2 };
   const W = Math.max(1e-6, box.r - box.l);
   const H = Math.max(1e-6, box.b - box.t);
-  const grab = { x: grabDoc.x - centre.x, y: grabDoc.y - centre.y };
-  const q = { x: pDoc.x - centre.x, y: pDoc.y - centre.y };
+  const grab = { x: grabDoc.x - center.x, y: grabDoc.y - center.y };
+  const q = { x: pDoc.x - center.x, y: pDoc.y - center.y };
   const min = opts.minSize || 1;
   const r = resizeBox(W, H, handle, grab, q, { keepAspect: true, fromCenter: !!opts.alt, minW: min, minH: min, snapX: opts.snapX, snapY: opts.snapY });
   const s = r.sx;
-  const nc = { x: centre.x + r.cx, y: centre.y + r.cy };
+  const nc = { x: center.x + r.cx, y: center.y + r.cy };
   const props = new Map();
   for (const l of layers) {
     const p = scaleLayerProps(l, s);
-    p.x = nc.x + (l.x - centre.x) * s;
-    p.y = nc.y + (l.y - centre.y) * s;
+    p.x = nc.x + (l.x - center.x) * s;
+    p.y = nc.y + (l.y - center.y) * s;
     props.set(l.id, p);
   }
   return { props, scale: s, box: { l: nc.x - r.w / 2, t: nc.y - r.h / 2, r: nc.x + r.w / 2, b: nc.y + r.h / 2 } };

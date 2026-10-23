@@ -28,7 +28,7 @@ const LOCKED = "This layer is locked. Unlock it to move it.";
 const TAP_PX = 8; // a touch that moves less than this is a tap (select.js DRAG_PX.touch)
 
 // Icons the editor uses, for any the shell's set does not have yet (Lucide
-// paths, ISC licence).
+// paths, ISC license).
 const FALLBACK_ICONS = {
   pointer: '<path d="M4.04 4.69a.5.5 0 0 1 .65-.65l16 6.5a.5.5 0 0 1-.06.95l-6.13 1.58a2 2 0 0 0-1.43 1.43l-1.58 6.13a.5.5 0 0 1-.95.06z"/>',
   hand: '<path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
@@ -284,15 +284,15 @@ export function createEditor(ctx, { host } = {}) {
     requestRender();
   }
 
-  // Centre of the free area (between the chrome), host-local.
-  function viewCentre() {
+  // Center of the free area (between the chrome), host-local.
+  function viewCenter() {
     const i = insets();
     return { x: i.left + (viewport.width - i.left - i.right) / 2, y: i.top + (viewport.height - i.top - i.bottom) / 2 };
   }
 
   function anchorLocal(anchor) {
     if (anchor && Number.isFinite(anchor.x) && Number.isFinite(anchor.y)) return viewport.clientToLocal(anchor.x, anchor.y);
-    return viewCentre();
+    return viewCenter();
   }
 
   function setZoom(z, { anchor, animate = true } = {}) {

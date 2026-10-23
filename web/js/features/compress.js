@@ -119,8 +119,8 @@ function context2d(canvas) {
   return c;
 }
 
-// The colour to put under a transparent design for formats without alpha:
-// the document's own background colour, else white.
+// The color to put under a transparent design for formats without alpha:
+// the document's own background color, else white.
 export function flattenColor(doc) {
   const bg = doc?.background;
   if (bg?.kind === "color" && bg.color) return bg.color;
@@ -304,9 +304,9 @@ const PNG8_STEPS = [256, 128, 64];
 // Make a file no bigger than maxBytes.
 // Lossy (JPG/WebP): bisect quality between minQuality and `quality` (at most
 // 7 encodes), then, if allowDownscale, shrink in 10% steps and search again.
-// PNG: lossless first, then 256/128/64-colour PNG, then shrink in 10% steps
-// (256 colours). `colors` starts PNG at that palette size (the export
-// dialog's "256-colour PNG" toggle). minWidth / minHeight: never shrink
+// PNG: lossless first, then 256/128/64-color PNG, then shrink in 10% steps
+// (256 colors). `colors` starts PNG at that palette size (the export
+// dialog's "256-color PNG" toggle). minWidth / minHeight: never shrink
 // below this size (fits is then false when it would have needed to).
 // onStep(step) fires after every encode:
 //   { n, kind: "quality"|"colors"|"lossless", type, quality, colors, scale, width, height, bytes, fits }

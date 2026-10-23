@@ -2,7 +2,7 @@
 // [{ id, params }]; the renderer applies them in order to the cropped,
 // masked image and caches the result. Mods register more with
 // filters.register({ id, label, params: [...], apply(imageData, params) }).
-// A param is { key, label, min, max, step, default } or, for colours,
+// A param is { key, label, min, max, step, default } or, for colors,
 // { key, label, type: "color", default: "#rrggbb" }.
 
 import { createRegistry } from "../app/context.js";

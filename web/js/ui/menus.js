@@ -518,7 +518,7 @@ export function createUI(ctx, roots = {}) {
     ro?.observe(el);
     // Focus moves in when asked, when the content has an [autofocus] element, or
     // when the popover was opened from the keyboard. Mouse users keep their focus
-    // (an inline text edit must not lose it to a font or colour popover).
+    // (an inline text edit must not lose it to a font or color popover).
     if (opts.focus !== false) {
       const auto = el.querySelector("[autofocus]");
       const first = opts.focus === true || keyboardLast ? auto || focusables(el)[0] || el : auto;

@@ -28,7 +28,7 @@ export function createContextMenu(core) {
       cmd("layer.front", "Bring to front", "chevrons-up"),
       cmd("layer.back", "Send to back", "chevrons-down"),
       "-",
-      cmd("align.center", "Centre on canvas", "align-center"),
+      cmd("align.center", "Center on canvas", "align-center"),
       "-",
       cmd("layer.lock", allLocked ? "Unlock" : "Lock", allLocked ? "unlock" : "lock"),
       cmd("layer.hide", "Hide", "eye-off"),

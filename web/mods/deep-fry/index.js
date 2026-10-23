@@ -10,7 +10,7 @@ export const manifest = {
   name: "Deep fry",
   version: "1.0.0",
   author: "Longitude",
-  description: "A filter that crushes colour and contrast, oversharpens and adds noise, plus a command to fry the selected images.",
+  description: "A filter that crushes color and contrast, oversharpens and adds noise, plus a command to fry the selected images.",
   apiVersion: 1,
 };
 
@@ -37,7 +37,7 @@ function rng(seed) {
   };
 }
 
-// Saturation and contrast crush with a warm push, then a slight posterise.
+// Saturation and contrast crush with a warm push, then a slight posterize.
 function crush(d, k) {
   const sat = 1 + 2.2 * k;
   const con = 1 + 1.4 * k;
@@ -148,7 +148,7 @@ function renderSection(body, layers, api) {
     wrap.replaceChildren();
     if (!shown) {
       wrap.append(
-        api.h("p", { class: "mod-hint" }, "Crushed colour, oversharpened edges and noise."),
+        api.h("p", { class: "mod-hint" }, "Crushed color, oversharpened edges and noise."),
         button({ label: "Deep fry", wide: true, onClick: () => fryImages(api) })
       );
       return;

@@ -28,7 +28,7 @@ const now = () => (typeof performance !== "undefined" ? performance.now() : Date
 const f = (v) => Math.round(v * 100) / 100;
 const lerp = (a, b, t) => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
 
-// The clean layer for a recognised stroke, in the pen's colour and width.
+// The clean layer for a recognized stroke, in the pen's color and width.
 export function cleanLayer(result, style) {
   const q = result?.params;
   if (!q) return null;
@@ -38,7 +38,7 @@ export function cleanLayer(result, style) {
     case "rect": {
       const ellipse = result.kind === "ellipse";
       // Shape strokes sit inside the box, so grow it by the stroke width to
-      // keep the line on the recognised outline.
+      // keep the line on the recognized outline.
       return createLayer("shape", {
         shape: ellipse ? "ellipse" : "rect",
         name: NAMES[result.kind],

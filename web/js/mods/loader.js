@@ -120,7 +120,7 @@ export function registerModCommands(ctx) {
     { id: "settings.fonts", title: "Manage fonts", group: "App", icon: "type", keywords: "custom fonts add remove typeface", run: open("fonts") },
     // Hidden from the palette: help.shortcuts (Shift+/) is already listed as "Keyboard shortcuts".
     { id: "settings.shortcuts", title: "Keyboard shortcuts", group: "App", icon: "keyboard", keywords: "keys hotkeys help", hidden: true, run: open("shortcuts") },
-    { id: "settings.about", title: "About Longitude", group: "App", icon: "info", keywords: "version licence credits source github", run: open("about") },
+    { id: "settings.about", title: "About Longitude", group: "App", icon: "info", keywords: "version license credits source github", run: open("about") },
   ];
   const offs = [];
   for (const def of defs) {

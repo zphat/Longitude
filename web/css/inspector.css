@@ -1,4 +1,4 @@
-/* Inspector, layers panel, colour picker, font picker and quick bar
+/* Inspector, layers panel, color picker, font picker and quick bar
    (js/ui/inspector.js, layers.js, colorpicker.js, fontpicker.js, quickbar.js).
    The right island is about 292 px wide; everything sits on a 4 px grid. */
 
@@ -134,7 +134,7 @@
   margin-right: 2px;
 }
 
-/* Colour row: swatch + hex field */
+/* Color row: swatch + hex field */
 .insp-color {
   display: flex;
   align-items: center;
@@ -605,7 +605,7 @@
   display: none;
 }
 
-/* ---- colour picker ------------------------------------------------------- */
+/* ---- color picker ------------------------------------------------------- */
 
 .popover.cp-pop,
 .popover.fp-pop {

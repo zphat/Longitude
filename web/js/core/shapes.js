@@ -1,5 +1,5 @@
 // Shape registry. Each shape draws itself as a Path2D in local coordinates
-// (box centred on 0,0) and, optionally, describes the same outline as a
+// (box centered on 0,0) and, optionally, describes the same outline as a
 // polygon so hit testing and previews work without a canvas. Mods add shapes
 // with shapes.register({ id, label, icon, path, outline?, defaults?, params? }).
 

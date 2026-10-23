@@ -173,7 +173,7 @@ Deno.test("hitTest: shapes use their outline (fill) or stroke band", () => {
   const none = createLayer("shape", { x: 0, y: 0, w: 10, h: 10, fill: { on: false } });
   assert.ok(hitTest(none, { x: 0, y: 0 }, { tol: 0 }), "no fill and no stroke falls back to the box");
   const rect = createLayer("shape", { x: 0, y: 0, w: 100, h: 100, radius: 40 });
-  assert.ok(!hitTest(rect, { x: 48, y: 48 }, { tol: 0 }), "rounded corners are honoured");
+  assert.ok(!hitTest(rect, { x: 48, y: 48 }, { tol: 0 }), "rounded corners are honored");
 });
 
 Deno.test("hitTest: freehand paths use distance to the polyline", () => {

@@ -51,7 +51,7 @@ Deno.test("layoutText: lines, baselines and the box", () => {
   near(L.height, L.ascent + L.descent + 120 + 20);
   near(L.lines[0].y, -L.height / 2 + 10 + L.ascent, 1e-9, "first baseline sits one ascent below the padded top");
   assert.deepEqual(measureBox(l), { w: L.width, h: L.height });
-  for (const line of L.lines) near(line.x, -line.width / 2, 1e-9, "centred lines");
+  for (const line of L.lines) near(line.x, -line.width / 2, 1e-9, "centered lines");
 });
 
 Deno.test("layoutText: alignment puts each line's left edge in place", () => {

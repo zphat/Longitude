@@ -48,7 +48,7 @@ Deno.test("normalizeHex: one canonical form", () => {
   assert.equal(normalizeHex("nope"), null);
 });
 
-Deno.test("rgbToHsv and hsvToRgb: primaries and greys", () => {
+Deno.test("rgbToHsv and hsvToRgb: primaries and grays", () => {
   assert.deepEqual(rgbToHsv(255, 0, 0), { h: 0, s: 1, v: 1 });
   assert.deepEqual(rgbToHsv(0, 255, 0), { h: 120, s: 1, v: 1 });
   assert.deepEqual(rgbToHsv(0, 0, 255), { h: 240, s: 1, v: 1 });
@@ -115,7 +115,7 @@ Deno.test("docColors: what the design uses, most used first", () => {
   assert.deepEqual(docColors(null), []);
 });
 
-Deno.test("cleanPalettes: keeps valid colours, drops empty palettes", () => {
+Deno.test("cleanPalettes: keeps valid colors, drops empty palettes", () => {
   const out = cleanPalettes([{ name: "Brand", colors: ["#FFF", "nope", "#fff", "#00000080"] }, { name: "Empty", colors: [] }, null, { colors: ["#123"] }]);
   assert.deepEqual(out, [
     { name: "Brand", colors: ["#ffffff", "#00000080"] },

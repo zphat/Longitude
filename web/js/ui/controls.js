@@ -330,8 +330,8 @@ export function iconButton({ icon: iconName, tip, kbd, onClick, active, size, di
   return el;
 }
 
-// Colour chip button. Supports "#rrggbb" and "#rrggbbaa". Shows a checkerboard
-// under translucent colours.
+// Color chip button. Supports "#rrggbb" and "#rrggbbaa". Shows a checkerboard
+// under translucent colors.
 export function swatch({ value = "#ffffff", onClick, tip, size }) {
   let v = value;
   const fill = h("span", { class: "fill" });
@@ -353,7 +353,7 @@ export function swatch({ value = "#ffffff", onClick, tip, size }) {
   return el;
 }
 
-// Labelled row: field("Size", number(...))
+// Labeled row: field("Size", number(...))
 export function field(label, ...controls) {
   return h("div", { class: "ctl-field" }, h("span", { class: "ctl-label" }, label), h("div", { class: "ctl-field-body" }, controls));
 }

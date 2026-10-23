@@ -140,7 +140,7 @@ Deno.test("remove background fits the box to the person in the same undo step", 
   near(after.crop.x + after.crop.w, (60 + pad) / MW);
   near(after.crop.y, (20 - pad) / MH);
   near(after.crop.y + after.crop.h, 1, 1e-12);
-  // The person (columns 20..60 of 200) sits left of centre, and so does the box.
+  // The person (columns 20..60 of 200) sits left of center, and so does the box.
   near(after.x, (((20 - pad) + (60 + pad)) / 2 / MW) * 1280, 1e-6);
   assert(after.x < 400 && after.w < 400, "the box follows the person, not the photo");
   for (const [u, v] of [[0.1, 0.2], [0.3, 0.99]]) {
@@ -187,13 +187,13 @@ Deno.test("restore keeps a crop the user chose after the trim", async () => {
   eq(layer().crop, crop, "only the mask goes");
 });
 
-Deno.test("after a reload, a trim of the whole photo is still recognised", async () => {
+Deno.test("after a reload, a trim of the whole photo is still recognized", async () => {
   const first = setup();
   await first.bg.removeLayerBackground(first.id, { provider: "test" });
   const trimmed = first.layer();
   // A new service has no records from the last session.
   const bg2 = createBgService(first.ctx);
-  assert(bg2.untrimProps(first.id), "recognised from the mask");
+  assert(bg2.untrimProps(first.id), "recognized from the mask");
   bg2.restoreLayer(first.id);
   eq(first.layer().crop, { x: 0, y: 0, w: 1, h: 1 });
   near(first.layer().x, 640, 1e-6);

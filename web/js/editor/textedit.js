@@ -119,12 +119,12 @@ export function createTextEditor(ctx, editor) {
         left = -contentW / 2 - slack;
         width = contentW + 2 * slack;
       }
-      // The same trailing spacing, for lines that do not wrap: centred and
+      // The same trailing spacing, for lines that do not wrap: centered and
       // right-aligned lines shift by it.
       if (layer.align === "center") left += L.spacing / 2;
       else if (layer.align === "right") left += L.spacing;
     }
-    // CSS centres the font's ascent + descent in each line box; the canvas
+    // CSS centers the font's ascent + descent in each line box; the canvas
     // puts the first baseline at pad + ascent.
     const baseline = -L.height / 2 + L.pad.y + L.ascent;
     const top = baseline - (L.lineHeightPx + L.ascent - L.descent) / 2;

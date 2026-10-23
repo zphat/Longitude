@@ -20,7 +20,7 @@ function near(a, b, eps, message = "") {
   if (!(Math.abs(a - b) <= eps)) throw Error(`${message} expected ${b} ± ${eps}, got ${a}`);
 }
 
-Deno.test("toInputTensor writes planar RGB with the model's normalisation", () => {
+Deno.test("toInputTensor writes planar RGB with the model's normalization", () => {
   // 2x1 image: white, then pure red.
   const rgba = new Uint8ClampedArray([255, 255, 255, 255, 255, 0, 0, 255]);
   const isnet = toInputTensor(rgba, 2, 1, { scale: 1 / 255, mean: [0.5, 0.5, 0.5], std: [1, 1, 1] });
@@ -92,12 +92,12 @@ Deno.test("resizeBicubic keeps constants, matches identity and is smooth", () =>
   for (let i = 1; i < 32; i++) assert(up[i] >= up[i - 1] - 0.08, "no big dips");
   assert(up[0] < 0.05 && up[31] > 0.95, "ends");
   const distinct = new Set(Array.from(up.subarray(10, 22), (v) => v.toFixed(3)));
-  assert(distinct.size > 6, "smooth ramp, not nearest neighbour");
+  assert(distinct.size > 6, "smooth ramp, not nearest neighbor");
 
-  // Downscale averages: a fine checkerboard becomes grey.
+  // Downscale averages: a fine checkerboard becomes gray.
   const checker = Float32Array.from({ length: 64 * 64 }, (_, i) => ((i % 64) + Math.floor(i / 64)) % 2);
   const down = resizeBicubic(checker, 64, 64, 8, 8);
-  for (const v of down) near(v, 0.5, 0.06, "checker -> grey");
+  for (const v of down) near(v, 0.5, 0.06, "checker -> gray");
 });
 
 Deno.test("blur121 softens only edges", () => {

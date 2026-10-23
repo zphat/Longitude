@@ -133,7 +133,7 @@ export function isTyping(target = document.activeElement) {
 }
 
 // Inputs that take typed text, and with it their own Ctrl+Z, Ctrl+C/V/X and
-// Ctrl+A. Ranges, checkboxes, radios, colour wells, buttons and file inputs
+// Ctrl+A. Ranges, checkboxes, radios, color wells, buttons and file inputs
 // do not, and neither does a select.
 const TEXT_INPUTS = new Set(["text", "search", "email", "url", "tel", "password", "number", "date", "time", "datetime-local", "month", "week"]);
 

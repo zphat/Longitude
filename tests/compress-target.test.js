@@ -20,7 +20,7 @@ class FakeCanvas {
         self.draws.push({ from: [src.width, src.height], args, quality: this.imageSmoothingQuality });
       },
       getImageData(x, y, w, h) {
-        // Four flat stripes: an exact palette, so 256-colour PNG is tiny.
+        // Four flat stripes: an exact palette, so 256-color PNG is tiny.
         const data = new Uint8ClampedArray(w * h * 4);
         for (let i = 0; i < w * h; i++) {
           const band = Math.floor(((i % w) / w) * 4);
@@ -84,7 +84,7 @@ Deno.test("JPG is flattened before encoding", async () => {
   assertEquals(r.quality, 0.92);
 });
 
-Deno.test("PNG tries lossless, then a 256-colour palette", async () => {
+Deno.test("PNG tries lossless, then a 256-color palette", async () => {
   const canvas = new FakeCanvas(200, 100);
   const r = await encodeToTarget(canvas, { type: "image/png", maxBytes: 20_000 });
   assert(r.fits);
@@ -122,7 +122,7 @@ Deno.test("an aborted search rejects", async () => {
   assertEquals(name, "AbortError");
 });
 
-Deno.test("an unsupported format is a plain error, not a mislabelled file", async () => {
+Deno.test("an unsupported format is a plain error, not a mislabeled file", async () => {
   const canvas = new FakeCanvas(10, 10);
   canvas.convertToBlob = async () => new Blob([new Uint8Array(4)], { type: "image/png" });
   let message = "";

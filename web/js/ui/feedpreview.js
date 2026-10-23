@@ -89,7 +89,7 @@ function roundRect(g, x, y, w, hh, r) {
   else g.rect(x, y, w, hh);
 }
 
-// A busy, colourful thumbnail-like picture: gradient, glow, a figure or an
+// A busy, colorful thumbnail-like picture: gradient, glow, a figure or an
 // object, chunky text bars. kind "video" (16:9) or "cover" (square).
 function drawMock(g, W, H, seed, kind) {
   const rnd = mulberry32(seed);
@@ -714,7 +714,7 @@ export function openFeedPreview(ctx) {
 
   sheet.panel.append(stage, topLeft, topCenter, topRight, bottom, notice);
 
-  // ---- behaviour
+  // ---- behavior
 
   function paintViews() {
     const seg = segmented({ value: st.view, options: FEED_VIEWS[st.platform].map((v) => ({ value: v.id, label: v.label })), onChange: (v) => setState({ view: v }) });

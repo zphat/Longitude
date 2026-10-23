@@ -28,7 +28,7 @@ Deno.test("placeImage: fills an empty canvas when the aspect matches", () => {
   assert.ok(fitted.h <= 720 * 0.7 + 1e-9);
 });
 
-Deno.test("placeImage: fits inside 70 % of the canvas, centred or at a point", () => {
+Deno.test("placeImage: fits inside 70 % of the canvas, centered or at a point", () => {
   const doc = createDoc();
   const big = placeImage(doc, 4000, 1000);
   assert.ok(big.w <= 1280 * 0.7 + 1e-9);
@@ -62,7 +62,7 @@ Deno.test("clipboard envelope round trip", () => {
   assert.equal(parseLayers(`{"${CLIP_KEY}": [{"type": "nope"}]}`), null);
 });
 
-Deno.test("pasteOffset: steps, and recentres when off the canvas", () => {
+Deno.test("pasteOffset: steps, and recenters when off the canvas", () => {
   const doc = createDoc();
   const a = createLayer("shape", { x: 100, y: 100, w: 50, h: 50 });
   assert.deepEqual(pasteOffset([a], 2, doc), { dx: 48, dy: 48 });

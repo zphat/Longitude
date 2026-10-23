@@ -219,7 +219,7 @@ Deno.test("fonts.json is complete and points at real files", async () => {
       bytes += st.size;
     }
     if (!system) {
-      assert(/^(OFL-1\.1|Apache-2\.0)$/.test(f.license), `${where} licence must be OFL-1.1 or Apache-2.0`);
+      assert(/^(OFL-1\.1|Apache-2\.0)$/.test(f.license), `${where} license must be OFL-1.1 or Apache-2.0`);
       const slug = f.category === "original" ? f.family.toLowerCase().replace(/ /g, "-") : f.family.toLowerCase().replace(/[^a-z0-9]/g, "");
       await Deno.stat(new URL(`LICENSES/${slug}.txt`, FONTS));
     }

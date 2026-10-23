@@ -272,7 +272,7 @@ export function mountShell(ctx, regions = {}) {
 
   const leftIsland = h("div", { class: "island top-island top-left" }, menuBtn, h("span", { class: "top-sep" }), nameWrap, presetChip, saveState, statusPill);
 
-  // ---- top centre: search pill
+  // ---- top center: search pill
 
   const searchPill = h(
     "button",

@@ -1,6 +1,6 @@
 // Arrow tool (A). Drag from tail to tip; Shift snaps the angle to 15 degree
 // steps; both ends snap to the canvas and other layers. A click makes a
-// default arrow pointing up and to the right, centred on the point.
+// default arrow pointing up and to the right, centered on the point.
 
 import { createLayer } from "../../core/model.js";
 import { refitArrow } from "../../core/geometry.js";

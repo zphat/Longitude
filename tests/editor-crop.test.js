@@ -70,7 +70,7 @@ Deno.test("resizeFrame stays inside the picture with a minimum size", () => {
   near((aspect.r - aspect.l) / (aspect.b - aspect.t), (F.r - F.l) / (F.b - F.t));
 });
 
-Deno.test("cropResult moves the box centre with the frame in a rotated layer", () => {
+Deno.test("cropResult moves the box center with the frame in a rotated layer", () => {
   const l = image({ rotation: 90 });
   const { F, I } = cropFrames(l);
   const next = { ...F, r: F.r - 100 };

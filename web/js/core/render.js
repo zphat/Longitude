@@ -234,7 +234,7 @@ export function renderLayer(ctx, layer, { scale = 1, assets = null, cache = null
   drawLayer(ctx, layer, o);
 }
 
-// Draws a layer fitted and centred in the rect (x, y, w, h) of the current
+// Draws a layer fitted and centered in the rect (x, y, w, h) of the current
 // transform, for layer thumbnails. Pass no cache (or a separate one).
 export function renderLayerThumb(ctx, layer, { x = 0, y = 0, w, h, assets = null, pad = 0 } = {}) {
   if (!layer || !(w > 0) || !(h > 0)) return;
@@ -434,7 +434,7 @@ function composite(layer, k, o, x0, y0, x1, y1, fx0, fy0) {
 }
 
 // Render a layer's composite into `out` (already sized and cleared). The
-// layer centre lands at (-x0 + fx0, -y0 + fy0).
+// layer center lands at (-x0 + fx0, -y0 + fy0).
 function paint(out, layer, k, o, x0, y0, fx0, fy0) {
   const W = out.width;
   const H = out.height;
@@ -715,7 +715,7 @@ const freehandCache = new WeakMap();
 
 const pressure = (p) => (Number.isFinite(p) ? Math.min(1, Math.max(0, p)) : 0.5);
 
-// Smoothed, resampled centre line with a radius per sample: streamlined
+// Smoothed, resampled center line with a radius per sample: streamlined
 // input, quadratic curves through midpoints, pressure-scaled width and
 // tapered ends.
 export function freehandSpine(layer) {

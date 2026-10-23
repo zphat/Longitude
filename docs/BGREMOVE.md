@@ -31,7 +31,7 @@ Code lives in `web/js/features/bgremove/`:
 3. **Main thread** again: wraps the mask in a canvas, stores it with
    `ctx.assets.addCanvas`, and sets `layer.mask` with one undo step
    ("Remove background"). The same step fits the box to the cutout (below),
-   so the selection, snapping and the Centre pill follow the person instead
+   so the selection, snapping and the Center pill follow the person instead
    of the old photo frame. The original image is never changed, so
    "Restore original" sets `mask: null` and puts the photo's box back.
 
@@ -51,18 +51,18 @@ depends on the box (ellipse frame, rounded corners, mod filters) keep their box.
 The service remembers the crop from before each trim for the session. "Restore
 original" puts it back while the layer still shows that trim; if the user has
 re-cropped since, only the mask goes. After a reload, a crop that is exactly
-what the trim makes of the whole photo is recognised and restored the same
+what the trim makes of the whole photo is recognized and restored the same
 way. Running removal again on a trimmed layer fits within the original crop,
 so a better model can bring back what a weaker one cut off, and
 `bg.fitToCutout(layerId)` does the same for a mask the refine brush changed.
 
 ## Providers
 
-| Provider | Model | File | Download | Licence | Runs on |
+| Provider | Model | File | Download | License | Runs on |
 | --- | --- | --- | --- | --- | --- |
 | **Fast** (default) | IS-Net general use, int8 weights | [xrds/isnet-general-onnx-int8](https://huggingface.co/xrds/isnet-general-onnx-int8) `model_quantized.onnx` | 44 MB + runtime | Apache-2.0 weights ([DIS](https://github.com/xuebinqin/DIS/blob/main/LICENSE.md)), MIT conversion | WebGPU or CPU |
 | **Best** | BiRefNet lite (Swin-T) | GPU with fp16: [runes/birefnet-lite-webgpu](https://huggingface.co/runes/birefnet-lite-webgpu) (123 MB) / otherwise: [CoderViking/birefnet-lite-onnx](https://huggingface.co/CoderViking/birefnet-lite-onnx) (200 MB) | 123 or 200 MB + runtime | MIT ([BiRefNet](https://github.com/ZhengPeng7/BiRefNet/blob/main/LICENSE), [weights](https://huggingface.co/ZhengPeng7/BiRefNet_lite)) | WebGPU, or CPU (fp32 file) |
-| **Magic (flat backgrounds)** | None: colour flood fill from the edges | none | 0 | MIT (Longitude) | CPU, instant |
+| **Magic (flat backgrounds)** | None: color flood fill from the edges | none | 0 | MIT (Longitude) | CPU, instant |
 
 The runtime is [onnxruntime-web](https://github.com/microsoft/onnxruntime)
 1.27.0 (MIT) from jsDelivr: about 24 MB for the WebGPU build or 13.5 MB for the
@@ -78,7 +78,7 @@ response, which the browser needs.
 The brief: weights and code under MIT, Apache-2.0 or BSD; an ONNX export that
 onnxruntime-web can run; a small "Fast" (under about 50 MB) and a better "Best".
 
-| Candidate | Licence | Verdict |
+| Candidate | License | Verdict |
 | --- | --- | --- |
 | BiRefNet / BiRefNet lite ([code](https://github.com/ZhengPeng7/BiRefNet), [weights](https://huggingface.co/ZhengPeng7/BiRefNet_lite)) | MIT | **Best.** State of the art for dichotomous segmentation; hair and fine edges are clearly better than IS-Net. Full BiRefNet is 490 MB in fp16, too big; lite is the sweet spot. |
 | [onnx-community/BiRefNet_lite-ONNX](https://huggingface.co/onnx-community/BiRefNet_lite-ONNX) | MIT | Not used. This stock export fails in browsers: Concat nodes with up to 1024 inputs exceed WebGPU's storage-buffer limit, and the deformable convolutions run out of wasm memory (`std::bad_alloc`). Documented on both re-export cards below and in [onnxruntime#21968](https://github.com/microsoft/onnxruntime/issues/21968). |
@@ -86,8 +86,8 @@ onnxruntime-web can run; a small "Fast" (under about 50 MB) and a better "Best".
 | [CoderViking/birefnet-lite-onnx](https://huggingface.co/CoderViking/birefnet-lite-onnx) | MIT | Used for Best everywhere else. Static 1024 x 1024 fp32 export with deformable convolution rewritten as GridSample taps, verified by its author on both the WebGPU and wasm backends. |
 | IS-Net general use ([DIS](https://github.com/xuebinqin/DIS)) | Apache-2.0 | **Fast.** The general-purpose model behind rembg's `isnet-general-use`. The int8 file stores only the convolution weights as int8 (weight-only QDQ) and computes in float32, so quality matches the 176 MB fp32 model (mean difference 0.0005 in our check) at a quarter of the size, and it runs on WebGPU as well as the CPU. |
 | [onnx-community/ISNet-ONNX](https://huggingface.co/onnx-community/ISNet-ONNX) | tagged AGPL-3.0 | Not used, because of the AGPL tag on that repository. |
-| [@imgly/background-removal](https://github.com/imgly/background-removal-js) | AGPL-3.0 | Not used (licence). |
-| [BRIA RMBG-1.4 / 2.0](https://huggingface.co/briaai/RMBG-2.0) | non-commercial | Not used (licence). |
+| [@imgly/background-removal](https://github.com/imgly/background-removal-js) | AGPL-3.0 | Not used (license). |
+| [BRIA RMBG-1.4 / 2.0](https://huggingface.co/briaai/RMBG-2.0) | non-commercial | Not used (license). |
 | U2-Net / u2netp ([U-2-Net](https://github.com/xuebinqin/U-2-Net)) | Apache-2.0 | Not used. u2netp is tiny (4.6 MB, [BritishWerewolf/U-2-Netp](https://huggingface.co/BritishWerewolf/U-2-Netp)) but works at 320 x 320 and gives blobby edges; IS-Net is the same authors' successor. |
 | MODNet ([code](https://github.com/ZHKKKe/MODNet), [Xenova/modnet](https://huggingface.co/Xenova/modnet)) | Apache-2.0 | Not used by default. Small (6.6 to 26 MB) and good at hair, but trained for portraits only; products, logos and game art fail. A good candidate for a mod (see below). |
 | [ormbg](https://huggingface.co/onnx-community/ormbg-ONNX) | Apache-2.0 | Not used. IS-Net architecture trained on synthetic people; no better than IS-Net general use on objects. |
@@ -140,13 +140,13 @@ or per user with `ctx.bg.setDefaultProvider(id)` (stored in prefs as `bgProvider
 Both models take float32 NCHW `[1, 3, 1024, 1024]` RGB, squeezed (not
 letterboxed) to 1024 x 1024, and return `[1, 1, 1024, 1024]`.
 
-| | Input name | Normalisation | Output | Activation |
+| | Input name | Normalization | Output | Activation |
 | --- | --- | --- | --- | --- |
 | IS-Net | `input` | `x / 255 - 0.5` (mean 0.5, std 1) | `output` (already a sigmoid; the file has 11 more side outputs, we fetch only this one) | min-max stretch, as rembg does |
 | BiRefNet lite | `input_image` | ImageNet mean `[0.485, 0.456, 0.406]`, std `[0.229, 0.224, 0.225]` | `output_image` (logits) | sigmoid |
 
 Input and output names were read from the files' graphs. Transparent pixels
-are shown to the model as mid grey. The 1024 x 1024 result is resized to the
+are shown to the model as mid gray. The 1024 x 1024 result is resized to the
 photo's natural size with a separable bicubic filter (wider kernel when
 shrinking), softened with a 1-2-1 blur, and passed through a contrast curve
 (`BG_CONFIG.refine`, overridable per model): values below `lo` become fully
@@ -247,8 +247,8 @@ maskAlphaMap(maskCanvas, maxSide = 256) -> { w, h, data: Uint8Array }
 createMask(width, height, value = 255) -> canvas   readAlpha(mask)   alphaToMask(alpha)
 ```
 
-- `magicMask` compares colours in OKLab (a perceptual space), so tolerance
-  behaves the same in darks and lights. Tolerance 0 removes just that colour,
+- `magicMask` compares colors in OKLab (a perceptual space), so tolerance
+  behaves the same in darks and lights. Tolerance 0 removes just that color,
   100 almost everything. Pixels just past the tolerance are partly removed so
   edges stay smooth. The result multiplies into `baseMask`.
 - `paintMask` paints a continuous soft round brush along the segment (no dabs).
@@ -307,7 +307,7 @@ ctx.bg.config.models.modnet = {
 ctx.bg.providers.register(ctx.bg.modelProvider({ id: "portrait", label: "Portrait", note: "People only.", model: "modnet" }));
 ```
 
-Check the model's real input and output names and normalisation first (for
+Check the model's real input and output names and normalization first (for
 example with Python `onnx.load(path).graph.input`); `engine.js` falls back to the
 first input and output if a name does not match. Set `sha256: null` when you do
 not have a hash, and `size` to the input size the model was trained at.

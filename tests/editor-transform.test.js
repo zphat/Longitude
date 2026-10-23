@@ -57,14 +57,14 @@ Deno.test("resizeBox: aspect lock on a corner uses the larger scale", () => {
   near(r.w, 400);
 });
 
-Deno.test("resizeBox: aspect lock on a side scales around the centre line", () => {
+Deno.test("resizeBox: aspect lock on a side scales around the center line", () => {
   const r = resizeBox(200, 100, "e", { x: 100, y: 0 }, { x: 200, y: 0 }, { keepAspect: true });
   near(r.w, 300);
   near(r.h, 150);
   near(r.cy, 0);
 });
 
-Deno.test("resizeBox: from the centre grows both sides", () => {
+Deno.test("resizeBox: from the center grows both sides", () => {
   const r = resizeBox(100, 100, "e", { x: 50, y: 0 }, { x: 60, y: 0 }, { fromCenter: true });
   assert.equal(r.w, 120);
   assert.equal(r.cx, 0);

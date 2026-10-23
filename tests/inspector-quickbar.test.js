@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { placeQuickbar, screenBox, shapePaint } from "../web/js/ui/quickbar.js";
 
-Deno.test("shapePaint: a ring leads with its colour, never an empty Fill dot", () => {
+Deno.test("shapePaint: a ring leads with its color, never an empty Fill dot", () => {
   const ring = { fill: { on: false, color: "#ffffff" }, stroke: { on: true, color: "#ff2d2d" } };
   const solid = { fill: { on: true, color: "#ffe14d" }, stroke: { on: false } };
   const both = { fill: { on: true }, stroke: { on: true } };
@@ -28,7 +28,7 @@ Deno.test("screenBox: bounds of the points, null when empty", () => {
   assert.equal(screenBox([{ x: NaN, y: 1 }]), null);
 });
 
-Deno.test("placeQuickbar: centred above the selection", () => {
+Deno.test("placeQuickbar: centered above the selection", () => {
   const p = placeQuickbar({ l: 400, t: 300, r: 600, b: 400 }, BAR, VIEW);
   assert.equal(p.side, "above");
   assert.equal(p.x, 380);
@@ -60,7 +60,7 @@ Deno.test("placeQuickbar: reports a selection outside the view", () => {
   assert.equal(placeQuickbar({ l: 400, t: -300, r: 600, b: -10 }, BAR, VIEW).visible, false);
 });
 
-Deno.test("placeQuickbar: a view narrower than the bar centres it", () => {
+Deno.test("placeQuickbar: a view narrower than the bar centers it", () => {
   const p = placeQuickbar({ l: 10, t: 300, r: 50, b: 400 }, BAR, { w: 200, h: 800 });
   assert.equal(p.x, -20);
 });

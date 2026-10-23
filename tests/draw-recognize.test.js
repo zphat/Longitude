@@ -96,7 +96,7 @@ Deno.test("a rough circle becomes a perfect circle", () => {
   assert.equal(r.params.rotation, 0);
 });
 
-Deno.test("a circle drawn anticlockwise with a small gap still counts", () => {
+Deno.test("a circle drawn counterclockwise with a small gap still counts", () => {
   const stroke = wobble(ellipsePoints({ cx: 0, cy: 0, rx: 60, ry: 60, start: -1, sweep: 0.93, dir: -1 }), { amp: 1.2, seed: 9 });
   const r = recognize(stroke);
   assert.equal(r.kind, "ellipse");
@@ -143,7 +143,7 @@ Deno.test("a wobbly stroke between two points is a line", () => {
   nearPt(r.params.b, [400, 180], 4, "b");
 });
 
-Deno.test("a nearly level line is levelled", () => {
+Deno.test("a nearly level line is leveled", () => {
   const stroke = polyline([[0, 50], [300, 60]]);
   const r = recognize(stroke);
   assert.equal(r.kind, "line");
@@ -237,7 +237,7 @@ Deno.test("a tilted square keeps its tilt", () => {
   near(r.params.cy, 300, 8);
 });
 
-Deno.test("a box drawn anticlockwise from the bottom right", () => {
+Deno.test("a box drawn counterclockwise from the bottom right", () => {
   const stroke = wobble(polyline([[400, 300], [400, 100], [100, 100], [100, 300], [394, 300]]), { amp: 1.5, seed: 17 });
   const r = recognize(stroke);
   assert.equal(r.kind, "rect");

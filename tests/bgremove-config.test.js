@@ -93,7 +93,7 @@ Deno.test("friendlyError gives plain messages", () => {
   assert(other.code === "model" && other.detail.includes("Unexpected"), "generic keeps the detail");
   const gpu = friendlyError(Object.assign(Error("This model could not run on your graphics card. Try again to use the processor instead."), { code: "gpu" }));
   assert(gpu.code === "gpu" && gpu.message.includes("graphics card"), "gpu failures keep their code");
-  const flat = friendlyError(Object.assign(Error("The edges are not one flat colour. Try Fast or Best."), { code: "not-flat" }));
+  const flat = friendlyError(Object.assign(Error("The edges are not one flat color. Try Fast or Best."), { code: "not-flat" }));
   assert(flat.code === "not-flat" && flat.message.startsWith("The edges"), "provider messages pass through");
 });
 

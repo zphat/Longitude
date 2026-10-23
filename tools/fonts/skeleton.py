@@ -1,6 +1,6 @@
 """Skeleton strokes for monoline fonts.
 
-A skeleton is a centre line made of straight lines and cubic curves. The build
+A skeleton is a center line made of straight lines and cubic curves. The build
 strokes it with round caps and joins (skia-pathops), unions everything into
 clean outlines and writes TrueType quadratic contours. Coordinates are font
 units, y up.
@@ -117,14 +117,14 @@ def rect(x0, y0, x1, y1):
 
 
 class Glyph:
-    """Strokes (centre lines with a width) and fills (closed areas)."""
+    """Strokes (center lines with a width) and fills (closed areas)."""
 
     def __init__(self, name, unicodes, lsb, rsb, width=None):
         self.name = name
         self.unicodes = unicodes
         self.lsb = lsb
         self.rsb = rsb
-        self.advance = width  # fixed advance (centres the ink) when set
+        self.advance = width  # fixed advance (centers the ink) when set
         self.strokes = []
         self.fills = []
 

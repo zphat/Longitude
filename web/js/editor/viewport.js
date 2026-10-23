@@ -248,7 +248,7 @@ export function createViewport({ host, canvas, onChange, onResize }) {
     const e = easeOut(t);
     const { from, to } = anim;
     const z = Math.exp(lerp(Math.log(from.zoom), Math.log(to.zoom), e));
-    // Interpolate the doc point at the view centre so the zoom feels anchored.
+    // Interpolate the doc point at the view center so the zoom feels anchored.
     const cx = vp.width / 2;
     const cy = vp.height / 2;
     const fc = { x: (cx - from.panX) / from.zoom, y: (cy - from.panY) / from.zoom };

@@ -47,18 +47,18 @@ Deno.test("best: nearest target within the threshold; canvas wins ties", () => {
   assert.equal(best([600], T.xs, 6), null);
 });
 
-Deno.test("snapMove: pulls a box onto the canvas centre and reports it", () => {
+Deno.test("snapMove: pulls a box onto the canvas center and reports it", () => {
   const T = buildTargets(docWith([]));
-  const box = boxOf(537, 300, 737, 400); // centre x 637
+  const box = boxOf(537, 300, 737, 400); // center x 637
   const s = snapMove(box, T, 6);
   near(s.dx, 3);
   assert.equal(s.x, true);
   const fin = offsetBox(box, s.dx, s.dy);
   const guides = alignGuides(fin, T);
-  const centre = guides.find((g) => g.axis === "x" && g.centre);
-  assert.ok(centre, "centre guide");
-  assert.equal(centre.from, 0);
-  assert.equal(centre.to, 720);
+  const center = guides.find((g) => g.axis === "x" && g.center);
+  assert.ok(center, "center guide");
+  assert.equal(center.from, 0);
+  assert.equal(center.to, 720);
 });
 
 Deno.test("snapMove: edges snap to other layers; locked axes stay", () => {
@@ -75,18 +75,18 @@ Deno.test("snapMove: edges snap to other layers; locked axes stay", () => {
   assert.ok(g);
   assert.equal(g.from, 250);
   assert.equal(g.to, 560);
-  assert.equal(g.centre, false);
+  assert.equal(g.center, false);
 });
 
-Deno.test("snapMove: an edge on the canvas centre line is not called centred", () => {
+Deno.test("snapMove: an edge on the canvas center line is not called centered", () => {
   const T = buildTargets(docWith([]));
   const guides = alignGuides(boxOf(640, 100, 700, 200), T);
   const g = guides.find((x) => x.axis === "x" && x.v === 640);
   assert.ok(g?.canvas);
-  assert.equal(g.centre, false);
+  assert.equal(g.center, false);
 });
 
-Deno.test("spacing: centred between two neighbours", () => {
+Deno.test("spacing: centered between two neighbors", () => {
   const a = createLayer("shape", { x: 150, y: 300, w: 100, h: 100 }); // r 200
   const b = createLayer("shape", { x: 650, y: 300, w: 100, h: 100 }); // l 600
   const T = buildTargets(docWith([a, b]));
@@ -122,7 +122,7 @@ Deno.test("snapPoint and pointGuides", () => {
   assert.equal(s.y, 360);
   const guides = pointGuides({ x: s.x, y: s.y }, T);
   assert.equal(guides.length, 2);
-  assert.ok(guides.find((g) => g.axis === "y" && g.centre));
+  assert.ok(guides.find((g) => g.axis === "y" && g.center));
 });
 
 Deno.test("visualBox: paths drop their padding, arrows hug the stroke", () => {

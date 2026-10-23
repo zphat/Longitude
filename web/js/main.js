@@ -377,7 +377,7 @@ async function boot() {
   const ctx = createContext();
   globalThis.longitude = ctx; // handy in the console; mods get their own frozen api
 
-  // Theme first, so nothing flashes in the wrong colours.
+  // Theme first, so nothing flashes in the wrong colors.
   ctx.themes = createThemes(ctx);
   attempt("Theme", () => ctx.themes.apply());
 

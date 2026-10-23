@@ -1,4 +1,4 @@
-// JSON packs: themes (Latitude's format), size presets, colour palettes and
+// JSON packs: themes (Latitude's format), size presets, color palettes and
 // fonts that point at files in web/mods/. Packs are data only and never run
 // code. They are validated on import, kept in IndexedDB (database "longitude",
 // store "kv", key "packs") and applied again on every boot by loadMods.
@@ -45,7 +45,7 @@ export function packId(name) {
   return `p-${s || "pack"}`.slice(0, 24).replace(/-+$/, "");
 }
 
-// "#abc" -> "#aabbcc"; keeps 6 and 8 digit colours; lowercase. Null if invalid.
+// "#abc" -> "#aabbcc"; keeps 6 and 8 digit colors; lowercase. Null if invalid.
 export function normHex(c) {
   if (typeof c !== "string" || !COLOR_RE.test(c.trim())) return null;
   const v = c.trim().toLowerCase();
@@ -67,11 +67,11 @@ function parsePalettes(list) {
   if (list.length > PACK_LIMITS.palettes) throw Error(`A pack can hold up to ${PACK_LIMITS.palettes} palettes.`);
   return list.map((p, i) => {
     const name = text(p?.name, 40) || `Palette ${i + 1}`;
-    if (!Array.isArray(p?.colors) || !p.colors.length) throw Error(`Palette "${name}" needs a list of colours.`);
-    if (p.colors.length > PACK_LIMITS.colors) throw Error(`Palette "${name}" can hold up to ${PACK_LIMITS.colors} colours.`);
+    if (!Array.isArray(p?.colors) || !p.colors.length) throw Error(`Palette "${name}" needs a list of colors.`);
+    if (p.colors.length > PACK_LIMITS.colors) throw Error(`Palette "${name}" can hold up to ${PACK_LIMITS.colors} colors.`);
     const colors = p.colors.map((c) => {
       const hex = normHex(c);
-      if (!hex) throw Error(`Palette "${name}": "${String(c).slice(0, 20)}" is not a hex colour like #ff2d2d.`);
+      if (!hex) throw Error(`Palette "${name}": "${String(c).slice(0, 20)}" is not a hex color like #ff2d2d.`);
       return hex;
     });
     return { name, colors };
@@ -173,12 +173,12 @@ export function packCounts(pack) {
   };
 }
 
-// "2 themes, 3 size presets and 1 colour palette"
+// "2 themes, 3 size presets and 1 color palette"
 export function countsText(counts) {
   return listText([
     counts.themes && plural(counts.themes, "theme"),
     counts.presets && plural(counts.presets, "size preset"),
-    counts.palettes && plural(counts.palettes, "colour palette"),
+    counts.palettes && plural(counts.palettes, "color palette"),
     counts.fonts && plural(counts.fonts, "font"),
   ]);
 }
@@ -284,7 +284,7 @@ export function createPacks(ctx, { modsBase = defaultModsBase(), kv = table("kv"
     }
   }
 
-  // prefs "palettes": the colour picker's list. Entries with a "pack" field
+  // prefs "palettes": the color picker's list. Entries with a "pack" field
   // belong to packs and are rebuilt here; anything else is left alone.
   function syncPalettes() {
     if (!ctx.prefs) return;

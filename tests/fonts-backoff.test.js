@@ -96,7 +96,7 @@ Deno.test("retry: true and the online event skip the backoff", async () => {
     eq(await reg.load("Bungee", 400, "normal", { retry: true }), false);
     eq(tries("Bungee"), 3, "an explicit retry fetches at once");
     eq((await reg.ensureDoc({ layers: [{ type: "text", font: "Bungee" }] })).length, 1);
-    eq(tries("Bungee"), 3, "ensureDoc honours the backoff by default");
+    eq(tries("Bungee"), 3, "ensureDoc honors the backoff by default");
     await reg.ensureDoc({ layers: [{ type: "text", font: "Bungee" }] }, { retry: true });
     eq(tries("Bungee"), 4, "opening a design retries");
   });

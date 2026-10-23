@@ -2,7 +2,7 @@
 
 Longitude has two ways in:
 
-- **Packs** are JSON files with themes, size presets, colour palettes and
+- **Packs** are JSON files with themes, size presets, color palettes and
   fonts. They never run code. Import them in Settings > Packs.
 - **Code mods** are small JavaScript modules in `web/mods/`. They add
   commands, tools, inspector sections, shapes, filters and more through a
@@ -65,9 +65,9 @@ Try the example pack).
 | `note` | Optional, up to 100 characters. Shown on the theme card. |
 | `scheme` | `"dark"` or `"light"`. Sets form controls and scroll bars. |
 | `texture` | `"grain"` (default), `"scan"` (faint scan lines) or `"none"`. |
-| `colors` | All 13 keys, each a six-digit hex colour. |
+| `colors` | All 13 keys, each a six-digit hex color. |
 
-| Colour key | Colours |
+| Color key | Colors |
 | --- | --- |
 | `bg` | Window background. The workspace is derived from it. |
 | `panel`, `panel2` | Floating islands, and fields and cards inside them. |
@@ -79,7 +79,7 @@ Try the example pack).
 | `green`, `red`, `amber` | Success, errors and destructive actions, warnings. |
 
 Keep text readable: `text`, `muted` and `faint` need 4.5:1 contrast on `bg`,
-`panel` and `panel2`, and `ink` needs 4.5:1 on `accent`. Themes colour
+`panel` and `panel2`, and `ink` needs 4.5:1 on `accent`. Themes color
 Longitude itself, never the user's design. A pack holds up to eight themes.
 
 ### Longitude packs
@@ -92,7 +92,7 @@ optional, but a pack must add something.
   "version": 1,
   "name": "Night shift",
   "author": "Your name",
-  "description": "Sizes and colours for the late uploads.",
+  "description": "Sizes and colors for the late uploads.",
   "themes": [],
   "presets": [
     {
@@ -125,8 +125,8 @@ optional, but a pack must add something.
 [presets](#presets)). A preset whose id already exists is skipped and the
 review screen says which.
 
-**Palettes** are `{ name, colors }` with 1 to 24 colours as `#rgb`, `#rrggbb`
-or `#rrggbbaa`. They appear in the colour picker. Longitude keeps them in the
+**Palettes** are `{ name, colors }` with 1 to 24 colors as `#rgb`, `#rrggbb`
+or `#rrggbbaa`. They appear in the color picker. Longitude keeps them in the
 `palettes` preference as `{ id, name, colors, pack }`.
 
 **Fonts** point at files inside `web/mods/`. A pack cannot download a font
@@ -135,10 +135,10 @@ from the internet: copy the font files into a folder such as
 (relative, no `..`, no URL) and must end in `.woff2`, `.woff`, `.ttf` or
 `.otf`. `category` is one of `original`, `classic`, `meme`, `display` or
 `clean` (default `display`). Optional fields: `label`, `fallback`,
-`license`, `credit`, `sample`, `tags`. Only ship fonts whose licence allows
+`license`, `credit`, `sample`, `tags`. Only ship fonts whose license allows
 it.
 
-Limits: 8 themes, 24 presets, 16 palettes of up to 24 colours, 16 fonts with
+Limits: 8 themes, 24 presets, 16 palettes of up to 24 colors, 16 fonts with
 up to 8 faces each, 1 MB per file.
 
 ---
@@ -316,7 +316,7 @@ removal to point at your own files. `bg.masks` holds the mask helpers
 
 The document lives in one store with undo. Every change through it is
 undoable. Layers follow the model in `docs/SPEC.md` section 4: `x, y` is the
-centre of the box, `w, h` its size, `rotation` in degrees.
+center of the box, `w, h` its size, `rotation` in degrees.
 
 | Read | |
 | --- | --- |
@@ -394,7 +394,7 @@ Build matching UI with the same helpers the app uses:
 | `controls` | `slider`, `number`, `toggle`, `segmented`, `select`, `button`, `iconButton`, `swatch`, `field`, `row`, `section` from `web/js/ui/controls.js`. Value controls call `onInput(v)` while dragging and `onChange(v)` once at the end. |
 | `icon(name, { size })` | An icon from the app's set |
 | `registerIcons({ name: "<svg body>" })` | Adds 24 × 24 stroke icons. Prefix names with your mod id. Existing names are not replaced. |
-| `addStyles(css) -> dispose` | Adds a `<style>` that is removed when the mod stops. Use the theme tokens (`var(--accent)`, `var(--panel2)`, `var(--r-s)`…), never fixed colours. |
+| `addStyles(css) -> dispose` | Adds a `<style>` that is removed when the mod stops. Use the theme tokens (`var(--accent)`, `var(--panel2)`, `var(--r-s)`…), never fixed colors. |
 
 CSS classes you can use inside inspector sections: `mod-hint` (a short muted
 explanation line), `mod-stack` (a column with the inspector's spacing) and
@@ -506,7 +506,7 @@ api.shapes.register({
 });
 ```
 
-`path` returns a `Path2D` in local coordinates with the box centred on 0,0
+`path` returns a `Path2D` in local coordinates with the box centered on 0,0
 (`x` from `-w/2` to `w/2`). `outline` returns the same outline as points; hit
 testing and the shape picker use it, so always provide it. `params` become
 sliders in the inspector and their values arrive in `params`. The built-in
@@ -620,7 +620,7 @@ api.bg.providers.register({
    folder into their `web/mods/`, add the line to `mods.json` and press
    **Check for new mods**.
 4. Set `homepage` in the manifest so people can find updates. Raise `version`
-   when you change behaviour. If a future Longitude changes the API, it will
+   when you change behavior. If a future Longitude changes the API, it will
    ask for a new `apiVersion` and tell the user which mods need an update.
 
 Want it in Longitude itself? Open a pull request at

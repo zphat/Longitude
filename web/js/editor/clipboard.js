@@ -18,7 +18,7 @@ export function serializeLayers(layers) {
   return JSON.stringify({ [CLIP_KEY]: layers });
 }
 
-// Layers from clipboard text, normalised, or null when it is not ours.
+// Layers from clipboard text, normalized, or null when it is not ours.
 export function parseLayers(text) {
   if (typeof text !== "string" || !text.includes(CLIP_KEY)) return null;
   try {
@@ -33,7 +33,7 @@ export function parseLayers(text) {
 }
 
 // How far the n-th paste moves the layers. A group that would land wholly
-// off the canvas is centred on it instead.
+// off the canvas is centered on it instead.
 export function pasteOffset(layers, n, doc, step = STEP) {
   const box = unionBox(layers.map(aabb));
   let dx = n * step;

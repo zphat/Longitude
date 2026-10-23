@@ -1055,7 +1055,7 @@ function compressMode(ctx) {
       const mh = number({ label: "H", value: s.maxH, min: 16, max: 8000, step: 1, tip: "Largest height", onChange: (v) => update({ maxH: v }) });
       out.push(switchRow("Limit size", s.limit, (b) => update({ limit: b }, { structural: true })));
       if (s.limit) out.push(h("div", { class: "qt-pair" }, mw, h("span", { class: "qt-x" }, "×"), mh));
-      if (pngPossible) out.push(switchRow("Smaller PNG (256 colours)", s.png8, (b) => update({ png8: b }), null, "PNGs get a 256-colour palette. Often 60 to 80% smaller."));
+      if (pngPossible) out.push(switchRow("Smaller PNG (256 colors)", s.png8, (b) => update({ png8: b }), null, "PNGs get a 256-color palette. Often 60 to 80% smaller."));
       return [h("div", { class: "qt-side-scroll" }, out)];
     },
   });

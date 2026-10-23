@@ -5,7 +5,7 @@
 
 Needs fontTools and brotli (pip install --user fonttools brotli). Variable
 axes and their full ranges are kept. Hinting is dropped for design fonts (they
-are drawn large on a canvas) and kept for the UI fonts. Licence texts are
+are drawn large on a canvas) and kept for the UI fonts. License texts are
 copied to web/fonts/LICENSES/<slug>.txt.
 
 Fonts whose OFL names a Reserved Font Name are copied byte for byte instead
@@ -72,9 +72,9 @@ def build(src, dest, unicodes, hinting):
     return dest.stat().st_size
 
 
-def has_reserved_name(licence_text):
-    """True when the copyright header (above the licence body) reserves a font name."""
-    header = licence_text.split("This Font Software is licensed", 1)[0]
+def has_reserved_name(license_text):
+    """True when the copyright header (above the license body) reserves a font name."""
+    header = license_text.split("This Font Software is licensed", 1)[0]
     return "reserved font name" in header.lower()
 
 
@@ -104,9 +104,9 @@ def main():
     lic_dir = WEB_FONTS / "LICENSES"
     lic_dir.mkdir(parents=True, exist_ok=True)
     for fam in sources["families"]:
-        licence = CACHE / fam["dir"] / fam["license"]
-        shutil.copyfile(licence, lic_dir / f"{fam['slug']}.txt")
-        reserved = has_reserved_name(licence.read_text(encoding="utf-8", errors="replace"))
+        license = CACHE / fam["dir"] / fam["license"]
+        shutil.copyfile(license, lic_dir / f"{fam['slug']}.txt")
+        reserved = has_reserved_name(license.read_text(encoding="utf-8", errors="replace"))
         for f in fam["files"]:
             src = CACHE / fam["dir"] / f["src"]
             dest = WEB_FONTS / f["out"]

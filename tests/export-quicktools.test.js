@@ -30,7 +30,7 @@ Deno.test("isImageFile accepts images by type or extension", () => {
   assert.equal(isImageFile(null), false);
 });
 
-Deno.test("fileType normalises MIME types and falls back to the extension", () => {
+Deno.test("fileType normalizes MIME types and falls back to the extension", () => {
   assert.equal(fileType(f("a.jpg", "image/jpg")), "image/jpeg");
   assert.equal(fileType(f("a.jpeg", "image/pjpeg")), "image/jpeg");
   assert.equal(fileType(f("a.jfif")), "image/jpeg");
@@ -103,7 +103,7 @@ Deno.test("convertTarget resolves presets and custom sizes", () => {
   assert.ok(CONVERT_SIZES.every((s) => s.id === "original" || s.id === "custom" || s.id === `${s.width}x${s.height}`));
 });
 
-Deno.test("settings normalisers repair saved prefs", () => {
+Deno.test("settings normalizers repair saved prefs", () => {
   assert.deepEqual(normalizeCompressSettings({}), { format: "keep", quality: 0.8, fit: false, fitMB: 2, limit: false, maxW: 1920, maxH: 1920, png8: true });
   const c = normalizeCompressSettings({ format: "image/gif", quality: 4, fit: true, fitMB: 0, limit: "yes", maxW: 5, maxH: 1e9, png8: false });
   assert.equal(c.format, "keep");

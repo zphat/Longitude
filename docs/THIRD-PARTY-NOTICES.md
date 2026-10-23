@@ -1,11 +1,11 @@
 # Third-party notices
 
 Longitude is MIT licensed (see `LICENSE`). It includes, or downloads on
-demand, the third-party works listed here under their own licences.
+demand, the third-party works listed here under their own licenses.
 
 ## Fonts
 
-The font files live in `web/fonts/`. Each family's full licence text is in
+The font files live in `web/fonts/`. Each family's full license text is in
 `web/fonts/LICENSES/<family>.txt`. All were taken from the
 [google/fonts](https://github.com/google/fonts) repository.
 
@@ -80,7 +80,7 @@ remove a background, checks each file's size and SHA-256, and keeps them in
 the browser's Cache Storage. `tools/fetch_model.py` can put copies in
 `web/vendor/` for offline use. Details and sources are in `docs/BGREMOVE.md`.
 
-| Work | Used for | Licence | Source |
+| Work | Used for | License | Source |
 | --- | --- | --- | --- |
 | onnxruntime-web 1.27.0 | Runs the models | MIT, Copyright (c) Microsoft Corporation | [microsoft/onnxruntime](https://github.com/microsoft/onnxruntime), served by jsDelivr |
 | IS-Net general use (DIS), int8 weights | "Fast" | Apache-2.0 (weights, [DIS](https://github.com/xuebinqin/DIS)); MIT (ONNX conversion) | [xrds/isnet-general-onnx-int8](https://huggingface.co/xrds/isnet-general-onnx-int8) |

@@ -51,7 +51,7 @@ function rng(seed) {
   };
 }
 
-Deno.test("oklab maps white, black and grey sensibly", () => {
+Deno.test("oklab maps white, black and gray sensibly", () => {
   const w = oklab(255, 255, 255);
   near(w[0], 1, 1e-3, "white L");
   near(w[1], 0, 1e-3, "white a");
@@ -59,7 +59,7 @@ Deno.test("oklab maps white, black and grey sensibly", () => {
   const k = oklab(0, 0, 0);
   near(k[0], 0, 1e-6, "black L");
   const g = oklab(128, 128, 128);
-  assert(g[0] > 0.55 && g[0] < 0.65, `grey L ${g[0]}`);
+  assert(g[0] > 0.55 && g[0] < 0.65, `gray L ${g[0]}`);
   const red = oklab(255, 0, 0);
   assert(red[1] > 0.2, "red has positive a");
 });
@@ -82,7 +82,7 @@ const twoTone = image(20, 10, (x, y) => {
   return x < 10 ? [255, 255, 255] : [220, 20, 30];
 });
 
-Deno.test("magicAlpha contiguous removes only the connected colour", () => {
+Deno.test("magicAlpha contiguous removes only the connected color", () => {
   const a = magicAlpha(twoTone, { x: 2, y: 2, tolerance: 20, contiguous: true, feather: 0 });
   assert(a.data.length === 200, "one byte per pixel");
   assert(at(a, 0, 0) === 0 && at(a, 9, 9) === 0, "white half removed");
@@ -121,7 +121,7 @@ Deno.test("magicAlpha with tolerance 0 still removes the clicked pixel", () => {
   assert(at(a, 3, 3) === 0, "seed removed");
 });
 
-// Light grey studio background with sensor noise and a dark subject touching nothing.
+// Light gray studio background with sensor noise and a dark subject touching nothing.
 function studio(seed = 1) {
   const r = rng(seed);
   return image(60, 40, (x, y) => {
@@ -210,7 +210,7 @@ Deno.test("growAlpha reaches across the image border and shrink ignores the fram
 });
 
 Deno.test("growAlpha matches a brute-force dilation with the same shape", () => {
-  // The structuring element is what one centred pixel grows into.
+  // The structuring element is what one centered pixel grows into.
   const r = 5;
   const n = 2 * r + 3;
   const probe = growAlpha(alphaMap(n, n, (x, y) => (x === r + 1 && y === r + 1 ? 255 : 0)), r);
@@ -236,7 +236,7 @@ Deno.test("paintAlpha erases and restores with a soft round brush", () => {
   const a = alphaMap(50, 50, () => 255);
   const rect = paintAlpha(a, { x: 25, y: 25 }, { x: 25, y: 25 }, { radius: 10, hardness: 0.5, mode: "erase" });
   assert(rect && rect.x <= 15 && rect.x + rect.w >= 35, "dirty rect covers the brush");
-  assert(at(a, 25, 25) === 0, "centre erased");
+  assert(at(a, 25, 25) === 0, "center erased");
   assert(at(a, 25, 40) === 255, "outside untouched");
   const mid = at(a, 25, 33);
   assert(mid > 0 && mid < 255, `soft falloff, got ${mid}`);
@@ -268,7 +268,7 @@ Deno.test("downsampleAlpha area-averages to the longest side", () => {
   assert(d.data.every((v) => v === 255), "flat stays flat");
   const checker = alphaMap(64, 64, (x, y) => ((x + y) % 2 ? 255 : 0));
   const c = downsampleAlpha(checker, 16);
-  assert(c.data.every((v) => Math.abs(v - 128) <= 1), "checkerboard averages to grey");
+  assert(c.data.every((v) => Math.abs(v - 128) <= 1), "checkerboard averages to gray");
   const small = downsampleAlpha(alphaMap(10, 5, () => 7), 256);
   assert(small.w === 10 && small.h === 5 && small.data[0] === 7, "never upsamples");
 });
