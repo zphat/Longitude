@@ -6,6 +6,8 @@
 //   alpha  { width, height, data }  data = one byte per pixel, 0..255
 // The canvas wrappers at the bottom are the SPEC 11 exports used by the editor.
 
+import { clearReadCache, ctx2d, isPixels, makeCanvas, readPixels, sourceSize } from "./pixels.js";
+
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const LITTLE_ENDIAN = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
 
@@ -258,13 +260,52 @@ function boxesForGauss(sigma, n) {
 }
 
 // Box blur of n samples at offset + i*stride, edge-normalized, src -> dst.
+// The interior has the full window; only the r samples at each end are clipped.
 function boxLine(src, dst, offset, stride, n, r, prefix) {
+  let acc = 0;
   prefix[0] = 0;
-  for (let i = 0; i < n; i++) prefix[i + 1] = prefix[i] + src[offset + i * stride];
-  for (let i = 0; i < n; i++) {
-    const a = i - r < 0 ? 0 : i - r;
+  for (let i = 0, p = offset; i < n; i++, p += stride) {
+    acc += src[p];
+    prefix[i + 1] = acc;
+  }
+  const k = 2 * r + 1;
+  const lo = Math.min(r, n);
+  const hi = Math.max(lo, n - r);
+  let p = offset;
+  for (let i = 0; i < lo; i++, p += stride) {
     const b = i + r >= n ? n - 1 : i + r;
-    dst[offset + i * stride] = (prefix[b + 1] - prefix[a]) / (b - a + 1);
+    dst[p] = (prefix[b + 1] - prefix[0]) / (b + 1);
+  }
+  for (let i = lo; i < hi; i++, p += stride) dst[p] = (prefix[i + r + 1] - prefix[i - r]) / k;
+  for (let i = hi; i < n; i++, p += stride) {
+    const a = i - r;
+    dst[p] = (prefix[n] - prefix[a]) / (n - a);
+  }
+}
+
+// Columns are blurred a strip at a time, reading whole rows, which is much
+// kinder to the cache than walking each column. Same sums as boxLine.
+const STRIP = 16;
+
+function boxColumns(src, dst, w, h, r, prefix) {
+  for (let x0 = 0; x0 < w; x0 += STRIP) {
+    const sw = Math.min(STRIP, w - x0);
+    prefix.fill(0, 0, sw);
+    for (let y = 0; y < h; y++) {
+      const pr = y * STRIP;
+      const nr = pr + STRIP;
+      const row = y * w + x0;
+      for (let c = 0; c < sw; c++) prefix[nr + c] = prefix[pr + c] + src[row + c];
+    }
+    for (let y = 0; y < h; y++) {
+      const a = y - r < 0 ? 0 : y - r;
+      const b = y + r >= h ? h - 1 : y + r;
+      const count = b - a + 1;
+      const pa = a * STRIP;
+      const pb = (b + 1) * STRIP;
+      const row = y * w + x0;
+      for (let c = 0; c < sw; c++) dst[row + c] = (prefix[pb + c] - prefix[pa + c]) / count;
+    }
   }
 }
 
@@ -277,6 +318,15 @@ function tentLine(src, dst, offset, stride, n) {
   }
 }
 
+function tentColumns(src, dst, w, h) {
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    const up = y > 0 ? row - w : row;
+    const down = y < h - 1 ? row + w : row;
+    for (let x = 0; x < w; x++) dst[row + x] = (src[up + x] + 2 * src[row + x] + src[down + x]) * 0.25;
+  }
+}
+
 // Soften the alpha by `px` (roughly a gaussian with sigma px/2). Returns a new alpha.
 export function featherAlpha(alpha, px) {
   const { width: w, height: h, data } = alpha;
@@ -286,19 +336,18 @@ export function featherAlpha(alpha, px) {
     out.set(data);
     return { width: w, height: h, data: out };
   }
-  let a = Float32Array.from(data);
+  const a = Float32Array.from(data);
   const b = new Float32Array(a.length);
-  const prefix = new Float64Array(Math.max(w, h) + 1);
+  const prefix = new Float64Array(w + 1);
+  const columns = new Float64Array((h + 1) * STRIP);
   const passes = sigma < 0.8 ? [0] : boxesForGauss(sigma, 3).map((s) => (s - 1) / 2);
   for (const r of passes) {
     for (let y = 0; y < h; y++) {
       if (r === 0) tentLine(a, b, y * w, 1, w);
       else boxLine(a, b, y * w, 1, w, r, prefix);
     }
-    for (let x = 0; x < w; x++) {
-      if (r === 0) tentLine(b, a, x, w, h);
-      else boxLine(b, a, x, w, h, r, prefix);
-    }
+    if (r === 0) tentColumns(b, a, w, h);
+    else boxColumns(b, a, w, h, r, columns);
   }
   out.set(a);
   return { width: w, height: h, data: out };
@@ -306,56 +355,88 @@ export function featherAlpha(alpha, px) {
 
 // ---- grow / shrink (grayscale dilate / erode with an octagon ≈ disc) ----------
 
-// Max (or min) over a sliding window of 2r+1 on one line, in place.
-// van Herk / Gil-Werman: O(n) whatever the radius.
-function windowLine(buf, n, r, isMax, g, hh) {
-  const k = 2 * r + 1;
-  const len = n + 2 * r;
-  const id = isMax ? 0 : 255;
-  for (let j = 0; j < len; j++) {
-    const v = j < r || j >= n + r ? id : buf[j - r];
-    if (j % k === 0) g[j] = v;
-    else g[j] = isMax ? (v > g[j - 1] ? v : g[j - 1]) : v < g[j - 1] ? v : g[j - 1];
-  }
-  for (let j = len - 1; j >= 0; j--) {
-    const v = j < r || j >= n + r ? id : buf[j - r];
-    if (j % k === k - 1 || j === len - 1) hh[j] = v;
-    else hh[j] = isMax ? (v > hh[j + 1] ? v : hh[j + 1]) : v < hh[j + 1] ? v : hh[j + 1];
-  }
-  for (let i = 0; i < n; i++) {
-    const p = hh[i];
-    const q = g[i + k - 1];
-    buf[i] = isMax ? (p > q ? p : q) : p < q ? p : q;
+// Max (or min) over a sliding window of 2r+1 along lines, in place.
+// van Herk / Gil-Werman: O(n) whatever the radius. line holds one line padded
+// by r neutral samples at each end; g is the running max from each block
+// start, hh the running max to each block end (blocks of k from 0).
+function herkMax(line, len, k, g, hh) {
+  for (let s = 0; s < len; s += k) {
+    const e = s + k < len ? s + k : len;
+    let m = line[s];
+    g[s] = m;
+    for (let j = s + 1; j < e; j++) {
+      const v = line[j];
+      if (v > m) m = v;
+      g[j] = m;
+    }
+    m = line[e - 1];
+    hh[e - 1] = m;
+    for (let j = e - 2; j >= s; j--) {
+      const v = line[j];
+      if (v > m) m = v;
+      hh[j] = m;
+    }
   }
 }
 
-// Run windowLine along every line with direction (dx, dy).
+function herkMin(line, len, k, g, hh) {
+  for (let s = 0; s < len; s += k) {
+    const e = s + k < len ? s + k : len;
+    let m = line[s];
+    g[s] = m;
+    for (let j = s + 1; j < e; j++) {
+      const v = line[j];
+      if (v < m) m = v;
+      g[j] = m;
+    }
+    m = line[e - 1];
+    hh[e - 1] = m;
+    for (let j = e - 2; j >= s; j--) {
+      const v = line[j];
+      if (v < m) m = v;
+      hh[j] = m;
+    }
+  }
+}
+
+// Run the window along every line with direction (dx, dy).
 function morphPass(data, w, h, r, isMax, dx, dy) {
   if (r <= 0) return;
-  const maxLen = Math.max(w, h);
-  const buf = new Uint8Array(maxLen);
-  const idx = new Int32Array(maxLen);
-  const g = new Uint8Array(maxLen + 2 * r);
-  const hh = new Uint8Array(maxLen + 2 * r);
-  const starts = [];
-  if (dy === 0) for (let y = 0; y < h; y++) starts.push([0, y]);
-  else if (dx === 0) for (let x = 0; x < w; x++) starts.push([x, 0]);
-  else if (dx === 1) {
-    for (let x = 0; x < w; x++) starts.push([x, 0]);
-    for (let y = 1; y < h; y++) starts.push([0, y]);
-  } else {
-    for (let x = 0; x < w; x++) starts.push([x, 0]);
-    for (let y = 1; y < h; y++) starts.push([w - 1, y]);
-  }
-  for (const [sx, sy] of starts) {
-    let n = 0;
-    for (let x = sx, y = sy; x >= 0 && x < w && y < h; x += dx, y += dy) {
-      idx[n] = y * w + x;
-      buf[n] = data[idx[n]];
-      n++;
+  const k = 2 * r + 1;
+  const size = Math.max(w, h) + 2 * r;
+  const id = isMax ? 0 : 255;
+  const line = new Uint8Array(size).fill(id);
+  const g = new Uint8Array(size);
+  const hh = new Uint8Array(size);
+  const herk = isMax ? herkMax : herkMin;
+  const step = dy * w + dx;
+  const off = k - 1;
+  const run = (start, n) => {
+    for (let t = 0, p = start; t < n; t++, p += step) line[r + t] = data[p];
+    line.fill(id, r + n, n + 2 * r);
+    herk(line, n + 2 * r, k, g, hh);
+    if (isMax) {
+      for (let t = 0, p = start; t < n; t++, p += step) {
+        const a = hh[t];
+        const b = g[t + off];
+        data[p] = a > b ? a : b;
+      }
+    } else {
+      for (let t = 0, p = start; t < n; t++, p += step) {
+        const a = hh[t];
+        const b = g[t + off];
+        data[p] = a < b ? a : b;
+      }
     }
-    windowLine(buf, n, r, isMax, g, hh);
-    for (let i = 0; i < n; i++) data[idx[i]] = buf[i];
+  };
+  if (dy === 0) for (let y = 0; y < h; y++) run(y * w, w);
+  else if (dx === 0) for (let x = 0; x < w; x++) run(x, h);
+  else if (dx === 1) {
+    for (let x = 0; x < w; x++) run(x, Math.min(w - x, h));
+    for (let y = 1; y < h; y++) run(y * w, Math.min(w, h - y));
+  } else {
+    for (let x = 0; x < w; x++) run(x, Math.min(x + 1, h));
+    for (let y = 1; y < h; y++) run(y * w + w - 1, Math.min(w, h - y));
   }
 }
 
@@ -507,79 +588,7 @@ export function downsampleAlpha(alpha, maxSide = 256) {
 
 // ---- canvas wrappers (browser) --------------------------------------------------
 
-export function sourceSize(source) {
-  const width = source.naturalWidth || source.videoWidth || source.displayWidth || source.width || 0;
-  const height = source.naturalHeight || source.videoHeight || source.displayHeight || source.height || 0;
-  return { width, height };
-}
-
-export function makeCanvas(width, height) {
-  if (typeof document !== "undefined") {
-    const c = document.createElement("canvas");
-    c.width = width;
-    c.height = height;
-    return c;
-  }
-  return new OffscreenCanvas(width, height);
-}
-
-function ctx2d(canvas) {
-  return canvas.getContext("2d", { willReadFrequently: true });
-}
-
-const isPixels = (s) => s && s.data && typeof s.width === "number" && typeof s.height === "number" && !s.getContext;
-
-// Decoded images do not change, so a caller that reads the same image again
-// and again (the magic eraser, once per click) can ask for the pixels to be
-// kept: { cache: true }. At most two images, none over READ_CACHE_PIXELS, and
-// all dropped after READ_CACHE_IDLE ms without a read, so a big photo's
-// pixels are not held for the rest of the session.
-const recenterads = [];
-const READ_CACHE_PIXELS = 16e6;
-const READ_CACHE_IDLE = 15000;
-let readCacheTimer = 0;
-
-function touchReadCache() {
-  clearTimeout(readCacheTimer);
-  readCacheTimer = recenterads.length ? setTimeout(clearReadCache, READ_CACHE_IDLE) : 0;
-}
-
-// Forget the pixels kept by readPixels(source, { cache: true }).
-export function clearReadCache() {
-  clearTimeout(readCacheTimer);
-  readCacheTimer = 0;
-  recenterads.length = 0;
-}
-
-// RGBA pixels of an ImageBitmap, image, canvas or ImageData-like object.
-export function readPixels(source, { cache = false } = {}) {
-  if (isPixels(source)) return source;
-  const { width, height } = sourceSize(source);
-  if (!width || !height) throw Error("The image has no pixels.");
-  if (typeof source.getContext === "function") {
-    const own = source.getContext("2d");
-    if (own) return own.getImageData(0, 0, width, height);
-  }
-  const immutable = (typeof ImageBitmap !== "undefined" && source instanceof ImageBitmap)
-    || (typeof HTMLImageElement !== "undefined" && source instanceof HTMLImageElement);
-  const keep = cache && immutable && width * height <= READ_CACHE_PIXELS;
-  const at = keep ? recenterads.findIndex((r) => r.source === source) : -1;
-  if (at >= 0) {
-    const [hit] = recenterads.splice(at, 1);
-    recenterads.unshift(hit);
-    touchReadCache();
-    return hit.pixels;
-  }
-  const g = ctx2d(makeCanvas(width, height));
-  g.drawImage(source, 0, 0, width, height);
-  const pixels = g.getImageData(0, 0, width, height);
-  if (keep) {
-    recenterads.unshift({ source, pixels });
-    recenterads.length = Math.min(recenterads.length, 2);
-    touchReadCache();
-  }
-  return pixels;
-}
+export { clearReadCache, makeCanvas, readPixels, sourceSize };
 
 // Alpha of a mask canvas (or of any image) at its own size.
 export function readAlpha(mask) {

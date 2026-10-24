@@ -111,7 +111,8 @@ function setup(layers = []) {
   };
   const host = new FakeNode("div");
   fakeDocument.body.append(host);
-  const editor = { host, zoom: 2, docToScreen: (p) => ({ x: p.x * 2 + 10, y: p.y * 2 + 20 }), requestRender() {} };
+  const view = { panX: 10, panY: 20 };
+  const editor = { host, zoom: 2, view, docToScreen: (p) => ({ x: p.x * 2 + view.panX, y: p.y * 2 + view.panY }), requestRender() {} };
   const te = createTextEditor(ctx, editor);
   const textarea = () => host.children.find((c) => c.tagName === "TEXTAREA") || null;
   const type = (value) => {
@@ -129,6 +130,7 @@ function setup(layers = []) {
     ctx,
     te,
     host,
+    view,
     emitted,
     textarea,
     type,
@@ -335,7 +337,7 @@ Deno.test("a drop onto emptied text does not take the dropped file with it", () 
   t.te.start(layer.id);
   t.type("");
   globalThis.dispatchEvent(dropEvent(["Files"]));
-  assert.equal(t.store.get(layer.id).text, "Old title", "the emptied edit is cancelled");
+  assert.equal(t.store.get(layer.id).text, "Old title", "the emptied edit is canceled");
   const [img] = t.store.add([createLayer("image", { asset: "ast_face" })], { label: "Add image" });
   fakeDocument.dispatchEvent(new Event("pointerdown"));
   assert.ok(t.store.get(img), "the photo stays");
@@ -384,4 +386,34 @@ Deno.test("fixed-width text with letter spacing wraps in the box where the canva
     assert.ok(Math.abs(e - (2 * (400 + left) + 10)) < 0.01, `${align}: box starts at the content's left edge (${e})`);
     t.done();
   }
+});
+
+Deno.test("the box follows the view without polling every frame", async () => {
+  const layer = createLayer("text", { text: "Follow", x: 300, y: 200 });
+  const t = setup([layer]);
+  t.te.start(layer.id);
+  const ta = t.textarea();
+  const before = ta.style.transform;
+  assert.match(before, /^matrix\(/);
+  // The view pans: the "view" event moves the box at once.
+  t.view.panX += 40;
+  t.ctx.emit("view", { zoom: 2, panX: t.view.panX, panY: t.view.panY });
+  const after = ta.style.transform;
+  assert.notEqual(after, before);
+  const tx = (m) => Number(m.slice(7, -1).split(",")[4]);
+  assert.equal(Math.round(tx(after) - tx(before)), 40);
+  // Nothing moves while the view and the text sit still: no frame loop runs.
+  let frames = 0;
+  const raf = globalThis.requestAnimationFrame;
+  globalThis.requestAnimationFrame = (fn) => {
+    frames++;
+    return raf ? raf(fn) : setTimeout(fn, 0);
+  };
+  try {
+    await new Promise((r) => setTimeout(r, 200));
+    assert.equal(frames, 0, "no frames requested while idle");
+  } finally {
+    globalThis.requestAnimationFrame = raf;
+  }
+  t.done();
 });

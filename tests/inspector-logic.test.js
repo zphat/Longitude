@@ -243,7 +243,7 @@ Deno.test("Panel: a typed value commits under its own label when flushed first",
   store.begin("Resize");
   store.patch(id, { x: 10 });
   store.cancel(); // Escape mid-drag
-  assert.equal(store.get(id).size, 48, "cancelling the drag keeps the typed size");
+  assert.equal(store.get(id).size, 48, "canceling the drag keeps the typed size");
   assert.equal(store.historyLabels().undo, "Font size");
 });
 

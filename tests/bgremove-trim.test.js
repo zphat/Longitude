@@ -241,3 +241,27 @@ Deno.test("an empty or full mask leaves the box alone", async () => {
   eq(full.layer().crop, { x: 0, y: 0, w: 1, h: 1 });
   near(full.layer().w, 1280);
 });
+
+Deno.test("the engine loads on first use: errors still read plainly, cancel stays a cancel", async () => {
+  const { bg, id } = setup();
+  bg.providers.register({ id: "broken", label: "Broken", run: async () => { throw Error("bad_alloc in wasm"); } });
+  let err = null;
+  try {
+    await bg.removeLayerBackground(id, { provider: "broken" });
+  } catch (e) {
+    err = e;
+  }
+  eq([err?.code, err?.message], ["memory", "Not enough memory for this one. Try Fast, or a smaller image."], "friendly error from engine.js");
+  const controller = new AbortController();
+  bg.providers.register({ id: "slow", label: "Slow", run: async () => { controller.abort(); return fakeMask(rectAlpha(MW, MH, 0, 0, MW, MH)); } });
+  err = null;
+  try {
+    await bg.removeLayerBackground(id, { provider: "slow", signal: controller.signal });
+  } catch (e) {
+    err = e;
+  }
+  eq([err?.name, err?.code], ["AbortError", "cancelled"]);
+  const caps = await bg.capabilities();
+  assert(caps && typeof caps.backend === "string", "capabilities resolve");
+  bg.release(); // nothing started: nothing to free, no throw
+});

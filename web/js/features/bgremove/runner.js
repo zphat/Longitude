@@ -161,7 +161,7 @@ export function createRunner({ url = new URL("./worker.js", import.meta.url), id
       return !broken && !!worker;
     },
     terminate() {
-      failAll("Cancelled");
+      failAll("Canceled");
       stop();
     },
   };

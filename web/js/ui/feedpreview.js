@@ -684,7 +684,11 @@ export function openFeedPreview(ctx) {
       { value: "dark", label: "Dark", icon: "moon", showLabel: true, tip: "Dark theme" },
       { value: "light", label: "Light", icon: "sun", showLabel: true, tip: "Light theme" },
     ],
-    onChange: (v) => setState({ scheme: v }),
+    // Only colors change: no rebuild, and the scroll position stays.
+    onChange: (v) => {
+      setState({ scheme: v }, { rebuild: false });
+      applyScheme();
+    },
   });
   const topRight = h("div", { class: "island fp-island fp-top-right" }, schemeSeg);
 
@@ -716,9 +720,16 @@ export function openFeedPreview(ctx) {
 
   // ---- behavior
 
+  // The view buttons are rebuilt only when the platform changes, so the
+  // focused button (keyboard use) survives a view switch.
+  let viewSeg = null;
+  let viewSegFor = "";
   function paintViews() {
-    const seg = segmented({ value: st.view, options: FEED_VIEWS[st.platform].map((v) => ({ value: v.id, label: v.label })), onChange: (v) => setState({ view: v }) });
-    viewHost.replaceChildren(seg);
+    if (viewSegFor !== st.platform) {
+      viewSegFor = st.platform;
+      viewSeg = segmented({ value: st.view, options: FEED_VIEWS[st.platform].map((v) => ({ value: v.id, label: v.label })), onChange: (v) => setState({ view: v }) });
+      viewHost.replaceChildren(viewSeg);
+    } else viewSeg.value = st.view;
     platformSeg.value = st.platform;
     schemeSeg.value = st.scheme;
     topRight.hidden = st.platform === "spotify";
@@ -741,8 +752,10 @@ export function openFeedPreview(ctx) {
     }
   }
 
+  // The mock window fills the stage (less its 32 px gutters) without a
+  // sideways scrollbar at 1024 px; real slot sizes keep it from going narrower.
   function sizeWindow() {
-    const w = clamp((stage.clientWidth || 1280) - 64, 960, 1480);
+    const w = clamp((stage.clientWidth || 1280) - 64, 920, 1480);
     page.style.setProperty("--fp-win-w", `${Math.round(w)}px`);
   }
 
@@ -755,6 +768,13 @@ export function openFeedPreview(ctx) {
     for (const el of page.querySelectorAll("[data-bind=initial]")) el.textContent = initialOf(channel);
     const hue = hashString(channel) % 360;
     for (const el of page.querySelectorAll("[data-bind=avatar]")) el.style.background = hsl(hue, 55, 46);
+  }
+
+  function applyScheme() {
+    page.className = `fp-page ${st.platform} ${st.scheme}`;
+    const tree = page.firstElementChild;
+    tree?.classList.toggle("dark", st.scheme === "dark");
+    tree?.classList.toggle("light", st.scheme === "light");
   }
 
   function build() {
@@ -774,6 +794,8 @@ export function openFeedPreview(ctx) {
     const msg = aspectNotice(st.platform, doc.width, doc.height);
     notice.hidden = !msg;
     notice.replaceChildren(...(msg ? [icon("info", { size: "sm" }), h("span", null, msg)] : []));
+    // Make room so the notice never sits on the mock's top edge.
+    stage.classList.toggle("noticed", !!msg);
     stage.scrollTop = 0;
   }
 

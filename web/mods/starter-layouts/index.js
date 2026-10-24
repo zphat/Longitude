@@ -10,6 +10,7 @@ export const manifest = {
   name: "Starter layouts",
   version: "1.0.0",
   author: "Longitude",
+  homepage: "https://github.com/zphat/Longitude/tree/main/web/mods/starter-layouts",
   description: "Commands that lay out common thumbnails with placeholders: face and big text, versus split, before and after.",
   apiVersion: 1,
 };

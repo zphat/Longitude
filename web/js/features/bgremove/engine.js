@@ -5,14 +5,13 @@
 
 import { BG_CONFIG, variantsFor, vendorUrl } from "./config.js";
 import { outputToAlpha, toFloat32, toHalfArray, toInputTensor } from "./pipeline.js";
-import { edgeMagicAlpha } from "./mask.js";
 
 const MB = 1e6;
 
 // ---- errors -----------------------------------------------------------------
 
 const MESSAGES = {
-  cancelled: "Cancelled",
+  cancelled: "Canceled",
   network: "Could not download the model. Check your connection and try again.",
   integrity: "The download was damaged. Try again.",
   runtime: "Could not start the background remover in this browser.",
@@ -423,7 +422,7 @@ function reporter(onProgress) {
 const mb = (bytes) => Math.max(1, Math.round(bytes / MB));
 
 // Whatever happens, a loaded session gets its idle timer again, so a failed or
-// cancelled run does not keep the model in memory for the rest of the session.
+// canceled run does not keep the model in memory for the rest of the session.
 // A session that just ran out of memory is a poor bet for the next run: it is
 // released at once.
 async function runModel(job, opts) {
@@ -520,8 +519,11 @@ async function runModelOnce(job, { onProgress, signal }) {
   return { alpha, width: target.width, height: target.height, backend: current.backend, variant: plan.variantId, gpuFailed };
 }
 
-function runEdgeMagic(job, { onProgress }) {
+// mask.js loads with the first edge-magic job, so planning and model runs
+// never parse it.
+async function runEdgeMagic(job, { onProgress }) {
   onProgress?.({ phase: "run", progress: 0.3, message: "Finding the background" });
+  const { edgeMagicAlpha } = await import("./mask.js");
   const a = edgeMagicAlpha(job.image, job.options || {});
   onProgress?.({ phase: "run", progress: 0.9, message: "Refining edges" });
   return { alpha: a.data, width: a.width, height: a.height, backend: "local", variant: null, gpuFailed: false };

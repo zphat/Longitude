@@ -241,7 +241,7 @@ export class Store extends EventTarget {
       if (!deepEqual(bg, d.background)) (next.background = bg), (changed = true);
     }
     if (!changed) return false;
-    return this._apply(next, { reason: "docprops", ids: null, label: "Canvas", ...opts });
+    return this._apply(next, { reason: "docprops", ids: null, label: "Canvas", ...opts, sameIds: true });
   }
 
   // ---- layer changes -----------------------------------------------------
@@ -275,7 +275,7 @@ export class Store extends EventTarget {
       }
     }
     if (!next) return false;
-    return this._apply({ ...this.doc, layers: next }, { reason: "patch", ids: changed, normalize: changed, prevMap, label: "Edit", ...opts });
+    return this._apply({ ...this.doc, layers: next }, { reason: "patch", ids: changed, normalize: changed, prevMap, label: "Edit", ...opts, sameIds: true });
   }
 
   add(layers, { index, select = true, label, ...opts } = {}) {
@@ -506,6 +506,7 @@ export class Store extends EventTarget {
     const next = this._normalize(before, list, "self");
     if (next === before) return false;
     const changed = next.layers.filter((l, i) => l !== before.layers[i]).map((l) => l.id);
+    this._carryIndex(before.layers, next.layers);
     this.doc = next;
     this._emit("change", { reason: "patch", ids: changed, transient: this._gestures.length > 0 });
     return true;
@@ -528,10 +529,20 @@ export class Store extends EventTarget {
   _normalize(doc, ids, prev) {
     if (!this._normalizers.length || !ids?.length) return doc;
     let layers = null;
-    const idx = new Map();
-    doc.layers.forEach((l, i) => idx.set(l.id, i));
+    let idx = null;
+    // Most changes keep every layer where it was, so the store's own index
+    // usually answers; a full map is built only when it does not.
+    const find = (id) => {
+      const i = this.index(id);
+      if (i >= 0 && doc.layers[i]?.id === id) return i;
+      if (!idx) {
+        idx = new Map();
+        doc.layers.forEach((l, j) => idx.set(l.id, j));
+      }
+      return idx.get(id);
+    };
     for (const id of ids) {
-      const i = idx.get(id);
+      const i = find(id);
       if (i === undefined) continue;
       const layer = (layers || doc.layers)[i];
       const before = prev === "self" ? null : prev?.get(id);
@@ -554,7 +565,9 @@ export class Store extends EventTarget {
     return layers ? { ...doc, layers } : doc;
   }
 
-  _apply(next, { reason, ids = null, normalize = null, prevMap, label = "Edit", coalesce = null, transient = false, selection = null }) {
+  // sameIds: every layer id keeps its position (patch, canvas props), so the
+  // id index stays valid and the selection needs no pruning.
+  _apply(next, { reason, ids = null, normalize = null, prevMap, label = "Edit", coalesce = null, transient = false, selection = null, sameIds = false }) {
     next = this._normalize(next, normalize, prevMap || new Map());
     const gesture = this._gestures[this._gestures.length - 1];
     const recording = !transient && !gesture;
@@ -565,9 +578,15 @@ export class Store extends EventTarget {
       if (ids == null) gesture.allIds = true;
       else for (const id of ids) gesture.ids.add(id);
     }
-    const sel = this._prune(selection ? toIds(selection) : this.selection, next);
+    const sel = selection ? this._prune(toIds(selection), next) : sameIds ? this.selection : this._prune(this.selection, next);
+    if (sameIds) this._carryIndex(this.doc.layers, next.layers);
     this._set(next, sel, { reason, ids: ids ? [...ids] : null, transient: !recording }, recording);
     return true;
+  }
+
+  // Keep the id -> index map for a layers array whose ids sit where they did.
+  _carryIndex(from, to) {
+    if (this._indexOf === from && from.length === to.length) this._indexOf = to;
   }
 
   _set(doc, selection, detail, history) {
@@ -622,9 +641,12 @@ export class Store extends EventTarget {
   }
 
   _prune(selection, doc) {
-    const ids = new Set(doc.layers.map((l) => l.id));
     const out = [];
-    for (const id of selection) if (ids.has(id) && !out.includes(id)) out.push(id);
+    if (!selection.length) return out;
+    // The current doc has an index already; another doc gets a set once.
+    let ids = null;
+    const has = doc === this.doc ? (id) => this.index(id) >= 0 : (id) => (ids ||= new Set(doc.layers.map((l) => l.id))).has(id);
+    for (const id of selection) if (has(id) && !out.includes(id)) out.push(id);
     return out;
   }
 

@@ -656,9 +656,9 @@ Deno.test("pen [ and ] work in doc px on the canvas, and the pill leaves with th
   dispose();
 });
 
-// ---- cancelled pointers ------------------------------------------------------------------
+// ---- canceled pointers -------------------------------------------------------------------
 
-Deno.test("a cancelled press (pinch, OS gesture) leaves nothing behind in any creation tool", () => {
+Deno.test("a canceled press (pinch, OS gesture) leaves nothing behind in any creation tool", () => {
   const { store, api, tool, edits, dispose } = setup();
   for (const id of ["rect", "ellipse", "circle", "arrow", "pen", "text"]) {
     const t = tool(id);

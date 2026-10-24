@@ -1,9 +1,10 @@
-// Home: the full-screen start overlay. Sizes drawn to scale, a big drop zone,
-// recent designs and the quick tools. Esc closes it when a design is open.
+// Home: the full-screen start overlay. Recent designs in one row under the
+// heading, sizes drawn to scale, a big drop zone and the quick tools. Esc
+// closes it when a design is open.
 
 import { h, clear, isTyping, debounce } from "./dom.js";
 import { icon } from "./icons.js";
-import { logoMark, presetGlyph, sizeLabel, sizeForm } from "./shell.js";
+import { logoMark, presetGlyph, sizeLabel, sizeForm, shortLabel } from "./shell.js";
 import { aspectLabel } from "../features/presets.js";
 import { keysLabel } from "../app/context.js";
 import { kbdNodes } from "./menus.js";
@@ -33,6 +34,13 @@ export function fitBox(w, hgt, boxW, boxH) {
   if (!(w > 0) || !(hgt > 0)) return { w: boxW, h: boxH };
   const k = Math.min(boxW / w, boxH / hgt);
   return { w: Math.round(w * k * 10) / 10, h: Math.round(hgt * k * 10) / 10 };
+}
+
+// How many cards of at least `min` px fit in one row of `width` px with
+// `gap` between them (the same count CSS auto-fill makes).
+export function rowCapacity(width, min, gap) {
+  if (!(width > 0) || !(min > 0)) return 0;
+  return Math.max(1, Math.floor((width + gap) / (min + gap)));
 }
 
 // Arrow-key movement between cards laid out in a wrapping grid.
@@ -80,11 +88,21 @@ const hasFiles = (e) => [...(e.dataTransfer?.types || [])].includes("Files");
 
 // ---- home --------------------------------------------------------------------------------
 
+const LEDE_RETURN = "Pick a size, drop an image, or pick up where you left off.";
+const LEDE_FIRST = "Pick a size or drop an image to start.";
+// Recent cards: the narrowest a card gets, the gap between them, and how many
+// are drawn before "Show all" (more than ever fit in one row).
+const RECENT_MIN = 256;
+const RECENT_GAP = 10;
+const RECENT_ROW_MAX = 12;
+
 export function mountHome(ctx, el = document.getElementById("home")) {
   let isOpen = false;
-  let urls = [];
+  let thumbs = new Map(); // "id:updated:size" -> object URL, reused across refreshes
   let showAll = false;
   let recentCache = [];
+  let recentCols = 0;
+  let pendingFocus = null;
 
   el.classList.add("home", "grain");
   el.setAttribute("role", "dialog");
@@ -118,12 +136,8 @@ export function mountHome(ctx, el = document.getElementById("home")) {
 
   // ---- hero
 
-  const hero = h(
-    "section",
-    { class: "home-hero" },
-    h("h1", { class: "home-title", id: "home-title" }, "What are we making?"),
-    h("p", { class: "home-lede" }, "Pick a size, drop an image, or pick up where you left off."),
-  );
+  const lede = h("p", { class: "home-lede" }, LEDE_FIRST);
+  const hero = h("section", { class: "home-hero" }, h("h1", { class: "home-title", id: "home-title" }, "What are we making?"), lede);
   el.setAttribute("aria-labelledby", "home-title");
 
   // ---- drop zone
@@ -150,8 +164,8 @@ export function mountHome(ctx, el = document.getElementById("home")) {
 
   const presetsEl = h("div", { class: "home-presets" });
 
-  function presetCard(p) {
-    const box = fitBox(p.width, p.height, 104, 58);
+  function presetCard(p, group) {
+    const box = fitBox(p.width, p.height, 92, 44);
     const round = presetGlyph(p) === "circle";
     const shape = h(
       "span",
@@ -160,9 +174,9 @@ export function mountHome(ctx, el = document.getElementById("home")) {
     );
     const card = h(
       "button",
-      { type: "button", class: "preset-card", "data-tip": p.note || null, "data-tip-place": "bottom" },
+      { type: "button", class: "preset-card", "aria-label": `${p.label}, ${sizeLabel(p.width, p.height)}`, "data-tip": p.note || null, "data-tip-place": "bottom" },
       h("span", { class: "preset-preview" }, shape),
-      h("span", { class: "preset-label" }, p.label),
+      h("span", { class: "preset-label" }, shortLabel(p.label, group)),
       h("span", { class: "preset-size" }, h("span", { class: "num" }, sizeLabel(p.width, p.height)), h("span", { class: "preset-ratio" }, aspectLabel(p.width, p.height))),
     );
     card.addEventListener("click", () => go(newDesign(ctx, { preset: p.id })));
@@ -170,7 +184,7 @@ export function mountHome(ctx, el = document.getElementById("home")) {
   }
 
   function customCard() {
-    const shape = h("span", { class: "preset-shape custom", style: { width: "64px", height: "48px" } }, icon("plus", { size: "sm" }));
+    const shape = h("span", { class: "preset-shape custom", style: { width: "56px", height: "40px" } }, icon("plus", { size: "sm" }));
     const card = h(
       "button",
       { type: "button", class: "preset-card custom", "aria-haspopup": "dialog" },
@@ -201,7 +215,7 @@ export function mountHome(ctx, el = document.getElementById("home")) {
     clear(presetsEl);
     const groups = ctx.presets?.groups?.() || [];
     for (const g of groups) {
-      const cards = g.presets.filter((p) => !p.custom).map(presetCard);
+      const cards = g.presets.filter((p) => !p.custom).map((p) => presetCard(p, g.label));
       if (g.id === "Custom" || g.presets.some((p) => p.custom)) cards.push(customCard());
       if (!cards.length) continue;
       presetsEl.append(h("section", { class: "preset-group" }, h("h2", { class: "home-h micro" }, g.id === "Custom" ? "Custom size" : g.label), h("div", { class: "preset-grid" }, cards)));
@@ -244,54 +258,82 @@ export function mountHome(ctx, el = document.getElementById("home")) {
 
   // ---- recent
 
-  const recentGrid = h("div", { class: "recent-grid", role: "list" });
-  const recentMore = h("button", { type: "button", class: "btn ghost recent-more", hidden: true });
+  const recentGrid = h("div", { class: "recent-grid", role: "list", "aria-labelledby": "home-recent-h" });
+  const recentMore = h("button", { type: "button", class: "btn ghost recent-more", hidden: true, "aria-expanded": "false" });
   recentMore.addEventListener("click", () => {
     showAll = !showAll;
     renderRecent(recentCache);
   });
   const storageNote = h("p", { class: "home-note", hidden: true }, icon("alert-triangle", { size: "sm" }), h("span", null, "This browser is not keeping data for this site, so designs last until you close the tab. Save a project file of each one to keep it."));
-  const recentSection = h("section", { class: "home-recent" }, h("div", { class: "home-row-head" }, h("h2", { class: "home-h micro" }, "Recent"), recentMore), storageNote, recentGrid);
+  const recentSection = h("section", { class: "home-recent", hidden: true }, h("div", { class: "home-row-head" }, h("h2", { class: "home-h micro", id: "home-recent-h" }, "Recent"), recentMore), recentGrid);
   gridNav(recentGrid, ".recent-open");
 
-  function actionButton(iconName, tip, fn, danger = false) {
-    const b = h("button", { type: "button", class: ["icon-btn", "sm", danger && "danger"], "data-tip": tip, "aria-label": tip }, icon(iconName, { size: "sm" }));
-    b.addEventListener("click", (e) => {
-      e.stopPropagation();
-      fn();
-    });
-    return b;
+  // Rename, duplicate and delete live in one menu per card: the "more" button
+  // or a right click (the menu key and Shift+F10 too). F2 and Delete work on a
+  // focused card.
+  function cardMenu(p, at) {
+    const isCurrent = session.open && ctx.store?.doc?.id === p.id;
+    ctx.ui.menu(
+      [
+        { label: isCurrent ? "Back to this design" : "Open", icon: "folder-open", run: () => go(openStoredDesign(ctx, p.id)) },
+        { label: "Rename", icon: "edit", kbd: "F2", run: () => go(rename(p)) },
+        { label: "Duplicate", icon: "copy-plus", run: () => go(duplicate(p)) },
+        "-",
+        { label: "Delete", icon: "trash", kbd: "Del", danger: true, run: () => go(remove(p)) },
+      ],
+      at instanceof Element ? { anchor: at, placement: "bottom-end", minWidth: 200 } : { x: at.x, y: at.y, minWidth: 200 },
+    );
   }
 
-  function recentCard(p) {
-    const url = p.thumb ? URL.createObjectURL(p.thumb) : null;
-    if (url) urls.push(url);
+  function thumbUrl(p, next) {
+    if (!p.thumb) return null;
+    const key = `${p.id}:${p.updated}:${p.thumb.size}`;
+    const url = thumbs.get(key) || next.get(key) || URL.createObjectURL(p.thumb);
+    next.set(key, url);
+    return url;
+  }
+
+  function recentCard(p, next) {
+    const url = thumbUrl(p, next);
     const isCurrent = session.open && ctx.store?.doc?.id === p.id;
     const thumb = h(
       "span",
       { class: "recent-thumb" },
-      url ? h("img", { src: url, alt: "", draggable: "false", decoding: "async" }) : h("span", { class: "recent-blank" }, icon("image")),
+      url ? h("img", { src: url, alt: "", draggable: "false", decoding: "async", loading: "lazy" }) : h("span", { class: "recent-blank" }, icon("image", { size: "sm" })),
     );
+    // The time gives way (an ellipsis) before the size does on a narrow card.
+    const when = h("span", { class: isCurrent ? "recent-when recent-now" : "recent-when" }, isCurrent ? "Editing now" : relativeTime(p.updated));
     const main = h(
       "button",
-      { type: "button", class: "recent-open", "aria-label": `Open ${p.name}` },
+      { type: "button", class: "recent-open", "aria-label": `${isCurrent ? "Back to" : "Open"} ${p.name}` },
       thumb,
       h(
         "span",
         { class: "recent-meta" },
         h("span", { class: "recent-name" }, p.name),
-        h("span", { class: "recent-sub" }, relativeTime(p.updated), h("span", { class: "dotsep" }, "·"), h("span", { class: "num" }, sizeLabel(p.width, p.height))),
+        h("span", { class: "recent-sub" }, when, h("span", { class: "dotsep" }, "·"), h("span", { class: "num" }, sizeLabel(p.width, p.height))),
       ),
     );
     main.addEventListener("click", () => go(openStoredDesign(ctx, p.id)));
-    const actions = h(
-      "div",
-      { class: "recent-actions" },
-      actionButton("edit", "Rename", () => rename(p)),
-      actionButton("copy-plus", "Duplicate", () => duplicate(p)),
-      actionButton("trash", "Delete", () => remove(p), true),
-    );
-    return h("div", { class: ["recent-card", isCurrent && "current"], role: "listitem" }, main, actions, isCurrent ? h("span", { class: "recent-badge" }, "Open now") : null);
+    const more = h("button", { type: "button", class: "icon-btn sm recent-menu", "data-tip": "Rename, duplicate or delete", "aria-label": `More for ${p.name}`, "aria-haspopup": "menu" }, icon("more-horizontal", { size: "sm" }));
+    more.addEventListener("click", (e) => {
+      e.stopPropagation();
+      cardMenu(p, more);
+    });
+    const card = h("div", { class: ["recent-card", isCurrent && "current"], role: "listitem", "data-id": p.id }, main, more);
+    card.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      cardMenu(p, { x: e.clientX, y: e.clientY });
+    });
+    main.addEventListener("keydown", (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === "Delete" || e.key === "Backspace") go(remove(p));
+      else if (e.key === "F2") go(rename(p));
+      else return;
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    return card;
   }
 
   async function rename(p) {
@@ -332,20 +374,51 @@ export function mountHome(ctx, el = document.getElementById("home")) {
   }
 
   function renderRecent(list) {
-    for (const u of urls) URL.revokeObjectURL(u);
-    urls = [];
-    clear(recentGrid);
-    const LIMIT = 8;
-    const shown = showAll ? list : list.slice(0, LIMIT);
-    if (!list.length) {
-      recentGrid.append(h("p", { class: "recent-none" }, "Designs you make are saved here, in this browser."));
-    } else {
-      recentGrid.append(...shown.map(recentCard));
-    }
-    recentMore.hidden = list.length <= LIMIT;
-    recentMore.textContent = showAll ? "Show fewer" : `Show all ${list.length}`;
+    // Keep the keyboard where it was when the cards are drawn again.
+    const focusedCard = recentGrid.contains(document.activeElement) ? document.activeElement.closest?.(".recent-card") : null;
+    const focusedId = focusedCard?.dataset.id;
+    const focusedAt = focusedCard ? [...recentGrid.children].indexOf(focusedCard) : -1;
+    const focusedMenu = !!document.activeElement?.classList?.contains("recent-menu");
+    const next = new Map();
+    const shown = showAll ? list : list.slice(0, RECENT_ROW_MAX);
+    clear(recentGrid).append(...shown.map((p) => recentCard(p, next)));
+    for (const [key, url] of thumbs) if (!next.has(key)) URL.revokeObjectURL(url);
+    thumbs = next;
+    if (!list.length) showAll = false;
+    recentSection.hidden = !list.length;
+    lede.textContent = list.length ? LEDE_RETURN : LEDE_FIRST;
     storageNote.hidden = ctx.assets?.persistent !== false;
+    recentCols = 0;
+    fitRecent();
+    if (focusedCard) {
+      // The same design, or (it was deleted) the card that took its place.
+      const cards = [...recentGrid.children].filter((c) => !c.hidden);
+      const card = cards.find((c) => c.dataset.id === focusedId) || cards[Math.min(focusedAt, cards.length - 1)];
+      (card?.querySelector(focusedMenu ? ".recent-menu" : ".recent-open") || presetsEl.querySelector(".preset-card"))?.focus({ preventScroll: true });
+    }
+    applyFocus();
   }
+
+  // One row of cards unless "Show all" is on; the rest wait behind the button.
+  function fitRecent() {
+    const cols = rowCapacity(recentGrid.clientWidth, RECENT_MIN, RECENT_GAP) || 4;
+    if (cols !== recentCols) {
+      recentCols = cols;
+      const cards = recentGrid.children;
+      for (let i = 0; i < cards.length; i++) cards[i].hidden = !showAll && i >= cols;
+      recentMore.hidden = recentCache.length <= cols;
+      recentMore.textContent = showAll ? "Show fewer" : `Show all ${recentCache.length}`;
+      recentMore.setAttribute("aria-expanded", String(showAll));
+    }
+    // A name cut short shows in full in the card's tooltip.
+    for (const name of recentGrid.querySelectorAll(".recent-name")) {
+      const btn = name.closest(".recent-open");
+      if (!btn) continue;
+      if (name.scrollWidth > name.clientWidth + 1) btn.dataset.tip = name.textContent;
+      else delete btn.dataset.tip;
+    }
+  }
+  if (typeof ResizeObserver === "function") new ResizeObserver(() => isOpen && fitRecent()).observe(recentGrid);
 
   let refreshing = 0;
   async function refresh() {
@@ -381,13 +454,14 @@ export function mountHome(ctx, el = document.getElementById("home")) {
       { class: "home-inner" },
       header,
       hero,
+      storageNote,
+      recentSection,
       h(
         "div",
         { class: "home-grid" },
         h("div", { class: "home-main" }, presetsEl),
         h("aside", { class: "home-side" }, drop, h("section", { class: "home-tools" }, h("h2", { class: "home-h micro" }, "Quick tools"), toolsEl)),
       ),
-      recentSection,
       footer,
     ),
   );
@@ -457,6 +531,17 @@ export function mountHome(ctx, el = document.getElementById("home")) {
     closeBtn.hidden = !session.open;
   }
 
+  // focus: "presets" (New design) or "recent" (Go to home) puts the keyboard
+  // on the first card of that row; for "recent" once the list is drawn.
+  function applyFocus() {
+    if (!isOpen || !pendingFocus) return;
+    const want = pendingFocus;
+    pendingFocus = null;
+    const firstPreset = presetsEl.querySelector(".preset-card");
+    const target = want === "recent" ? recentGrid.querySelector(".recent-card:not([hidden]) .recent-open") || firstPreset : firstPreset;
+    target?.focus({ preventScroll: true });
+  }
+
   function open({ focus } = {}) {
     paintClose();
     if (!isOpen) {
@@ -465,14 +550,15 @@ export function mountHome(ctx, el = document.getElementById("home")) {
       el.hidden = false;
       el.classList.remove("closing");
       el.classList.add("opening");
-      setTimeout(() => el.classList.remove("opening"), 260);
+      setTimeout(() => el.classList.remove("opening"), 220);
       if (ctx.ui.setInert) ctx.ui.setInert(appEl, "home", true);
       else if (appEl) appEl.inert = true;
       ctx.ui.hideTip?.();
       ctx.emit("home", { open: true });
     }
+    pendingFocus = focus === "presets" || focus === "recent" ? focus : null;
+    // Home always opens at the top, where the recent designs are.
     main.scrollTop = 0;
-    if (focus === "recent" && recentCache.length) recentSection.scrollIntoView({ block: "start" });
     renderPresets();
     refresh();
     // Fresh thumbnails for the design that was just open.
@@ -481,8 +567,9 @@ export function mountHome(ctx, el = document.getElementById("home")) {
       .then(() => isOpen && refresh());
     setTimeout(() => {
       if (!isOpen) return;
-      const target = focus === "presets" ? presetsEl.querySelector(".preset-card") : focus === "recent" ? recentGrid.querySelector(".recent-open") : null;
-      (target || el).focus({ preventScroll: !target });
+      if (pendingFocus === "presets") applyFocus();
+      else if (!el.contains(document.activeElement)) el.focus({ preventScroll: true });
+      main.scrollTop = 0;
     }, 30);
   }
 

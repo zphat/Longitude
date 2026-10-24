@@ -279,7 +279,7 @@ Cross-area requests, by the area that asked:
 - `runner.js` transfer list: performance only. It would have to tell the
   cached `readPixels` buffers from fresh ones, and a wrong transfer detaches
   the cache.
-- `main.js` save chip on transient changes: a cancelled drag would leave
+- `main.js` save chip on transient changes: a canceled drag would leave
   "Saving…" with no save to clear it. The chip already reads "Saving…" for
   `pending`.
 - `main.js` "reopen the stored version" on a conflict: `openStoredDesign`
@@ -341,3 +341,73 @@ Cross-area requests, by the area that asked:
     context menu has Center on canvas.
 14. A Settings > Fonts or font picker visit retries fonts that failed earlier
     (go offline, open the picker, come back online, open it again).
+
+## Polish pass
+
+Spelling: every string is American English (color, center, gray, license,
+behavior, canceled); `tests/core-spelling.test.js` and
+`tests/export-spelling.test.js` guard it.
+
+### User-visible improvements
+
+- Lighter start: Export, the feed preview, quick tools, Settings, the
+  encoders (PNG-8, zip) and background removal load on first use, with their
+  stylesheets. Pointing at a button that opens one starts the fetch. Selecting
+  an image no longer loads the removal engine or asks for the graphics card:
+  the model size fills in when the pointer or focus reaches Remove background
+  or the Model line. Export no longer pulls in the feed preview.
+- Offline and updates: `sw.js` precaches every file the app can load, so an
+  offline start after an update works (VERSION `0.1.0-3`). The offline copies
+  of mods and presets carry over to the new cache. A tab that hears of an
+  update pins the modules it has not loaded yet, so it never mixes versions.
+- Inspector: every control in a section row is 32 px, segmented switches
+  included, and a stretched switch centers its buttons. The Solid/Gradient
+  switch sits in the Color header and is 28 px. Rarely used Adjust sliders
+  start folded. The sticker Outline comes right after Background on images.
+- Segmented controls are radio groups: one tab stop, arrows, Home and End.
+  After a mouse click the arrows still nudge the layer.
+- Focus traps in sheets and dialogs skip unselected segmented buttons, so
+  Shift+Tab stays inside Quick tools.
+- Home: recent designs in one row under the heading, with one menu per card
+  (Rename, Duplicate, Delete). On a narrow card the time ellipsizes and the
+  size always shows in full. The open design reads "Editing now", in muted
+  text after an accent dot. The storage note's text is in text color, with a
+  sun-gold icon.
+- Contrast: placeholders use `--muted` (4.6:1 or better in every theme). The
+  mixed slider track and the export size meter use `--line`, so you can see
+  them.
+- Copy: the Convert drop zone reads "Every image gets the size and format you
+  set. You can also paste with Ctrl V." Every "no match" empty state uses
+  curly quotes.
+- Canvas: overlay outlines, guides and handles snap to whole device pixels,
+  so they stay sharp while a box moves. Hover outlines no longer repaint the
+  design. The view glides along when the panel shows or hides.
+- Text: font readiness is tracked per face, not per size, so a resize drag
+  no longer runs a font check every frame. Font picker samples that load no
+  longer drop the text layouts.
+
+### Browser checks for the lead
+
+1. Inspector, text layer: click Align right, then press ArrowRight. The layer
+   moves 1 px and the alignment stays. Tab to the align switch: the arrows
+   change the alignment. Check the Size, align and toggle row, and the image
+   Crop and Frame row, for one height with no offset pill.
+2. Quick tools opened on Remove background: Shift+Tab from the selected tab
+   wraps inside the sheet. Do the same with Export and Settings.
+3. Select a photo with the Network panel open: no `vendor/` request, and
+   `bgremove/engine.js` loads only on hover of Remove background.
+4. Updates with two tabs: edit a file in `web/`, reload tab B, then in tab A
+   (toast ignored) open Export, Settings and a quick tool for the first time.
+   Each opens. DevTools should show `modulepreload` links in tab A's head.
+5. Offline after a bump: with the new worker waiting, close every tab, stop
+   `serve.py`, then open Longitude. It starts, and Settings, Export and the
+   mods work.
+6. Home at window widths of about 860 px and 1150 px: recent subtitles end in
+   an ellipsis on the time, never on the size. Check "Editing now" and the
+   storage note in Chalk and Linen.
+7. Placeholders (font search, Settings search, feed preview Title and
+   Channel), the mixed slider (two layers with different opacity) and the
+   export size meter, in Chalk and Linen.
+8. Separate decision, not changed: Chalk's accent `#5e8200` is 4.18:1 as text
+   on panels. About `#567600` would pass, but it changes the shared Sundial
+   Chalk look.

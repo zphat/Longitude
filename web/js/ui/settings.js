@@ -1,14 +1,18 @@
 // Settings: one modal with six tabs. General (theme, canvas aids, background
 // removal, storage), Fonts, Mods, Packs, Shortcuts and About.
 // openSettings(ctx, { tab }) opens it, or switches tabs when it is open.
+// The app loads this module on demand (mods/loader.js openSettings), so it
+// imports nothing that is not already loaded at boot.
 
 import { h, svg, clear, disposer, isMac } from "./dom.js";
 import { button, iconButton, toggle, segmented } from "./controls.js";
-import { icon, hasIcon, registerIcons } from "./icons.js";
+import { icon } from "./icons.js";
 import { keysLabel } from "../app/context.js";
 import { THEMES } from "./theme.js";
-import { formatBytes } from "../features/compress.js";
 import { countsText, packCounts, plural, listText } from "../mods/packs.js";
+import { ensureModIcons, ensureModStyles } from "../mods/ui.js";
+
+export { ensureModIcons, ensureModStyles } from "../mods/ui.js";
 
 export const LINKS = Object.freeze({
   source: "https://github.com/zphat/Longitude",
@@ -26,42 +30,55 @@ const TABS = [
   { id: "about", label: "About", icon: "info", render: aboutTab },
 ];
 
-// Lucide paths (ISC), registered only when the shell's set lacks them.
-const FALLBACK_ICONS = {
-  "sliders-horizontal": '<path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><path d="M14 2v4"/><path d="M8 10v4"/><path d="M16 18v4"/>',
-  type: '<path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/>',
-  puzzle: '<path d="M19.44 7.85c-.05.32.06.65.29.88l1.57 1.57c.47.47.7 1.09.7 1.7s-.23 1.24-.7 1.71l-1.61 1.61a.98.98 0 0 1-.84.28c-.47-.07-.8-.48-.97-.93a2.5 2.5 0 1 0-3.21 3.21c.45.17.86.5.93.97a.98.98 0 0 1-.28.84l-1.61 1.61a2.4 2.4 0 0 1-1.7.7 2.4 2.4 0 0 1-1.71-.7l-1.57-1.57a1.03 1.03 0 0 0-.88-.29c-.49.07-.84.5-1.02.97a2.5 2.5 0 1 1-3.24-3.24c.46-.18.9-.53.97-1.02a1.03 1.03 0 0 0-.29-.88l-1.57-1.57A2.4 2.4 0 0 1 2 12c0-.62.24-1.23.7-1.7l1.53-1.53c.24-.24.58-.35.92-.3.51.08.87.53 1.07 1.01a2.5 2.5 0 1 0 3.26-3.26c-.48-.2-.93-.56-1.01-1.07-.05-.34.06-.68.3-.92L10.3 2.7A2.4 2.4 0 0 1 12 2c.62 0 1.23.24 1.7.7l1.57 1.57c.23.23.56.34.88.29.49-.07.84-.5 1.02-.97a2.5 2.5 0 1 1 3.24 3.24c-.46.18-.9.53-.97 1.02Z"/>',
-  package: '<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
-  keyboard: '<path d="M10 8h.01"/><path d="M12 12h.01"/><path d="M14 8h.01"/><path d="M16 12h.01"/><path d="M18 8h.01"/><path d="M6 8h.01"/><path d="M7 16h10"/><path d="M8 12h.01"/><rect width="20" height="16" x="2" y="4" rx="2"/>',
-  info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
-  "trash-2": '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/>',
-  "refresh-cw": '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
-  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
-  "external-link": '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
-  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
-  "alert-circle": '<circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>',
-  shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
-  code: '<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>',
-  "book-open": '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
-};
-
 const WEIGHT_NAMES = { 100: "Thin", 200: "Extra light", 300: "Light", 400: "Regular", 500: "Medium", 600: "Semibold", 700: "Bold", 800: "Extra bold", 900: "Black" };
 const GROUP_ORDER = ["File", "Edit", "Tools", "Tool", "Insert", "Layer", "Arrange", "Align", "Text", "Image", "Shape", "View", "Export", "App"];
 
+const FONT_FILE = /\.(ttf|otf|woff2?)$/i;
+const PACK_FILE = /\.json$/i;
+
 let current = null;
 
-// Loads web/css/mods.css once (for pages whose index.html does not link it).
-export function ensureModStyles() {
-  const doc = globalThis.document;
-  if (!doc?.head || doc.querySelector('link[href$="css/mods.css"], link[data-mods-css]')) return;
-  doc.head.append(h("link", { rel: "stylesheet", href: new URL("../../css/mods.css", import.meta.url).href, "data-mods-css": "" }));
+// Decimal units, rounded up, the same way the export dialog shows sizes
+// (features/compress.js), without loading the export engine for one helper.
+export function formatBytes(n) {
+  if (!Number.isFinite(n) || n <= 0) return "0 B";
+  if (n < 1000) return `${Math.ceil(n)} B`;
+  const units = ["KB", "MB", "GB", "TB"];
+  let v = n / 1000;
+  let u = 0;
+  for (;;) {
+    let decimals = 1;
+    let rounded = Math.ceil(v * 10 - 1e-9) / 10;
+    if (rounded >= 100) {
+      decimals = 0;
+      rounded = Math.ceil(v - 1e-9);
+    }
+    if (rounded >= 1000 && u < units.length - 1) {
+      v /= 1000;
+      u++;
+      continue;
+    }
+    return `${rounded.toFixed(decimals)} ${units[u]}`;
+  }
 }
 
-// Adds the icons Settings and the mod commands use when the shell's set lacks them.
-export function ensureModIcons() {
-  const missing = {};
-  for (const [k, v] of Object.entries(FALLBACK_ICONS)) if (!hasIcon(k)) missing[k] = v;
-  registerIcons(missing);
+// Files dropped on Settings -> { fonts: File[], pack: File | null }. Fonts and
+// .json packs are told apart by name; a file of another kind goes to the tab
+// on screen (Fonts or Packs), which then says what it takes.
+export function sortDrop(files, tab = "") {
+  const fonts = [];
+  const packs = [];
+  const other = [];
+  for (const f of files || []) {
+    if (!f) continue;
+    const name = f.name || "";
+    if (FONT_FILE.test(name) || /^font\//.test(f.type || "")) fonts.push(f);
+    else if (PACK_FILE.test(name) || f.type === "application/json") packs.push(f);
+    else other.push(f);
+  }
+  if (tab === "fonts") fonts.push(...other);
+  else if (tab === "packs" && !packs.length && other.length) packs.push(other[0]);
+  return { fonts, pack: packs[0] || null };
 }
 
 // openSettings(ctx, { tab = "general", pack }) -> { close }
@@ -140,6 +157,32 @@ function createSettings(ctx) {
   window.addEventListener("keydown", outsideKeys, true);
   offs(() => window.removeEventListener("keydown", outsideKeys, true));
 
+  // Files dropped anywhere on Settings: fonts are added, a pack opens its
+  // review. The ring around the dialog says it will take them. dragover
+  // repeats while files hover, so the ring goes once it stops.
+  let dragTimer = 0;
+  const dragEnd = () => {
+    clearTimeout(dragTimer);
+    panel.classList.remove("dropping");
+  };
+  root.addEventListener("dragover", (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "copy";
+    panel.classList.add("dropping");
+    clearTimeout(dragTimer);
+    dragTimer = setTimeout(dragEnd, 160);
+  });
+  root.addEventListener("drop", (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragEnd();
+    takeFiles([...e.dataTransfer.files]);
+  });
+  offs(dragEnd);
+
   document.body.append(root);
   // On ctx.ui's layer stack: the app behind is inert and shortcuts stay
   // quiet. Escape stays with Settings (a tab may take it first).
@@ -193,13 +236,29 @@ function createSettings(ctx) {
     view?.hooks.importPack?.(input);
   }
 
+  function takeFiles(files) {
+    if (closed || !files.length) return;
+    const { fonts, pack } = sortDrop(files, view?.id);
+    if (!fonts.length && !pack) {
+      toast(ctx, "Settings takes font files (.ttf, .otf, .woff, .woff2) and packs (.json).", { kind: "warn" });
+      return;
+    }
+    if (pack) reviewPack(pack);
+    else show("fonts");
+    if (fonts.length) (view?.hooks.addFonts || ((list) => addFontFiles(ctx, list)))(fonts);
+  }
+
   return { show, close, reviewPack };
 }
 
+const hasFiles = (e) => [...(e.dataTransfer?.types || [])].includes("Files");
+
+// Tab order: tabs and theme cards keep only their current item reachable
+// (tabindex -1 on the rest), so those are left out of the wrap-around.
+const FOCUSABLE = ["button", "[href]", "input", "select", "textarea", "summary", "[tabindex]"].map((s) => `${s}:not([tabindex="-1"])`).join(", ");
+
 function trapFocus(panel, e) {
-  const items = [...panel.querySelectorAll('button, [href], input, select, textarea, summary, [tabindex]:not([tabindex="-1"])')].filter(
-    (el) => !el.disabled && !el.hidden && el.offsetParent !== null
-  );
+  const items = [...panel.querySelectorAll(FOCUSABLE)].filter((el) => !el.disabled && !el.hidden && el.offsetParent !== null);
   if (!items.length) return;
   const first = items[0];
   const last = items[items.length - 1];
@@ -302,6 +361,7 @@ function themeCard(theme, { active = false, onPick = null, badge = "" } = {}) {
   card.setActive = (on) => {
     card.classList.toggle("on", on);
     card.setAttribute("aria-checked", String(on));
+    card.setAttribute("tabindex", on ? "0" : "-1");
   };
   card.setActive(active);
   return card;
@@ -342,7 +402,13 @@ function themeGroup(ctx, env) {
   const grid = h("div", { class: "theme-grid", role: "radiogroup", "aria-label": "Theme" });
   let cards = new Map();
   const builtIn = new Set(THEMES.map((t) => t.id));
+  // One card is in the tab order: the current theme, else the first.
+  const reachable = () => {
+    const list = [...cards.values()];
+    if (list.length && !list.some((c) => c.getAttribute("tabindex") === "0")) list[0].setAttribute("tabindex", "0");
+  };
   const paint = () => {
+    const hadFocus = grid.contains(document.activeElement);
     clear(grid);
     cards = new Map();
     const list = ctx.themes?.list() || [];
@@ -353,11 +419,25 @@ function themeGroup(ctx, env) {
       cards.set(t.id, card);
       grid.append(card);
     }
+    reachable();
+    if (hadFocus) (cards.get(active) || grid.firstChild)?.focus();
   };
+  // Arrow keys move through the themes and apply each one, like any radio group.
+  grid.addEventListener("keydown", (e) => {
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+    const list = [...cards.values()];
+    const i = list.indexOf(e.target);
+    if (!step || i < 0) return;
+    e.preventDefault();
+    const next = list[(i + step + list.length) % list.length];
+    next.focus();
+    next.click();
+  });
   paint();
   env.d(ctx.on("themes", paint));
   env.d(ctx.on("theme", ({ id } = {}) => {
     for (const [tid, card] of cards) card.setActive(tid === id);
+    reachable();
   }));
   return group("Theme", "Themes color Longitude itself, never your designs.", grid);
 }
@@ -481,6 +561,8 @@ function storageGroup(ctx, env) {
     }
     const pct = est.quota > 0 ? Math.min(100, (est.usage / est.quota) * 100) : 0;
     fill.style.width = `${Math.max(pct, est.usage > 0 ? 1.5 : 0)}%`;
+    // Nearly full: the meter turns sun-gold, the color for "pay attention".
+    meter.classList.toggle("high", pct >= 80);
     meter.setAttribute("aria-label", `${formatBytes(est.usage)} used`);
     usage.textContent = est.quota > 0
       ? `Designs, images and fonts use ${formatBytes(est.usage)} of about ${formatBytes(est.quota)} this browser allows.`
@@ -547,6 +629,33 @@ function storageGroup(ctx, env) {
 
 // ---- Fonts ---------------------------------------------------------------------
 
+// Adds font files to this browser and says how it went. busy: the button to
+// show "Adding..." on while it works (optional).
+async function addFontFiles(ctx, files, busy = null) {
+  const fonts = ctx.fonts;
+  if (!fonts?.addCustom) {
+    toast(ctx, "Fonts are still loading. Try again in a moment.", { kind: "warn" });
+    return;
+  }
+  busy?.setDisabled(true);
+  busy?.setLabel("Adding...");
+  const added = [];
+  try {
+    for (const f of files) {
+      try {
+        added.push(await fonts.addCustom(f));
+      } catch (err) {
+        toast(ctx, `${f.name}: ${err.message}`, { kind: "error" });
+      }
+    }
+  } finally {
+    busy?.setDisabled(false);
+    busy?.setLabel("Add a font file");
+  }
+  if (added.length === 1) toast(ctx, `Added ${added[0]}. Find it under Yours in the font picker.`, { kind: "ok" });
+  else if (added.length > 1) toast(ctx, `Added ${plural(new Set(added).size, "font")}. Find them under Yours in the font picker.`, { kind: "ok" });
+}
+
 function fontsTab(ctx, env) {
   const el = h("div", { class: "set-stack" });
   const fonts = ctx.fonts;
@@ -556,27 +665,14 @@ function fontsTab(ctx, env) {
   }
   const input = h("input", { type: "file", accept: ".ttf,.otf,.woff,.woff2", multiple: true, hidden: true });
   const add = button({ label: "Add a font file", icon: "upload", kind: "primary", onClick: () => input.click() });
-  input.addEventListener("change", async () => {
+  input.addEventListener("change", () => {
     const files = [...input.files];
     input.value = "";
-    if (!files.length) return;
-    add.setDisabled(true);
-    add.setLabel("Adding...");
-    const added = [];
-    for (const f of files) {
-      try {
-        added.push(await fonts.addCustom(f));
-      } catch (err) {
-        toast(ctx, `${f.name}: ${err.message}`, { kind: "error" });
-      }
-    }
-    add.setDisabled(false);
-    add.setLabel("Add a font file");
-    if (added.length === 1) toast(ctx, `Added ${added[0]}. Find it under Yours in the font picker.`, { kind: "ok" });
-    else if (added.length > 1) toast(ctx, `Added ${plural(new Set(added).size, "font")}. Find them under Yours in the font picker.`, { kind: "ok" });
+    if (files.length) addFontFiles(ctx, files, add);
   });
+  env.hooks.addFonts = (files) => addFontFiles(ctx, files, add);
 
-  const yours = h("div", { class: "set-list" });
+  const yours = h("div", { class: "set-list drop-target" });
   const fromMods = h("div", { class: "set-list" });
   const modGroup = group("From mods and packs", "Mods and packs can add fonts. Turn the mod off or remove the pack to remove them.", fromMods);
   const footer = h("p", { class: "set-foot" });
@@ -629,7 +725,7 @@ function fontsTab(ctx, env) {
   el.append(
     group(
       "Your fonts",
-      "Add .ttf, .otf, .woff or .woff2 files. You can also drop font files onto the canvas.",
+      "Add .ttf, .otf, .woff or .woff2 files, or drop them here or on the canvas.",
       h("div", { class: "set-actions" }, add, input),
       yours
     ),
@@ -683,18 +779,26 @@ function modCard(ctx) {
       const label = mod.name;
       reload.classList.add("spin");
       reload.setDisabled(true);
-      const ok = await ctx.mods.reload(mod.id);
-      reload.classList.remove("spin");
-      reload.setDisabled(false);
+      let ok = false;
+      try {
+        ok = await ctx.mods.reload(mod.id);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        reload.classList.remove("spin");
+        reload.setDisabled(false);
+      }
       if (ok) toast(ctx, `Reloaded ${label}.`, { kind: "ok" });
     },
   });
+  // The manifest's homepage (https only, checked by the loader), for updates.
+  const home = h("a", { class: "icon-btn sm", target: "_blank", rel: "noopener noreferrer", hidden: true }, icon("external-link", { size: "sm" }));
   const el = h(
     "article",
     { class: "mod-card" },
     h("div", { class: "mod-glyph", "aria-hidden": "true" }, icon("puzzle")),
     h("div", { class: "mod-main" }, h("div", { class: "mod-title" }, name, version), by, desc, status),
-    h("div", { class: "mod-side" }, reload, sw)
+    h("div", { class: "mod-side" }, home, reload, sw)
   );
   el.update = (m) => {
     mod = m;
@@ -702,6 +806,12 @@ function modCard(ctx) {
     name.textContent = m.name;
     version.textContent = m.version ? `v${m.version}` : "";
     version.hidden = !m.version;
+    home.hidden = !m.homepage;
+    if (m.homepage) {
+      home.href = m.homepage;
+      home.dataset.tip = `${m.name} homepage`;
+      home.setAttribute("aria-label", `${m.name} homepage`);
+    }
     by.textContent = [m.author && `by ${m.author}`, m.id].filter(Boolean).join(" · ");
     desc.textContent = m.description;
     desc.hidden = !m.description;
@@ -741,7 +851,14 @@ function modsTab(ctx, env) {
         const list = await ctx.mods.refresh();
         await ctx.mods.describe();
         const fresh = list.filter((m) => !before.has(m.id)).length;
-        toast(ctx, fresh ? `Found ${plural(fresh, "new mod")}.` : "No new mods in mods.json.", { kind: fresh ? "ok" : "info" });
+        if (ctx.mods.errors.length) {
+          const lead = fresh ? `Found ${plural(fresh, "new mod")}, but mods.json` : "mods.json";
+          toast(ctx, `${lead} has a problem. It is shown above the list.`, { kind: "warn" });
+        } else {
+          toast(ctx, fresh ? `Found ${plural(fresh, "new mod")}.` : "No new mods in mods.json.", { kind: fresh ? "ok" : "info" });
+        }
+      } catch (err) {
+        toast(ctx, err.message || "mods.json could not be read.", { kind: "error" });
       } finally {
         check.setDisabled(false);
       }
@@ -931,30 +1048,24 @@ function packsTab(ctx, env) {
   }
   env.hooks.importPack = startImport;
 
+  // Drops anywhere on Settings arrive through the dialog (takeFiles), which
+  // lights this zone up while files hover.
   input.addEventListener("change", () => {
     const f = input.files[0];
     input.value = "";
     if (f) startImport(f);
   });
-  const hasFiles = (e) => [...(e.dataTransfer?.types || [])].includes("Files");
-  drop.addEventListener("dragover", (e) => {
-    if (!hasFiles(e)) return;
-    e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = "copy";
-    drop.classList.add("over");
-  });
-  drop.addEventListener("dragleave", (e) => {
-    if (!drop.contains(e.relatedTarget)) drop.classList.remove("over");
-  });
-  drop.addEventListener("drop", (e) => {
-    if (!hasFiles(e)) return;
-    e.preventDefault();
-    e.stopPropagation();
-    drop.classList.remove("over");
-    const f = e.dataTransfer.files[0];
-    if (f) startImport(f);
-  });
+
+  // "Use theme" turns into "Theme in use" while one of the pack's themes is on.
+  let useButtons = [];
+  const syncUse = () => {
+    const id = ctx.themes?.current?.()?.id;
+    for (const { btn, ids } of useButtons) {
+      const on = ids.includes(id);
+      btn.setLabel(on ? "Theme in use" : "Use theme");
+      btn.setAttribute("aria-pressed", String(on));
+    }
+  };
 
   const packRow = (p) => {
     const accent = p.themes[0]?.colors;
@@ -970,8 +1081,9 @@ function packsTab(ctx, env) {
       p.skipped.length ? h("div", { class: "set-row-warn" }, p.skipped.join(" ")) : null
     );
     const use = p.themeIds.length
-      ? button({ label: "Use theme", kind: "ghost", onClick: () => ctx.themes?.apply(p.themeIds[0]) })
+      ? button({ label: "Use theme", icon: "check", kind: "ghost set-use", onClick: () => ctx.themes?.apply(p.themeIds[0]) })
       : null;
+    if (use) useButtons.push({ btn: use, ids: p.themeIds });
     const remove = removeButton({
       tip: `Remove ${p.name}`,
       question: "Remove this pack?",
@@ -990,15 +1102,18 @@ function packsTab(ctx, env) {
 
   const paint = () => {
     clear(list);
+    useButtons = [];
     const packs = ctx.mods?.packs?.list() || [];
     if (!packs.length) {
       list.append(h("div", { class: "set-empty" }, "No packs yet. Packs you add stay in this browser."));
       return;
     }
     for (const p of packs) list.append(packRow(p));
+    syncUse();
   };
   paint();
   env.d(ctx.on("packs", paint));
+  env.d(ctx.on("theme", syncUse));
   return el;
 }
 
@@ -1046,7 +1161,7 @@ function shortcutsTab(ctx, env) {
     if (gestures.length) sorted.push(["Mouse and trackpad", gestures.map(([title, how]) => ({ title, how }))]);
     clear(list);
     if (!sorted.length) {
-      list.append(h("div", { class: "set-empty" }, `No shortcuts match "${search.value.trim()}".`));
+      list.append(h("div", { class: "set-empty" }, `No shortcuts match “${search.value.trim()}”.`));
       return;
     }
     for (const [g, rows] of sorted) {

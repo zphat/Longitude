@@ -10,6 +10,7 @@ export const manifest = {
   name: "Deep fry",
   version: "1.0.0",
   author: "Longitude",
+  homepage: "https://github.com/zphat/Longitude/tree/main/web/mods/deep-fry",
   description: "A filter that crushes color and contrast, oversharpens and adds noise, plus a command to fry the selected images.",
   apiVersion: 1,
 };

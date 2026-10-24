@@ -349,13 +349,13 @@ export function createSelectTool(core) {
   // Close the active drag: apply the newest pointer (ev, if any) and commit
   // it as one undo step, or cancel. A handle that never moved was a click:
   // its gesture is dropped and nothing is recorded.
-  function settle(ev, cancelled) {
+  function settle(ev, canceled) {
     const cur = g;
     const still = cur.moved === false;
-    if (ev && !cancelled && !still) apply(ev);
+    if (ev && !canceled && !still) apply(ev);
     last = null;
     if (cur.kind === "marquee") return;
-    if (cancelled || still) store.cancel();
+    if (canceled || still) store.cancel();
     else store.commit();
   }
 

@@ -323,12 +323,12 @@ export function createKit(ctx, editor) {
     },
 
     // A small mono pill with a value ("360 × 240"), placed near (x, y) in
-    // overlay units.
+    // overlay units. Same look as the select tool's size pills (.ed-pill).
     pill(parent, text, x, y) {
       if (!parent) return null;
-      const w = text.length * 6.7 + 16;
+      const w = Math.round(text.length * 6.6 + 16);
       const g = svg("g", { class: "draw-pill", transform: `translate(${Math.round(x - w / 2)} ${Math.round(y)})` });
-      g.append(svg("rect", { width: w, height: 22, rx: 11 }), svg("text", { x: w / 2, y: 15, "text-anchor": "middle", text }));
+      g.append(svg("rect", { x: 0.5, y: 0.5, width: w - 1, height: 21, rx: 7 }), svg("text", { x: w / 2, y: 15, "text-anchor": "middle", text }));
       parent.append(g);
       return g;
     },
@@ -386,7 +386,7 @@ export function registerDrawTools(ctx, editor) {
       title: "Magic eraser",
       keys: ["M"],
       icon: "wand",
-      keywords: "remove color color background flat erase",
+      keywords: "remove color colors background flat erase",
       when: (c) => hasMagicTarget(c.store),
       run: setTool("magic"),
     },

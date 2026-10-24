@@ -82,7 +82,7 @@ export function textTool(kit) {
   let press = null;
 
   // A press that will not finish (Escape, or the OS or a second finger
-  // cancelled the pointer): nothing is made.
+  // canceled the pointer): nothing is made.
   function cancel(api) {
     press = null;
     kit.clearOverlay(api);

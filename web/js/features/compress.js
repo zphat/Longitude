@@ -1,10 +1,29 @@
 // Export engine: encode, fit under a file size, resize, convert, download,
 // copy. Main.js exposes this module's namespace as ctx.exporter.
 
-import { encodePng8 } from "./png8.js";
+// The PNG-8 encoder and the zip writer load on first use (a color-limited
+// PNG, a batch download), not with the rest of this module. sw.js precaches
+// both, so they load offline too. A failed load is retried next time.
+const lazy = (load) => {
+  let p = null;
+  return () =>
+    (p ||= load().catch((err) => {
+      p = null;
+      throw err;
+    }));
+};
+const png8 = lazy(() => import("./png8.js"));
+const zip = lazy(() => import("./zip.js"));
 
-export { encodePng8 } from "./png8.js";
-export { makeZip } from "./zip.js";
+// canvas -> indexed PNG blob (png8.js).
+export async function encodePng8(canvas, opts) {
+  return (await png8()).encodePng8(canvas, opts);
+}
+
+// [{ name, blob }] -> zip blob (zip.js).
+export async function makeZip(files, opts) {
+  return (await zip()).makeZip(files, opts);
+}
 
 export const FORMATS = [
   { type: "image/png", label: "PNG", ext: "png", alpha: true, lossy: false },
@@ -22,7 +41,7 @@ export function labelFor(type) {
   return FORMATS.find((f) => f.type === type)?.label || extFor(type).toUpperCase();
 }
 
-const abortError = () => (typeof DOMException === "function" ? new DOMException("Cancelled", "AbortError") : Object.assign(Error("Cancelled"), { name: "AbortError" }));
+const abortError = () => (typeof DOMException === "function" ? new DOMException("Canceled", "AbortError") : Object.assign(Error("Canceled"), { name: "AbortError" }));
 
 function checkAbort(signal) {
   if (signal?.aborted) throw signal.reason instanceof Error ? signal.reason : abortError();

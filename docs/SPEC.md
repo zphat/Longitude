@@ -55,6 +55,19 @@ in the browser on the user's machine; images never leave it.
   of some types). Safari is best effort.
 - One external runtime dependency, loaded lazily only for background removal:
   `onnxruntime-web` (pinned version, jsDelivr) unless `web/vendor/ort/` exists.
+- Start light: boot loads only what the first screen needs. The export
+  dialog, feed preview, quick tools, encoders (compress, png8, zip), Settings,
+  the mask helpers and the background removal engine load with `import()` on
+  first use (`ui/ondemand.js`, `mods/loader.js`, `features/bgremove/index.js`);
+  their commands are registered at start and simply wait for the module.
+  `css/export.css` and `css/mods.css` load with their dialogs (`loadStyle()`
+  in `ui/dom.js`, awaited before the dialog shows). `sw.js` PRECACHE lists
+  every file the app can load (boot and on demand, stylesheets, interface
+  fonts), so a VERSION bump never leaves the new cache unable to start
+  offline. Once a page hears of an update it pins the modules it has not
+  loaded yet (`pinOnDemand()`: `<link rel="modulepreload">` from the files it
+  started with), so it never links newer files against older ones.
+  `tests/shell-boot.test.js` checks all of this.
 - Style: 2-space indent, double quotes, semicolons, `const` by default, small
   functions, comments only where intent is not obvious. No TypeScript.
 - Never put user strings in `innerHTML`. Use `h()` from `js/ui/dom.js`.
@@ -75,14 +88,14 @@ in the browser on the user's machine; images never leave it.
 ```
 web/index.html                 shell
 web/manifest.webmanifest       shell
-web/sw.js                      shell (cache app shell; never cache /mods/ code aggressively)
+web/sw.js                      shell (cache app shell, precache every file the app loads; never cache /mods/ code aggressively)
 web/css/tokens.css             PROVIDED (themes, base elements)
 web/css/controls.css           PROVIDED
 web/css/app.css                shell (layout: top bar, rail, stage, panels, home, palette, menus, toasts, dialogs, tooltips)
 web/css/editor.css             editor (text edit overlay, cursors, stage overlays)
 web/css/inspector.css          inspector (inspector, layers, color picker, font picker)
-web/css/export.css             export (export dialog, quick tools, feed preview)
-web/css/mods.css               mods (settings dialog)
+web/css/export.css             export (export dialog, quick tools, feed preview; loaded with them)
+web/css/mods.css               mods (settings dialog; loaded with it)
 web/js/ui/dom.js               PROVIDED
 web/js/ui/controls.js          PROVIDED
 web/js/ui/theme.js             PROVIDED
@@ -128,6 +141,7 @@ web/js/ui/quickbar.js          inspector (floating context bar above the selecti
 web/js/ui/exportdialog.js      export
 web/js/ui/quicktools.js        export
 web/js/ui/feedpreview.js       export
+web/js/ui/ondemand.js          export (export commands at start; loads the three views above on first use)
 web/js/mods/**                 mods
 web/mods/**                    mods
 web/js/ui/settings.js          mods
@@ -465,7 +479,7 @@ ctx.shapes        shapes registry             (main.js)
 ctx.filters       filters registry            (main.js)
 ctx.presets       presets service             (main.js)
 ctx.bg            background removal service  (main.js)
-ctx.exporter      compress module namespace   (main.js)
+ctx.exporter      compress module namespace once loaded, else null (main.js; loads with the first export or quick tool)
 ctx.editor        editor API                  (main.js, after createEditor)
 ctx.ui            { toast, menu, popover, dialog, confirm, prompt, openColorPicker, openFontPicker, openExport, openFeedPreview, openQuickTool, openSettings, openHome, closeHome }
 ctx.themes        theme service (provided ui/theme.js)
@@ -546,7 +560,7 @@ only when they set `allowInFields: true`; plain-letter shortcuts never do.
 `tool` { id } · `zoom` { zoom } · `home` { open } · `project` { id, name } ·
 `saved` { at } · `theme` { id } · `textedit` { id|null } · `mode` { mode: "normal"|"crop"|"refine"|"magic" } ·
 `bg-progress` { layerId, phase: "download"|"run"|"done"|"error", progress: 0..1, message } ·
-`prefs` { key, value } · `mods` {}
+`prefs` { key, value } · `mods` {} · `panel` { visible } (after the right panel's slide ends)
 
 ## 8. Editor (web/js/editor/)
 
@@ -617,15 +631,20 @@ Floating islands over a full-bleed workspace (Figma UI3 / Arc feel):
 - Top bar island (left): logo mark + "Longitude" wordmark (Syne), editable
   project name, preset chip ("YouTube thumbnail · 1280 × 720"), saved state.
 - Top bar island (center): search pill "Search or run a command  Ctrl K".
+  The label shortens to fit: "Search", then the icon and Ctrl K, then the
+  icon alone.
 - Top bar island (right): undo/redo, Preview (F), Export (lime primary).
 - Left rail island: Select, Hand, Text, Image, Shapes (flyout), Circle, Arrow,
   Pen; then Refine/Magic only when relevant; bottom: Settings.
-- Right island: inspector (scrolls) above a resizable layers panel.
+- Right island: inspector (scrolls) above a resizable layers panel (about
+  38% of the panel, 160 to 260 px, until resized; double-click the splitter
+  to go back to that).
 - Bottom-center island: zoom −/value/+, Fit, safe zones toggle, snapping
   toggle, grid toggle.
-- Home: full-screen overlay with presets grid (cards drawn to scale), recent
-  projects with thumbnails, quick tools, drop zone. Esc closes when a
-  project is open.
+- Home: full-screen overlay. Recent designs in one row under the heading
+  (hidden when there are none), then the presets grid (cards drawn to
+  scale), quick tools and the drop zone. Opens scrolled to the top. Esc
+  closes when a project is open.
 - Tooltips: `data-tip="Text"` plus optional `data-kbd="T"` on any element;
   one tooltip system in menus.js.
 - Toasts bottom-center above the zoom island; `ctx.ui.toast(msg, { kind:
@@ -642,11 +661,13 @@ label). Section order:
 - Nothing selected: Canvas (preset, width, height, background color /
   gradient / transparent, safe zones toggle).
 - Text: Font (picker with live hover preview), size, weight, italic,
-  align, uppercase; Color (solid / gradient); Stroke; Outline 2; Background;
-  Spacing (letter, line); Effects (shadow, glow); Layer.
+  align, uppercase; Color (solid / gradient; the Solid/Gradient switch sits
+  in the section header); Stroke; Outline 2; Background; Spacing (letter,
+  line); Effects (shadow, glow); Layer.
 - Image: big "Remove background" button (progress ring while running, then
-  "Refine" + "Restore original"), Magic eraser, Crop, Frame (rect radius /
-  ellipse), Adjust (sliders + reset), Outline, Effects, Layer.
+  "Refine" + "Restore original"), Magic eraser, Outline (sticker), Crop +
+  Frame (rect radius / ellipse), Filters, Adjust (sliders + reset), Effects,
+  Layer.
 - Shape: shape picker, Fill, Stroke, Radius, Effects, Layer.
 - Arrow: color, width, head, tail, sketch, straighten; Effects, Layer.
 - Path: color, width; Effects, Layer.
@@ -660,7 +681,8 @@ staples (#FFFFFF #000000 #FFE14D #FF2D2D #D1FF4A #2DE2E6 #7B61FF #FF7A1A),
 recent colors (prefs `recentColors`, 10).
 
 Font picker popover: search, category tabs (Original, Classics, Meme,
-Display, Clean, System, Yours), each family rendered in itself, hover
+Display, Clean, System, Yours; they wrap to two rows and take the arrow
+keys), each family rendered in itself, hover
 previews on the selected text layer (transient patch, restored on leave),
 "Add a font file" at the bottom.
 
@@ -687,8 +709,11 @@ bg = {
   async removeLayerBackground(layerId, { provider }) // full flow on an image layer: progress events on ctx.events 'bg-progress', mask stored via ctx.assets.addCanvas, store.patch(layer, { mask }) with label "Remove background"
   async removeFromImage(blobOrBitmap, { provider, onProgress, signal, maxSide = 4096 }) -> { mask, cutout: HTMLCanvasElement, width, height }   // a Blob input is scaled to maxSide first (0 keeps it)
   restoreLayer(layerId)                    // mask -> null (undoable)
+  masks                                    // mask.js once loaded (the first removal or cutout edit), else null
+  loadMasks() -> Promise<module>           // mask.js, loading it if needed
 }
-// mask.js (pure helpers)
+// pixels.js: sourceSize, makeCanvas, readPixels (always loaded; mask.js re-exports them)
+// mask.js (pure helpers, loaded on first use)
 export function magicMask(source, { x, y, tolerance = 32, contiguous = true, feather = 1, baseMask }) -> HTMLCanvasElement
 export function paintMask(maskCanvas, from, to, { radius, hardness, mode: "erase"|"restore" })  // in natural image px
 export function featherMask(mask, px) ; export function growMask(mask, px) ; export function maskToCutout(source, mask) -> canvas

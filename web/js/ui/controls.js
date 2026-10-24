@@ -52,7 +52,17 @@ function scrub(handle, { get, set, step, min, max, onEnd }) {
       handle.removeEventListener("pointerup", up);
       handle.removeEventListener("pointercancel", up);
       document.body.classList.remove("scrubbing");
-      if (moved) onEnd?.();
+      if (!moved) return;
+      // The click that ends a drag would focus the field behind a <label>
+      // handle (and keep Delete, tool letters and Space from the canvas).
+      // A plain click still focuses it.
+      const swallow = (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+      };
+      handle.addEventListener("click", swallow, { capture: true, once: true });
+      setTimeout(() => handle.removeEventListener("click", swallow, { capture: true }), 0);
+      onEnd?.();
     };
     handle.addEventListener("pointermove", move);
     handle.addEventListener("pointerup", up);
@@ -73,11 +83,14 @@ function numberInput({ value, min, max, step, unit, decimals, commit, live }) {
     return Number(v).toFixed(d).replace(/\.0+$/, "") + (unit || "");
   };
   input.value = fmt(value);
+  // Arrow keys are live edits; leaving the field ends them with onChange.
+  let nudged = false;
   const parse = () => {
     const n = parseFloat(String(input.value).replace(",", ".").replace(/[^\d.+-]/g, ""));
     return Number.isFinite(n) ? clampN(n, min, max) : null;
   };
   input.addEventListener("focus", () => {
+    nudged = false;
     input.value = input.value.replace(unit || "\u0000", "");
     requestAnimationFrame(() => input.select());
   });
@@ -94,17 +107,20 @@ function numberInput({ value, min, max, step, unit, decimals, commit, live }) {
       const cur = parse() ?? 0;
       const next = clampN(roundTo(cur + (e.key === "ArrowUp" ? 1 : -1) * step * (e.shiftKey ? 10 : 1), step), min, max);
       input.value = String(next);
+      nudged = true;
       live?.(next);
     }
     e.stopPropagation();
   });
   input.addEventListener("blur", () => {
+    const wasNudged = nudged;
+    nudged = false;
     if (input.dataset.cancel) {
       delete input.dataset.cancel;
-      commit(null);
+      commit(null, wasNudged);
       return;
     }
-    commit(parse());
+    commit(parse(), wasNudged);
   });
   return { input, fmt };
 }
@@ -121,9 +137,10 @@ export function slider({ label, min = 0, max = 100, step = 1, value = 0, unit = 
     step,
     unit,
     decimals,
-    commit: (n) => {
+    commit: (n, nudged) => {
       if (n === null) {
         input.value = fmt(v);
+        if (nudged) onChange?.(v);
         return;
       }
       setV(n, true);
@@ -194,14 +211,15 @@ export function number({ label, icon: iconName, value = 0, min = -1e6, max = 1e6
     step,
     unit,
     decimals,
-    commit: (n) => {
+    commit: (n, nudged) => {
       if (n === null) {
         input.value = fmt(v);
+        if (nudged) onChange?.(v);
         return;
       }
       const changed = n !== v;
       setV(n, true);
-      if (changed) onChange?.(v);
+      if (changed || nudged) onChange?.(v);
       else input.value = fmt(v);
     },
     live: (n) => {
@@ -258,6 +276,7 @@ export function toggle({ label, value = false, onChange, tip, small }) {
 }
 
 // Segmented buttons. options: [{ value, label?, icon?, tip? }]
+// One tab stop (the chosen button); arrow keys, Home and End change the choice.
 export function segmented({ options, value, onChange, size, full }) {
   let v = value;
   const el = h("div", { class: ["ctl-seg", size, full && "full"], role: "radiogroup" });
@@ -278,11 +297,38 @@ export function segmented({ options, value, onChange, size, full }) {
     return [o.value, b];
   });
   const paint = () => {
-    for (const [val, b] of btns) {
-      b.classList.toggle("on", val === v);
-      b.setAttribute("aria-checked", String(val === v));
-    }
+    const any = btns.some(([val]) => val === v);
+    btns.forEach(([val, b], i) => {
+      const on = val === v;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-checked", String(on));
+      b.setAttribute("tabindex", on || (!any && i === 0) ? "0" : "-1");
+    });
   };
+  // Browsers focus a button when it is clicked. A switch reached with the
+  // pointer passes the arrow keys on (they nudge the selected layer, as they
+  // did before the click); one reached with Tab keeps the radio-group keys.
+  let byPointer = false;
+  el.addEventListener("pointerdown", () => (byPointer = true));
+  el.addEventListener("focusout", (e) => {
+    if (!el.contains(e.relatedTarget)) byPointer = false;
+  });
+  const STEPS = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1, Home: "first", End: "last" };
+  el.addEventListener("keydown", (e) => {
+    if (byPointer) return;
+    const k = STEPS[e.key];
+    if (!k || e.altKey || e.ctrlKey || e.metaKey) return;
+    const live = btns.filter(([, b]) => !b.disabled);
+    if (!live.length) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const at = live.findIndex(([val]) => val === v);
+    const n = live.length;
+    const i = k === "first" ? 0 : k === "last" ? n - 1 : at < 0 ? (k > 0 ? 0 : n - 1) : (at + k + n) % n;
+    const [val, b] = live[i];
+    b.focus();
+    if (val !== v) b.click();
+  });
   paint();
   Object.defineProperty(el, "value", {
     get: () => v,

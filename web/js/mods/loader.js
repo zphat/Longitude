@@ -8,12 +8,38 @@
 import { API_VERSION, buildModApi, createScope } from "./api.js";
 import { createPacks } from "./packs.js";
 import { cleanModPath, defaultModsBase, resolveInside } from "./paths.js";
-import { ensureModIcons, ensureModStyles, openSettings } from "../ui/settings.js";
+import { ensureModIcons, ensureModStyles } from "./ui.js";
 import { THEMES } from "../ui/theme.js";
 
 export { buildModApi, createScope, scopeOf, API_VERSION } from "./api.js";
-export { openSettings } from "../ui/settings.js";
 export { importPack } from "./packs.js";
+
+// ---- Settings, on demand -------------------------------------------------------
+
+// The Settings dialog (ui/settings.js, about 50 KB, and css/mods.css) is only
+// fetched the first time it opens, or when loadSettings() is called ahead of
+// that (main.js does when the pointer reaches a Settings button).
+let settingsModule = null;
+export function loadSettings() {
+  settingsModule ||= Promise.all([import("../ui/settings.js"), ensureModStyles()])
+    .then(([m]) => m)
+    .catch((err) => {
+      settingsModule = null; // try again next time (offline, server restarted)
+      throw err;
+    });
+  return settingsModule;
+}
+
+// openSettings(ctx, opts) -> Promise<{ close }>. Same options as ui/settings.js.
+export function openSettings(ctx, opts) {
+  return loadSettings()
+    .then((m) => m.openSettings(ctx, opts))
+    .catch((err) => {
+      console.error("Settings could not open.", err);
+      ctx?.ui?.toast?.("Settings could not open. Reload Longitude and try again.", { kind: "error" });
+      return { close() {} };
+    });
+}
 
 export const MOD_ID_RE = /^[a-z][a-z0-9-]{1,50}$/;
 export const MAX_MODS = 64;
@@ -153,7 +179,6 @@ export async function loadMods(ctx, opts = {}) {
 
   ctx.ui ||= {};
   if (typeof ctx.ui.openSettings !== "function") ctx.ui.openSettings = (o) => openSettings(ctx, o);
-  ensureModStyles();
 
   const changed = () => ctx.emit?.("mods", {});
   const saved = () => {

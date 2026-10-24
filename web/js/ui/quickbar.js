@@ -408,6 +408,10 @@ export function mountQuickbar(stageEl, ctx) {
   };
   window.addEventListener("resize", onResize);
   d(() => window.removeEventListener("resize", onResize));
+  // The panel shown or hidden (narrow windows, Hide panel, focus mode) changes
+  // the room beside the stage without a resize: the shell's "panel" event
+  // comes once the slide has ended.
+  d(ctx.on("panel", onResize));
   if (typeof ResizeObserver === "function") {
     const ro = new ResizeObserver(() => {
       if (shown) queuePlace();

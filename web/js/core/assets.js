@@ -102,7 +102,7 @@ function idb(db, name, mode, op) {
     if (req) req.onsuccess = () => (value = req.result);
     tx.oncomplete = () => resolve(value);
     tx.onerror = () => reject(tx.error || req?.error);
-    tx.onabort = () => reject(tx.error || req?.error || Error("Storage request was cancelled."));
+    tx.onabort = () => reject(tx.error || req?.error || Error("Storage request was canceled."));
   });
 }
 

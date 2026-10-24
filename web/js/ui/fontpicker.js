@@ -63,6 +63,26 @@ export function fontMeta(f) {
   return parts.join(" · ");
 }
 
+// Arrow keys in the category tabs: the index to move to from i of n, or null
+// for a key the tabs do not use. Left and right wrap around.
+export function tabStep(i, n, key) {
+  if (n < 1) return null;
+  switch (key) {
+    case "ArrowRight":
+      return (i + 1) % n;
+    case "ArrowLeft":
+      return (i - 1 + n) % n;
+    case "Home":
+      return 0;
+    case "End":
+      return n - 1;
+    default:
+      return null;
+  }
+}
+
+const reducedMotion = () => !!globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+
 // ---- the picker -------------------------------------------------------------------
 
 export function openFontPicker(anchorEl, { value, weight = 400, onPreview, onPreviewEnd, onChange, onClose, ctx = boundCtx, placement } = {}) {
@@ -70,11 +90,15 @@ export function openFontPicker(anchorEl, { value, weight = 400, onPreview, onPre
   const offs = [];
   let query = "";
   let rows = []; // [{ el, info }]
+  let heads = []; // group headers, for the tab that follows the scroll
   let active = -1;
   let previewing = null;
   let previewTimer = 0;
   let observer = null;
   let picked = false;
+  let tabOn = null; // the group whose tab is lit
+  let spyQueued = false;
+  let jumpUntil = 0; // a tab click's smooth scroll owns the tab until then
 
   const search = h("input", { type: "search", class: "fp-search-input", placeholder: "Search fonts", spellcheck: "false", autocomplete: "off", autofocus: true, "aria-label": "Search fonts" });
   const tabs = h("div", { class: "fp-tabs", role: "tablist" });
@@ -161,9 +185,11 @@ export function openFontPicker(anchorEl, { value, weight = 400, onPreview, onPre
 
   const setActive = (i, { scroll = true, previewIt = true } = {}) => {
     if (!rows.length) return;
-    active = Math.max(0, Math.min(rows.length - 1, i));
-    rows.forEach((r, j) => r.el.classList.toggle("active", j === active));
+    const next = Math.max(0, Math.min(rows.length - 1, i));
+    if (next !== active) rows[active]?.el.classList.remove("active");
+    active = next;
     const row = rows[active];
+    row.el.classList.add("active");
     list.setAttribute("aria-activedescendant", row.el.id);
     if (scroll) row.el.scrollIntoView({ block: "nearest" });
     if (previewIt) preview(row.info.family);
@@ -193,7 +219,9 @@ export function openFontPicker(anchorEl, { value, weight = 400, onPreview, onPre
   function build() {
     observer?.disconnect();
     rows = [];
+    heads = [];
     active = -1;
+    tabOn = null;
     const all = fonts?.list?.() || [];
     const matches = filterFonts(all, query);
     const groups = groupFonts(matches, { keepEmpty: query ? [] : ["custom"] });
@@ -202,6 +230,7 @@ export function openFontPicker(anchorEl, { value, weight = 400, onPreview, onPre
     let idx = 0;
     for (const g of groups) {
       const head = h("div", { class: "fp-group micro", id: `fp-g-${g.id}`, dataset: { group: g.id } }, g.label);
+      heads.push(head);
       list.append(head);
       if (!g.items.length && g.id === "custom") {
         list.append(h("div", { class: "fp-hint" }, "Fonts you add show up here. They stay on this computer."));
@@ -212,16 +241,22 @@ export function openFontPicker(anchorEl, { value, weight = 400, onPreview, onPre
         list.append(row.el);
         observe(row);
       }
-      const tab = h("button", { type: "button", class: "fp-tab", role: "tab", dataset: { group: g.id } }, g.label);
+      // Every category stays in view (the tabs wrap); one tab stop, arrows move.
+      const tab = h("button", { type: "button", class: "fp-tab", role: "tab", tabindex: -1, "aria-selected": "false", "aria-controls": head.id, dataset: { group: g.id } }, g.label);
       tab.addEventListener("click", () => {
-        list.scrollTo({ top: head.offsetTop - 2, behavior: "smooth" });
+        // The clicked tab stays lit even when the list cannot scroll its
+        // group to the top (a short last group).
+        const smooth = !reducedMotion();
+        jumpUntil = performance.now() + (smooth ? 450 : 120);
+        list.scrollTo({ top: Math.max(0, head.offsetTop - 2), behavior: smooth ? "smooth" : "auto" });
         markTab(g.id);
       });
       tabs.append(tab);
     }
+    tabs.firstElementChild?.setAttribute("tabindex", "0");
     if (!rows.length) {
       list.append(
-        h("div", { class: "fp-empty" }, h("p", null, query ? `No fonts match "${query}"` : "No fonts yet"), h("p", { class: "muted" }, "Add a font file to use it here."))
+        h("div", { class: "fp-empty" }, h("p", null, query.trim() ? `No fonts match “${query.trim()}”` : "No fonts yet"), h("p", { class: "muted" }, "Add a font file to use it here."))
       );
     }
     const cur = rows.findIndex((r) => r.el.classList.contains("current"));
@@ -238,29 +273,47 @@ export function openFontPicker(anchorEl, { value, weight = 400, onPreview, onPre
     }
   }
 
+  // Lights one tab (and makes it the tabs' single tab stop). Only touches the
+  // DOM when the group changes, so following the scroll stays cheap.
   function markTab(id) {
+    if (id === tabOn) return;
+    tabOn = id;
     for (const t of tabs.children) {
       const on = t.dataset.group === id;
       t.classList.toggle("on", on);
       t.setAttribute("aria-selected", String(on));
-      if (on) t.scrollIntoView({ block: "nearest", inline: "nearest" });
+      t.tabIndex = on ? 0 : -1;
     }
   }
 
   // Highlight the tab of the group at the top of the list.
   function spy() {
-    const heads = [...list.querySelectorAll(".fp-group")];
-    if (!heads.length) return;
+    spyQueued = false;
+    if (!heads.length || performance.now() < jumpUntil) return;
     const top = list.scrollTop + 8;
     let cur = heads[0];
     for (const hd of heads) if (hd.offsetTop <= top) cur = hd;
     if (list.scrollTop > 0 && list.scrollTop + list.clientHeight >= list.scrollHeight - 2) cur = heads[heads.length - 1];
     markTab(cur.dataset.group);
   }
+  const queueSpy = () => {
+    if (spyQueued) return;
+    spyQueued = true;
+    requestAnimationFrame(spy);
+  };
 
   // ---- events ----
 
-  list.addEventListener("scroll", () => requestAnimationFrame(spy), { passive: true });
+  list.addEventListener("scroll", queueSpy, { passive: true });
+  tabs.addEventListener("keydown", (e) => {
+    const all = [...tabs.children];
+    const i = all.indexOf(e.target);
+    const j = i < 0 ? null : tabStep(i, all.length, e.key);
+    if (j === null) return;
+    e.preventDefault();
+    all[j].focus();
+    all[j].click();
+  });
   list.addEventListener("pointerleave", endPreview);
   search.addEventListener("input", () => {
     query = search.value;
@@ -355,6 +408,7 @@ export function openFontPicker(anchorEl, { value, weight = 400, onPreview, onPre
 
   const pop = showPopover(ctx, anchorEl, root, {
     placement,
+    minRoom: 320,
     className: "fp-pop",
     // Escape clears a search first (back to browsing); the next one closes.
     onEscape: () => {

@@ -31,7 +31,10 @@ Deno.test("mods.json lists the four example mods with the right defaults", async
   for (const m of mods) {
     const module = MODS[m.id];
     assert.equal(m.entry, `${m.id}/index.js`);
-    assert.equal(validateManifest(module.manifest, m.id).id, m.id);
+    const manifest = validateManifest(module.manifest, m.id);
+    assert.equal(manifest.id, m.id);
+    // Settings > Mods links each example to its source.
+    assert.equal(manifest.homepage, `https://github.com/zphat/Longitude/tree/main/web/mods/${m.id}`);
     assert.equal(typeof module.activate, "function");
   }
 });

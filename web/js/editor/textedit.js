@@ -336,12 +336,6 @@ export function createTextEditor(ctx, editor) {
     }, 0);
   }
 
-  function tick() {
-    if (!s) return;
-    position();
-    s.loop = frame(tick);
-  }
-
   function open(id, { caret = "end", created = false } = {}) {
     const layer = store().get(id);
     if (!layer || layer.type !== "text") return false;
@@ -381,7 +375,12 @@ export function createTextEditor(ctx, editor) {
     listen(globalThis, "drop", onDrop, true);
     listen(globalThis, "resize", position);
     listen(store(), "change", onStoreChange);
-    s.offs.push(ctx.on("zoom", () => position()));
+    // The box follows the view (zoom, pan, fit), font loads and the layer;
+    // nothing runs while the view and the text sit still.
+    s.offs.push(ctx.on("view", () => position()));
+    for (const type of ["load", "change"]) if (ctx.fonts?.addEventListener) listen(ctx.fonts, type, position);
+    const docFonts = globalThis.document?.fonts;
+    if (docFonts?.addEventListener) listen(docFonts, "loadingdone", position);
     s.offs.push(
       ctx.on("tool", (d) => {
         if (d?.id && d.id !== "select" && d.id !== "text") api.stop(true);
@@ -398,7 +397,8 @@ export function createTextEditor(ctx, editor) {
     setCaret(caret);
     if (store().selection.length !== 1 || store().selection[0] !== id) store().select([id]);
     ensureFont(layer);
-    s.loop = frame(tick);
+    // Once more after the first layout, in case the host moved meanwhile.
+    s.loop = frame(position);
     ctx.emit("textedit", { id });
     editor.requestRender?.();
     return true;

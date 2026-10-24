@@ -575,7 +575,7 @@ export async function renameDesign(ctx, id, name) {
   return done;
 }
 
-// A file picker. Resolves to the chosen files ([] when cancelled).
+// A file picker. Resolves to the chosen files ([] when canceled).
 export function pickFiles({ accept = "", multiple = true } = {}) {
   return new Promise((resolve) => {
     const input = document.createElement("input");

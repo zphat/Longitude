@@ -28,6 +28,16 @@ export function sizeLabel(w, hgt) {
   return `${Math.round(w)} × ${Math.round(hgt)}`;
 }
 
+// A preset's label under its group heading, without the group repeated:
+// "YouTube channel banner" under YouTube reads "Channel banner".
+export function shortLabel(label, group) {
+  const text = String(label ?? "");
+  const g = String(group ?? "").trim();
+  if (!g || text.length <= g.length + 1 || text.slice(0, g.length + 1).toLowerCase() !== `${g.toLowerCase()} `) return text;
+  const rest = text.slice(g.length + 1).trim();
+  return rest ? rest[0].toUpperCase() + rest.slice(1) : text;
+}
+
 // A small glyph that says what a preset is for.
 export function presetGlyph(p) {
   const id = p?.id || "";
@@ -274,12 +284,14 @@ export function mountShell(ctx, regions = {}) {
 
   // ---- top center: search pill
 
+  // Two labels: CSS shows the one that fits (container queries in app.css),
+  // or neither when only the icon and the shortcut fit.
   const searchPill = h(
     "button",
     { type: "button", class: "search-pill", "aria-label": "Search or run a command", "data-cmd": "view.palette" },
     icon("search", { size: "sm" }),
-    h("span", { class: "search-text" }, "Search or run a command"),
-    h("span", { class: "search-keys" }, kbdNodes(keysLabel("Mod+K"))),
+    h("span", { class: "search-text", "aria-hidden": "true" }, h("span", { class: "search-long" }, "Search or run a command"), h("span", { class: "search-short" }, "Search")),
+    h("span", { class: "search-keys", "aria-hidden": "true" }, kbdNodes(keysLabel("Mod+K"))),
   );
   searchPill.addEventListener("click", () => ctx.ui.openPalette?.());
   const centerIsland = h("div", { class: "island top-island top-center" }, searchPill);
@@ -438,9 +450,9 @@ export function mountShell(ctx, regions = {}) {
         const current = doc.preset === p.id;
         const b = h(
           "button",
-          { type: "button", class: ["size-row", current && "current"], "aria-current": current ? "true" : undefined },
+          { type: "button", class: ["size-row", current && "current"], "aria-label": `${p.label}, ${sizeLabel(p.width, p.height)}`, "aria-current": current ? "true" : undefined },
           h("span", { class: "size-thumb" }, ratioThumb(p.width, p.height, 18, { round: presetGlyph(p) === "circle" })),
-          h("span", { class: "size-label" }, p.label),
+          h("span", { class: "size-label" }, shortLabel(p.label, g.label)),
           h("span", { class: "size-dim num" }, sizeLabel(p.width, p.height)),
           current ? icon("check", { size: "sm", class: "size-check" }) : h("span", { class: "size-check" }),
         );
@@ -681,7 +693,7 @@ export function mountShell(ctx, regions = {}) {
 
   // ---- zoom island
 
-  const zoomValue = h("button", { type: "button", class: "zoom-value num", "data-tip": "Zoom", "aria-haspopup": "menu" }, "100%");
+  const zoomValue = h("button", { type: "button", class: "zoom-value num", "data-tip": "Zoom level", "aria-label": "Zoom level", "aria-haspopup": "menu" }, "100%");
   zoomValue.addEventListener("click", () => openZoomMenu(zoomValue));
   const safeBtn = cmdButton("view.safe-zones", "safe-zone", "Safe zones");
   const snapBtn = cmdButton("view.snapping", "magnet", "Snapping");
@@ -705,6 +717,7 @@ export function mountShell(ctx, regions = {}) {
     if (!Number.isFinite(z)) return;
     const pct = z * 100;
     zoomValue.textContent = `${pct >= 10 ? Math.round(pct) : pct.toFixed(1)}%`;
+    zoomValue.setAttribute("aria-label", `Zoom level ${zoomValue.textContent}`);
   }
 
   function paintToggles() {
@@ -734,7 +747,10 @@ export function mountShell(ctx, regions = {}) {
 
   // ---- right panel: splitter and responsive collapse
 
-  const DEFAULT_LAYERS_H = 260;
+  // Without a saved height the layers list takes about 38% of the panel
+  // (160 to 260 px), so a short window leaves the inspector more room.
+  const defaultLayersH = () => Math.round(Math.max(160, Math.min(260, (panel?.clientHeight || 0) * 0.38)));
+  const wantedLayersH = () => ctx.prefs.get("layersHeight", undefined) ?? defaultLayersH();
   function setLayersHeight(px, save = false) {
     if (!panel) return;
     const max = Math.max(140, panel.clientHeight - 160);
@@ -755,7 +771,7 @@ export function mountShell(ctx, regions = {}) {
       if (e.button !== 0) return;
       e.preventDefault();
       const layersEl = $id("layers");
-      const startH = layersEl ? layersEl.getBoundingClientRect().height : DEFAULT_LAYERS_H;
+      const startH = layersEl ? layersEl.getBoundingClientRect().height : wantedLayersH();
       splitter.classList.add("dragging");
       drag(e, {
         cursor: "row-resize",
@@ -766,9 +782,13 @@ export function mountShell(ctx, regions = {}) {
         },
       });
     });
-    splitter.addEventListener("dblclick", () => setLayersHeight(DEFAULT_LAYERS_H, true));
+    // Double-click goes back to the automatic height.
+    splitter.addEventListener("dblclick", () => {
+      ctx.prefs.set("layersHeight", undefined);
+      setLayersHeight(defaultLayersH());
+    });
     splitter.addEventListener("keydown", (e) => {
-      const cur = parseFloat(getComputedStyle(panel).getPropertyValue("--layers-h")) || DEFAULT_LAYERS_H;
+      const cur = parseFloat(getComputedStyle(panel).getPropertyValue("--layers-h")) || wantedLayersH();
       if (e.key === "ArrowUp") setLayersHeight(cur + (e.shiftKey ? 64 : 16), true);
       else if (e.key === "ArrowDown") setLayersHeight(cur - (e.shiftKey ? 64 : 16), true);
       else return;
@@ -776,8 +796,18 @@ export function mountShell(ctx, regions = {}) {
       e.stopPropagation();
     });
   }
-  requestAnimationFrame(() => setLayersHeight(ctx.prefs.get("layersHeight", DEFAULT_LAYERS_H)));
-  setLayersHeight(ctx.prefs.get("layersHeight", DEFAULT_LAYERS_H));
+  requestAnimationFrame(() => setLayersHeight(wantedLayersH()));
+  setLayersHeight(wantedLayersH());
+  // The window's height bounds the list: the saved (or automatic) height is
+  // applied again after a resize, once per frame.
+  let layersFrame = 0;
+  addEventListener("resize", () => {
+    if (layersFrame) return;
+    layersFrame = requestAnimationFrame(() => {
+      layersFrame = 0;
+      setLayersHeight(wantedLayersH());
+    });
+  });
 
   const body = document.body;
   const mqNarrow = matchMedia("(max-width: 1099px)");
@@ -796,11 +826,20 @@ export function mountShell(ctx, regions = {}) {
   }
 
   // Narrow windows: the panel is hidden until asked for. Wide windows: shown
-  // unless hidden on purpose.
+  // unless hidden on purpose. (The canvas insets follow from CSS: app.css.)
   function togglePanel(force) {
     if (mqNarrow.matches) body.classList.toggle("panel-open", force ?? !body.classList.contains("panel-open"));
     else body.classList.toggle("panel-hidden", force === undefined ? !body.classList.contains("panel-hidden") : !force);
     paintPanelBtn();
+    panelMoved();
+  }
+
+  // "panel" { visible } once the panel's 200 ms slide has ended, for anything
+  // placed against it.
+  let panelTimer = 0;
+  function panelMoved() {
+    clearTimeout(panelTimer);
+    panelTimer = setTimeout(() => ctx.emit("panel", { visible: panelVisible() }), 220);
   }
 
   function applyNarrow() {
@@ -812,7 +851,8 @@ export function mountShell(ctx, regions = {}) {
       tinyNoted = true;
       ctx.ui.toast?.("Longitude works best on a larger screen. Everything still works here.", { kind: "info", timeout: 6000 });
     }
-    setLayersHeight(parseFloat(getComputedStyle(panel).getPropertyValue("--layers-h")) || DEFAULT_LAYERS_H);
+    setLayersHeight(wantedLayersH());
+    panelMoved();
   }
   mqNarrow.addEventListener?.("change", applyNarrow);
   mqTiny.addEventListener?.("change", applyNarrow);
@@ -822,6 +862,7 @@ export function mountShell(ctx, regions = {}) {
 
   ctx.on("shell:toggle-ui", () => {
     const hidden = body.classList.toggle("ui-hidden");
+    panelMoved();
     if (hidden) ctx.ui.toast?.(`Interface hidden. Press ${keysLabel("Mod+\\")} to bring it back.`, { id: "ui-hidden", timeout: 3000 });
   });
 

@@ -8,10 +8,7 @@
 
 import { createRegistry } from "../../app/context.js";
 import { BG_CONFIG } from "./config.js";
-import { abortError, cacheUsage, clearCache, detectCaps, friendlyError, isCached, planModel } from "./engine.js";
-import * as masks from "./mask.js";
-import { alphaToMask, makeCanvas, maskToCutout, readPixels, sourceSize } from "./mask.js";
-import { createRunner } from "./runner.js";
+import { makeCanvas, readPixels, sourceSize } from "./pixels.js";
 import { canTrim, cutoutCrop, fitProps, opaqueBounds, sameCrop, unionCrop } from "./trim.js";
 
 export { BG_CONFIG } from "./config.js";
@@ -19,10 +16,79 @@ export { BG_CONFIG } from "./config.js";
 const MB = 1e6;
 const toMB = (bytes) => (bytes > 0 ? Math.max(1, Math.round(bytes / MB)) : 0);
 
-function asError(err) {
+// The engine (model planning, downloads, inference), the worker runner and
+// the mask helpers (mask.js) are only needed once background removal or a
+// cutout edit is used, so they load on first use instead of at startup. The
+// service worker keeps them for offline use. A failed load (offline before
+// the first use) is retried next time.
+let enginePromise = null;
+let runnerModule = null;
+let maskPromise = null;
+let maskModule = null;
+
+// mask.js; also kept for the synchronous ctx.bg.masks once loaded.
+function maskLib() {
+  maskPromise ||= import("./mask.js").then(
+    (m) => (maskModule = m),
+    (err) => {
+      maskPromise = null;
+      throw err;
+    },
+  );
+  return maskPromise;
+}
+
+let engineModule = null;
+function engine() {
+  enginePromise ||= import("./engine.js").then(
+    (m) => (engineModule = m),
+    (err) => {
+      enginePromise = null;
+      throw err;
+    },
+  );
+  return enginePromise;
+}
+
+function runnerLib() {
+  runnerModule ||= import("./runner.js").catch((err) => {
+    runnerModule = null;
+    throw err;
+  });
+  return runnerModule;
+}
+
+const LOAD_FAILED = "Could not start the background remover in this browser.";
+
+async function asError(err) {
   if (err instanceof Error && err.code) return err;
-  const info = friendlyError(err);
+  let info;
+  try {
+    info = (await engine()).friendlyError(err);
+  } catch {
+    info = { name: "Error", code: "runtime", message: LOAD_FAILED, detail: String(err?.message || err || "") };
+  }
   return Object.assign(Error(info.message), { name: info.name, code: info.code, detail: info.detail });
+}
+
+// Same error as engine.js abortError(), without loading the engine.
+function abortError() {
+  return Object.assign(Error("Canceled"), { name: "AbortError", code: "cancelled", detail: "" });
+}
+
+// The worker runner, created on first use. release() before then has nothing to free.
+function lazyRunner() {
+  let made = null;
+  const get = () => (made ||= runnerLib().then((m) => m.createRunner())).catch((err) => {
+    made = null;
+    throw err;
+  });
+  return {
+    run: async (job, opts) => (await get()).run(job, opts),
+    release() {
+      made?.then((r) => r.release()).catch(() => {});
+    },
+  };
 }
 
 function linkSignal(controller, signal) {
@@ -95,7 +161,7 @@ function capSide(source, maxSide) {
 }
 
 export function createBgService(ctx) {
-  const runner = createRunner();
+  const runner = lazyRunner();
   let avoidGpu = false; // set for the rest of the session once the graphics card fails
   const running = new Map(); // layerId -> { promise, controller }
   // Box trims this session: layerId -> { asset, crop: the crop before trimming,
@@ -132,6 +198,7 @@ export function createBgService(ctx) {
 
   async function mlInfo(def) {
     const model = BG_CONFIG.models[def.model];
+    const { planModel, isCached } = await engine();
     const plan = await planModel(def.model, { avoidGpu });
     const runtimeBytes = plan.runtime.wasm.bytes + plan.runtime.script.bytes + plan.runtime.glue.bytes;
     const [modelCached, runtimeCached] = await Promise.all([
@@ -180,7 +247,8 @@ export function createBgService(ctx) {
       async run(source, { onProgress, signal } = {}) {
         const { width, height } = sourceSize(source);
         if (!width || !height) throw Object.assign(Error("The image has no pixels."), { code: "decode" });
-        const plan = await planModel(def.model, { avoidGpu });
+        const [lib, { alphaToMask }] = await Promise.all([engine(), maskLib()]);
+        const plan = await lib.planModel(def.model, { avoidGpu });
         const input = modelInput(source, plan.model.size);
         let res;
         try {
@@ -207,6 +275,7 @@ export function createBgService(ctx) {
     ready: async () => true,
     async run(source, { onProgress, signal } = {}) {
       const image = readPixels(source);
+      const { alphaToMask } = await maskLib();
       const res = await runner.run({ type: "edge-magic", image: { width: image.width, height: image.height, data: image.data }, options: {} }, { onProgress, signal });
       const alpha = res.alpha instanceof Uint8ClampedArray ? res.alpha : new Uint8ClampedArray(res.alpha.buffer || res.alpha);
       return alphaToMask({ width: res.width, height: res.height, data: alpha });
@@ -359,7 +428,8 @@ export function createBgService(ctx) {
       ctx.editor?.setScanning?.(layerId, true);
       emit("run", 0, "Getting ready");
       try {
-        const bitmap = await ctx.assets.loadImage(layer.asset);
+        // mask.js loads with the image, so every provider (mods too) can use ctx.bg.masks.
+        const [bitmap] = await Promise.all([ctx.assets.loadImage(layer.asset), maskLib()]);
         if (controller.signal.aborted) throw abortError();
         const mask = await p.run(bitmap, {
           signal: controller.signal,
@@ -379,7 +449,7 @@ export function createBgService(ctx) {
         emit("done", 1, "Background removed");
         return { layerId, maskId, provider: p.id };
       } catch (err) {
-        const e = asError(err);
+        const e = await asError(err);
         emit("error", 0, e.message, { code: e.code, cancelled: e.code === "cancelled" });
         throw e;
       } finally {
@@ -400,8 +470,8 @@ export function createBgService(ctx) {
       ctx.emit("bg-progress", { layerId: null, provider: p.id, ...e });
     };
     try {
-      let bitmap = await toBitmap(input);
-      if (typeof Blob !== "undefined" && input instanceof Blob) bitmap = capSide(bitmap, maxSide);
+      const [decoded, { maskToCutout }] = await Promise.all([toBitmap(input), maskLib()]);
+      const bitmap = typeof Blob !== "undefined" && input instanceof Blob ? capSide(decoded, maxSide) : decoded;
       const { width, height } = sourceSize(bitmap);
       report({ phase: "run", progress: 0, message: "Getting ready" });
       const mask = await p.run(bitmap, { onProgress: report, signal });
@@ -409,7 +479,7 @@ export function createBgService(ctx) {
       report({ phase: "done", progress: 1, message: "Background removed" });
       return { mask, cutout, width, height, provider: p.id };
     } catch (err) {
-      const e = asError(err);
+      const e = await asError(err);
       report({ phase: "error", progress: 0, message: e.message, code: e.code, cancelled: e.code === "cancelled" });
       throw e;
     }
@@ -442,21 +512,31 @@ export function createBgService(ctx) {
     cutoutProps,
     untrimProps,
     modelInfo,
+    // True once engine.js has loaded (a removal, a model lookup, Settings):
+    // modelInfo() for a model then costs no download, and no GPU request.
+    get engineLoaded() {
+      return !!engineModule;
+    },
     confirmDownload,
     cancel(layerId) {
       running.get(layerId)?.controller.abort();
     },
     isRunning: (layerId) => running.has(layerId),
     modelProvider,
-    capabilities: detectCaps,
+    capabilities: async () => (await engine()).detectCaps(),
     // Frees the loaded model's memory (it is also freed after a few idle minutes).
     release: () => runner.release(),
     // Downloaded models and runtime in Cache Storage: { bytes, files }, and removing them.
-    cacheUsage: () => cacheUsage(BG_CONFIG.cacheName),
-    clearCache: () => clearCache(BG_CONFIG.cacheName),
+    cacheUsage: async () => (await engine()).cacheUsage(BG_CONFIG.cacheName),
+    clearCache: async () => (await engine()).clearCache(BG_CONFIG.cacheName),
     config: BG_CONFIG,
-    // mask.js helpers (magicMask, paintMask, featherMask, growMask, maskToCutout, …) for mods.
-    masks,
+    // mask.js helpers (magicMask, paintMask, featherMask, growMask, maskToCutout, …),
+    // null until mask.js has loaded: the first removal or cutout edit loads it,
+    // and so does loadMasks(), which resolves to the same module.
+    get masks() {
+      return maskModule;
+    },
+    loadMasks: maskLib,
   };
   return bg;
 }

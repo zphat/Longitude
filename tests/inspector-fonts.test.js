@@ -2,7 +2,7 @@
 //   deno test --allow-read tests/inspector-fonts.test.js
 
 import assert from "node:assert/strict";
-import { filterFonts, groupFonts, fontMeta, CATEGORY_TABS } from "../web/js/ui/fontpicker.js";
+import { filterFonts, groupFonts, fontMeta, tabStep, CATEGORY_TABS } from "../web/js/ui/fontpicker.js";
 
 const FONTS = [
   { family: "Longitude Meridian", label: "Longitude Meridian", category: "original", tags: ["condensed"], weights: [400] },
@@ -41,4 +41,15 @@ Deno.test("fontMeta", () => {
   assert.equal(fontMeta(FONTS[2]), "Variable · Italic");
   assert.equal(fontMeta(FONTS[5]), "2 weights · Italic");
   assert.equal(fontMeta(FONTS[1]), "");
+});
+
+Deno.test("tabStep: arrows walk the category tabs and wrap, Home and End jump", () => {
+  assert.equal(tabStep(0, 7, "ArrowRight"), 1);
+  assert.equal(tabStep(6, 7, "ArrowRight"), 0);
+  assert.equal(tabStep(0, 7, "ArrowLeft"), 6);
+  assert.equal(tabStep(3, 7, "ArrowLeft"), 2);
+  assert.equal(tabStep(4, 7, "Home"), 0);
+  assert.equal(tabStep(1, 7, "End"), 6);
+  assert.equal(tabStep(2, 7, "Enter"), null, "other keys are left alone");
+  assert.equal(tabStep(0, 0, "ArrowRight"), null);
 });

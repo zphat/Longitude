@@ -550,3 +550,45 @@ Deno.test("gesture: a drag that returns to its start records nothing, a real cha
   assert.equal(store.commit(), true, "order counts");
   assert.equal(store._undo.length, depth + 2);
 });
+
+Deno.test("index and selection stay right across patches, reorders and normalizers", () => {
+  const { store, ids } = setup(4);
+  store.clearHistory();
+  const seen = [];
+  store.addNormalizer((layer, doc, prev) => {
+    seen.push([layer.id, doc.layers.indexOf(layer), prev?.name ?? null]);
+  });
+  store.select([ids[1], ids[3]]);
+  // A patch keeps every id where it was: the same selection array, fresh lookups.
+  const sel = store.selection;
+  store.patch(ids[3], { x: 7 });
+  assert.equal(store.selection, sel, "selection untouched by a patch");
+  assert.equal(store.get(ids[3]).x, 7);
+  assert.deepEqual(ids.map((id) => store.index(id)), [0, 1, 2, 3]);
+  assert.deepEqual(seen.at(-1), [ids[3], 3, "S3"]);
+  // A reorder moves the index with it.
+  store.toFront(ids[0]);
+  assert.deepEqual(ids.map((id) => store.index(id)), [3, 0, 1, 2]);
+  store.patch(ids[0], { x: 9 });
+  assert.equal(store.get(ids[0]).x, 9);
+  assert.deepEqual(seen.at(-1), [ids[0], 3, "S0"]);
+  // update() can reorder and edit in one go; normalizers still see the right layer.
+  store.update((d) => {
+    d.layers.reverse();
+    d.layers[0].x = 42;
+  });
+  const first = store.layers()[0];
+  assert.equal(first.x, 42);
+  assert.equal(store.get(first.id), first);
+  assert.ok(seen.some(([id, i]) => id === first.id && i === 0), "normalizer saw the moved layer at its new index");
+  // remove prunes; remeasure keeps lookups working.
+  store.remove(ids[1]);
+  assert.deepEqual(store.selection, [ids[3]]);
+  assert.equal(store.index(ids[1]), -1);
+  store.remeasure();
+  for (const l of store.layers()) assert.equal(store.get(l.id), l);
+  // Undo back through all of it: lookups follow the restored doc.
+  while (store.undo());
+  assert.deepEqual(ids.map((id) => store.index(id)), [0, 1, 2, 3]);
+  assert.deepEqual(store.layers().map((l) => l.x), [100, 200, 300, 400]);
+});

@@ -233,7 +233,8 @@ export function buildModApi(ctx, manifest, { scope = createScope(), base = null,
           } catch (err) {
             report(err, where);
             try {
-              body?.append?.(h("p", { class: "mod-section-error" }, "This section could not load. Check the mod in Settings."));
+              const details = h("button", { type: "button", onClick: () => ctx.ui?.openSettings?.({ tab: "mods" }) }, "See details");
+              body?.append?.(h("p", { class: "mod-section-error" }, "This section could not load. ", details));
             } catch {}
             return undefined;
           }
@@ -325,9 +326,12 @@ export function buildModApi(ctx, manifest, { scope = createScope(), base = null,
     get config() {
       return ctx.bg?.config || null;
     },
+    // The mask helpers (mask.js). They load with the first removal (before any
+    // provider's run() is called); loadMasks() resolves to them at any time.
     get masks() {
       return ctx.bg?.masks || null;
     },
+    loadMasks: () => need("bg", "Background removal").loadMasks?.() ?? Promise.resolve(ctx.bg?.masks || null),
     get defaultProvider() {
       return ctx.bg?.defaultProvider || null;
     },

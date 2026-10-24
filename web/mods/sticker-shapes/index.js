@@ -10,6 +10,7 @@ export const manifest = {
   name: "Sticker shapes",
   version: "1.0.0",
   author: "Longitude",
+  homepage: "https://github.com/zphat/Longitude/tree/main/web/mods/sticker-shapes",
   description: "Adds badge, heart, lightning and callout arrow shapes, with a command to insert each one.",
   apiVersion: 1,
 };

@@ -128,7 +128,7 @@ or per user with `ctx.bg.setDefaultProvider(id)` (stored in prefs as `bgProvider
   confirm dialog asks before fetching it.
 - The model session stays loaded for quick repeat removals and is released
   after 3 idle minutes (`BG_CONFIG.idleReleaseMs`) or by `ctx.bg.release()`,
-  also after a failed or cancelled run. A session that ran out of memory is
+  also after a failed or canceled run. A session that ran out of memory is
   released at once. Because a WebAssembly heap never shrinks, the runner also
   closes the idle worker after the same 3 minutes (and on `release()`), which
   hands its memory back; the next removal starts a new worker and loads the
@@ -289,8 +289,10 @@ export function activate(api) {
 ```
 
 (`api.bg` assumes the mods API exposes `ctx.bg`; inside the app use `ctx.bg`.
-`ctx.bg.masks` is the whole of `mask.js`, which app modules can also import
-directly from `js/features/bgremove/mask.js`.)
+`ctx.bg.masks` is the whole of `mask.js` once it has loaded. It loads on the
+first removal, before any provider's `run()` is called, so it is always there
+inside `run()`; elsewhere use `await ctx.bg.loadMasks()`. App modules can
+also import it directly from `js/features/bgremove/mask.js`.)
 
 To add another ONNX model, describe it in `BG_CONFIG.models` and register a
 model provider; it then gets downloads, caching, the worker, WebGPU with CPU

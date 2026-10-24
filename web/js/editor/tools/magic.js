@@ -6,7 +6,7 @@
 
 import { svg } from "../../ui/dom.js";
 import { toLocal, setAlphaMap, hitTest } from "../../core/geometry.js";
-import * as maskLib from "../../features/bgremove/mask.js";
+import { loadMaskLib } from "./masklib.js";
 
 export const MAGIC_DEFAULT_TOLERANCE = 32;
 const HINT = "Click a color to remove it · Shift: everywhere · Alt: bring back";
@@ -95,6 +95,7 @@ export function magicTool(kit) {
 
     activate(api) {
       api0 = api;
+      loadMaskLib().catch(() => {}); // ready by the first click
       api.setCursor("crosshair");
       if (api.editor?.mode !== "magic") api.editor?.setMode?.("magic");
       api.setStatus(HINT);
@@ -176,10 +177,6 @@ export function magicTool(kit) {
       flash(api, "Click on an image");
       return;
     }
-    if (typeof maskLib.magicMask !== "function") {
-      ctx.ui?.toast?.("The magic eraser is not available.", { kind: "error" });
-      return;
-    }
     const at = imagePoint(layer, docPt);
     ripple(api, e, restore);
     if (!layer.mask && restore) {
@@ -188,7 +185,15 @@ export function magicTool(kit) {
     }
     busy = true;
     try {
-      const [img, base] = await Promise.all([ctx.assets.loadImage(layer.asset), layer.mask ? ctx.assets.loadImage(layer.mask) : null]);
+      const [img, base, maskLib] = await Promise.all([
+        ctx.assets.loadImage(layer.asset),
+        layer.mask ? ctx.assets.loadImage(layer.mask) : null,
+        loadMaskLib().catch(() => null),
+      ]);
+      if (typeof maskLib?.magicMask !== "function") {
+        ctx.ui?.toast?.("The magic eraser is not available.", { kind: "error" });
+        return;
+      }
       // Let the ripple paint before the pixel work.
       await pause(16);
       const x = Math.min(img.width - 1, Math.max(0, at.u * img.width));

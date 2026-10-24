@@ -1,6 +1,7 @@
 // Export dialog (SPEC 12): live preview with a before/after compare, format,
 // scale, quality, "fit under", 256-color PNG, a live file size, download and
-// copy. registerExportCommands() also wires the feed preview and quick tools.
+// copy. Loaded on first use: its commands (and copyDesign) live in
+// ondemand.js, which is part of the start-up set; both are re-exported here.
 
 import { h, on, debounce, disposer } from "./dom.js";
 import { icon } from "./icons.js";
@@ -19,9 +20,10 @@ import {
   MAX_CANVAS_SIDE,
   MAX_CANVAS_PIXELS,
 } from "../features/compress.js";
-import { openSheet, createCompare, ensureIcons, openQuickTool, switchRow } from "./quicktools.js";
-import { openFeedPreview } from "./feedpreview.js";
+import { openSheet, createCompare, ensureIcons, switchRow } from "./quicktools.js";
 import { keysLabel } from "../app/context.js";
+
+export { copyDesign, registerExportCommands } from "./ondemand.js";
 
 // ---- pure helpers ---------------------------------------------------------------
 
@@ -259,16 +261,6 @@ const isAbort = (err) => err?.name === "AbortError" || err?.stale === true;
 
 // ---- copy -----------------------------------------------------------------------
 
-// Mod+Shift+C: the design at 1x as a PNG on the clipboard.
-export async function copyDesign(ctx) {
-  const doc = ctx.store?.doc;
-  if (!doc) return false;
-  const canvas = await renderToCanvas(doc, { scale: 1, assets: ctx.assets, fonts: ctx.fonts, background: true });
-  const ok = await copyImage(canvas);
-  ctx.ui?.toast?.(ok ? "Copied as an image" : "This browser cannot copy images. Use Export instead.", { kind: ok ? "ok" : "warn" });
-  return ok;
-}
-
 // ---- the dialog -----------------------------------------------------------------
 
 let current = null;
@@ -347,7 +339,8 @@ export function openExportDialog(ctx, opts = {}) {
   );
 
   // ---- preview
-  const compare = createCompare({ checker: transparent() });
+  // Room under the image for the hint and the zoom / busy pills.
+  const compare = createCompare({ checker: transparent(), padBottom: 52 });
   const hintCompare = h("span", null, "Drag the line to compare. ");
   const hint = h("div", { class: "xp-preview-hint" }, hintCompare, h("span", { class: "xp-hint-zoom" }, "Click to view at 100%."));
   const errorBox = h("div", { class: "xp-preview-error", role: "alert", hidden: true });
@@ -428,15 +421,20 @@ export function openExportDialog(ctx, opts = {}) {
   const estNum = h("span", { class: "xp-est-num num" }, "…");
   const estUnit = h("span", { class: "xp-est-unit" });
   const badge = h("span", { class: "xp-badge", hidden: true });
+  // How much of the size limit the file uses (the badge says it in words).
+  const meterFill = h("span", { class: "xp-meter-fill" });
+  const meter = h("div", { class: "xp-meter", "aria-hidden": "true", hidden: true }, meterFill);
   const estDetail = h("div", { class: "xp-est-detail num" });
   const est = h(
     "div",
     { class: "xp-est", "aria-live": "polite" },
     h("div", { class: "xp-est-head" }, h("span", { class: "micro" }, "File size"), h("span", { class: "xp-est-busy" }, h("span", { class: "xp-spin" }), "Measuring")),
     h("div", { class: "xp-est-line" }, h("span", { class: "xp-est-value" }, estNum, estUnit), badge),
+    meter,
     estDetail,
   );
   const warnList = h("ul", { class: "xp-warn" });
+  let warnKey = "";
 
   const copyBtn = button({ label: "Copy image", icon: "copy", onClick: () => doCopy() });
   const downloadBtn = button({ label: "Download", icon: "download", kind: "primary", big: true, tip: "Download", kbd: keysLabel("Mod+Enter"), onClick: () => doDownload() });
@@ -516,17 +514,29 @@ export function openExportDialog(ctx, opts = {}) {
       estDetail.textContent = `${dims.width} × ${dims.height}`;
     }
     const limit = sizeLimit(preset, s);
-    badge.hidden = !(show && limit);
+    badge.hidden = meter.hidden = !(show && limit);
     if (show && limit) {
       const ok = show.bytes <= limit;
-      badge.className = `xp-badge ${ok ? "ok" : "bad"}`;
-      badge.replaceChildren(icon(ok ? "check" : "alert-triangle", { size: "sm" }), `${ok ? "Under" : "Over"} ${limitLabel(limit)}`);
+      const label = `${ok ? "Under" : "Over"} ${limitLabel(limit)}`;
+      if (badge.dataset.label !== label) {
+        badge.dataset.label = label;
+        badge.className = `xp-badge ${ok ? "ok" : "bad"}`;
+        badge.replaceChildren(icon(ok ? "check" : "alert-triangle", { size: "sm" }), label);
+      }
+      meter.classList.toggle("bad", !ok);
+      meterFill.style.width = `${Math.max(2, Math.min(100, (show.bytes / limit) * 100)).toFixed(1)}%`;
     }
     const warnings = exportWarnings({ preset, settings: s, dims, result: fresh ? result : null, transparent: transparent() });
     if (error) warnings.unshift({ kind: "error", text: error });
-    warnList.replaceChildren(
-      ...warnings.map((w) => h("li", { class: w.kind }, icon(w.kind === "info" ? "info" : "alert-triangle", { size: "sm" }), h("span", null, w.text))),
-    );
+    // Rebuilt only when the text changes, so the list does not flash while
+    // the size is being measured.
+    const key = warnings.map((w) => `${w.kind}:${w.text}`).join("\n");
+    if (key !== warnKey) {
+      warnKey = key;
+      warnList.replaceChildren(
+        ...warnings.map((w) => h("li", { class: w.kind }, icon(w.kind === "info" ? "info" : "alert-triangle", { size: "sm" }), h("span", null, w.text))),
+      );
+    }
     warnList.hidden = !warnings.length;
   }
 
@@ -734,79 +744,4 @@ export function openExportDialog(ctx, opts = {}) {
   const handle = { close: () => sheet.close() };
   current = { sheet, handle };
   return handle;
-}
-
-// ---- commands -------------------------------------------------------------------
-
-export function registerExportCommands(ctx) {
-  ensureIcons();
-  const d = disposer();
-  const hasDoc = (c) => !!c.store?.doc;
-  const reg = (def) => d(ctx.commands.register(def));
-  reg({
-    id: "file.export",
-    title: "Export",
-    group: "File",
-    keys: ["Mod+E"],
-    icon: "download",
-    keywords: "download save jpg jpeg png webp image file size compress",
-    when: hasDoc,
-    run: (c, args) => openExportDialog(c, args || {}),
-  });
-  reg({
-    id: "file.copy-image",
-    title: "Copy image",
-    group: "File",
-    keys: ["Mod+Shift+C"],
-    icon: "copy",
-    keywords: "clipboard png copy as image",
-    when: hasDoc,
-    run: (c) => copyDesign(c),
-  });
-  reg({
-    id: "view.feed-preview",
-    title: "Preview in a feed",
-    group: "View",
-    keys: ["F"],
-    icon: "play-rect",
-    keywords: "youtube spotify mock home search sidebar up next phone real size",
-    when: hasDoc,
-    run: (c) => openFeedPreview(c),
-  });
-  reg({
-    id: "tools.compress",
-    title: "Compress images",
-    group: "Tools",
-    icon: "minimize-2",
-    keywords: "shrink smaller file size optimize optimize jpg png webp batch",
-    run: (c, args) => openQuickTool("compress", c, args || {}),
-  });
-  reg({
-    id: "tools.remove-bg",
-    title: "Remove a background",
-    group: "Tools",
-    icon: "remove-bg",
-    keywords: "cutout cut out transparent png erase background",
-    run: (c, args) => openQuickTool("remove-bg", c, args || {}),
-  });
-  reg({
-    id: "tools.convert",
-    title: "Resize or convert images",
-    group: "Tools",
-    icon: "scaling",
-    keywords: "scale format jpg png webp 1280x720 square batch",
-    run: (c, args) => openQuickTool("convert", c, args || {}),
-  });
-
-  ctx.ui = ctx.ui || {};
-  const mine = {
-    openExport: (opts) => openExportDialog(ctx, opts || {}),
-    openFeedPreview: () => openFeedPreview(ctx),
-    openQuickTool: (kind, opts) => openQuickTool(kind, ctx, opts || {}),
-  };
-  Object.assign(ctx.ui, mine);
-  d(() => {
-    for (const [k, fn] of Object.entries(mine)) if (ctx.ui[k] === fn) delete ctx.ui[k];
-  });
-  return d.dispose;
 }

@@ -61,7 +61,11 @@ export function kbdNodes(label) {
 
 // ---- helpers --------------------------------------------------------------------
 
-const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
+// tabindex -1 is left out of every alternative (unselected segmented buttons
+// carry it), so the list matches the browser's tab order.
+const FOCUSABLE = ["button:not([disabled])", "[href]", 'input:not([disabled]):not([type="hidden"])', "select:not([disabled])", "textarea:not([disabled])", "[tabindex]", '[contenteditable="true"]']
+  .map((s) => `${s}:not([tabindex="-1"])`)
+  .join(", ");
 
 function focusables(root) {
   return [...root.querySelectorAll(FOCUSABLE)].filter((el) => el.offsetParent !== null || el === document.activeElement);

@@ -156,14 +156,24 @@ button {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--panel2);
+  background: var(--line);
   border: 2px solid transparent;
   background-clip: padding-box;
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--line);
+  background: color-mix(in srgb, var(--line), var(--faint));
   background-clip: padding-box;
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+/* Firefox has no ::-webkit-scrollbar (Chromium would drop it if these applied). */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+  }
 }
 
 svg.i {
@@ -253,7 +263,7 @@ kbd,
   transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast), box-shadow var(--t-fast), color var(--t-fast);
 }
 .btn:hover {
-  background: color-mix(in srgb, var(--panel2) 80%, var(--text) 8%);
+  background: color-mix(in srgb, var(--panel2) 92%, var(--text));
   border-color: var(--line);
 }
 .btn:active:not(:disabled) {
@@ -271,7 +281,7 @@ kbd,
   box-shadow: 0 6px 22px -8px var(--accent-line);
 }
 .btn.primary:hover {
-  background: color-mix(in srgb, var(--accent) 88%, #ffffff 12%);
+  background: color-mix(in srgb, var(--accent) 88%, var(--text));
   box-shadow: 0 8px 28px -8px var(--accent-line);
 }
 /* The glow above would replace the global focus ring: keep both. */
@@ -374,9 +384,22 @@ select {
 input[type="text"]:hover,
 input[type="search"]:hover,
 input[type="number"]:hover,
+input[type="url"]:hover,
 textarea:hover,
 select:hover {
   border-color: var(--line);
+}
+::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+.input:disabled,
+input:is([type="text"], [type="search"], [type="number"], [type="url"]):disabled:not(.ctl-num-input),
+textarea:disabled,
+select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: var(--line-soft);
 }
 .input:focus,
 input[type="text"]:focus,
@@ -432,6 +455,8 @@ select {
   *::before,
   *::after {
     animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
   }
 }

@@ -11,6 +11,7 @@ import { fromLocal, toLocal } from "../core/geometry.js";
 import { renderLayer, createRenderCache } from "../core/render.js";
 import { svg } from "../ui/dom.js";
 import { resizeCursor } from "./cursors.js";
+import { snapLine, axisAligned } from "./selection.js";
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const MAX_ZOOM_IN = 1000;
@@ -363,21 +364,27 @@ export function createCrop(core) {
       return;
     }
     group.style.display = "";
-    const poly = (pts) => `M${pts.map((p) => `${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join("L")}Z`;
+    // An upright picture gets its lines on whole pixels (w: stroke width),
+    // so the frame and thirds stay sharp while they move.
+    const aligned = axisAligned(s.l0);
+    const dpr = core.viewport.dpr || 1;
+    const S = (pt, w = 1.5) => {
+      const q = toScreen(pt);
+      return aligned ? { x: snapLine(q.x, w, dpr), y: snapLine(q.y, w, dpr) } : q;
+    };
+    const n = (v) => Math.round(v * 100) / 100;
+    const xy = (p) => `${n(p.x)} ${n(p.y)}`;
+    const poly = (pts) => `M${pts.map(xy).join("L")}Z`;
     const F = s.F;
-    const fs = framePoints().map(toScreen);
-    groups.image.setAttribute("d", poly(imagePoints().map(toScreen)));
+    const fs = framePoints().map((p) => S(p));
+    groups.image.setAttribute("d", poly(imagePoints().map((p) => S(p, 1))));
     groups.frame.setAttribute("d", poly(fs));
     groups.frameHalo.setAttribute("d", poly(fs));
     let grid = "";
     for (const f of [1 / 3, 2 / 3]) {
       const x = F.l + (F.r - F.l) * f;
       const y = F.t + (F.b - F.t) * f;
-      const a = toScreen({ x, y: F.t });
-      const b = toScreen({ x, y: F.b });
-      const c = toScreen({ x: F.l, y });
-      const d = toScreen({ x: F.r, y });
-      grid += `M${a.x} ${a.y}L${b.x} ${b.y}M${c.x} ${c.y}L${d.x} ${d.y}`;
+      grid += `M${xy(S({ x, y: F.t }, 1))}L${xy(S({ x, y: F.b }, 1))}M${xy(S({ x: F.l, y }, 1))}L${xy(S({ x: F.r, y }, 1))}`;
     }
     groups.grid.setAttribute("d", grid);
     // Brackets at the corners, bars on the sides, 16 px long on screen.
@@ -391,18 +398,11 @@ export function createCrop(core) {
       const px = hx < 0 ? F.l : hx > 0 ? F.r : (F.l + F.r) / 2;
       const py = hy < 0 ? F.t : hy > 0 ? F.b : (F.t + F.b) / 2;
       if (hx && hy) {
-        const a = toScreen({ x: px - hx * lx, y: py });
-        const m = toScreen({ x: px, y: py });
-        const b = toScreen({ x: px, y: py - hy * ly });
-        br += `M${a.x} ${a.y}L${m.x} ${m.y}L${b.x} ${b.y}`;
+        br += `M${xy(S({ x: px - hx * lx, y: py }))}L${xy(S({ x: px, y: py }))}L${xy(S({ x: px, y: py - hy * ly }))}`;
       } else if (hx) {
-        const a = toScreen({ x: px, y: py - ly * 0.6 });
-        const b = toScreen({ x: px, y: py + ly * 0.6 });
-        br += `M${a.x} ${a.y}L${b.x} ${b.y}`;
+        br += `M${xy(S({ x: px, y: py - ly * 0.6 }))}L${xy(S({ x: px, y: py + ly * 0.6 }))}`;
       } else {
-        const a = toScreen({ x: px - lx * 0.6, y: py });
-        const b = toScreen({ x: px + lx * 0.6, y: py });
-        br += `M${a.x} ${a.y}L${b.x} ${b.y}`;
+        br += `M${xy(S({ x: px - lx * 0.6, y: py }))}L${xy(S({ x: px + lx * 0.6, y: py }))}`;
       }
     }
     groups.brackets.setAttribute("d", br);
@@ -411,8 +411,8 @@ export function createCrop(core) {
     const kids = [...groups.knobs.children];
     while (kids.length < 4) kids.push(groups.knobs.appendChild(svg("circle", { class: "ed-crop-knob", r: "5.5" })));
     knobs.forEach((p, i) => {
-      kids[i].setAttribute("cx", p.x.toFixed(2));
-      kids[i].setAttribute("cy", p.y.toFixed(2));
+      kids[i].setAttribute("cx", n(p.x));
+      kids[i].setAttribute("cy", n(p.y));
     });
   }
 

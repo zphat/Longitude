@@ -14,6 +14,7 @@ import {
   pushRecent,
   docColors,
   cleanPalettes,
+  popoverRoom,
   STAPLES,
   RECENT_MAX,
 } from "../web/js/ui/colorpicker.js";
@@ -123,4 +124,28 @@ Deno.test("cleanPalettes: keeps valid colors, drops empty palettes", () => {
   ]);
   assert.deepEqual(cleanPalettes([{ name: "A", colors: ["#00000080"] }], { alpha: false }), [{ name: "A", colors: ["#000000"] }]);
   assert.deepEqual(cleanPalettes("x"), []);
+});
+
+Deno.test("popoverRoom: beside the anchor it may use the whole window", () => {
+  const a = { top: 300, bottom: 340 };
+  assert.equal(popoverRoom(a, 700, "left"), 684);
+  assert.equal(popoverRoom(a, 700, "right-start"), 684);
+  assert.equal(popoverRoom(null, 700, "top"), 684);
+});
+
+Deno.test("popoverRoom: keeps the asked-for side while it has enough room", () => {
+  // A quick bar at y 330-362 on a 700 px window: 314 above, 322 below.
+  const bar = { top: 330, bottom: 362 };
+  assert.equal(popoverRoom(bar, 700, "top", { min: 300 }), 314, "above, so the picker never covers the text under the bar");
+  assert.equal(popoverRoom(bar, 700, "bottom", { min: 300 }), 322);
+  // Too little above: the roomier side wins.
+  const high = { top: 90, bottom: 122 };
+  assert.equal(popoverRoom(high, 700, "top", { min: 320 }), 562);
+  assert.equal(popoverRoom(high, 700, "top-start", { min: 320 }), 562);
+});
+
+Deno.test("popoverRoom: never more than the window, never negative", () => {
+  assert.equal(popoverRoom({ top: -50, bottom: 2000 }, 700, "bottom"), 0);
+  assert.equal(popoverRoom({ top: 900, bottom: 940 }, 700, "top", { min: 100 }), 684);
+  assert.equal(popoverRoom({ top: 300, bottom: 340 }, 0, "top"), 0);
 });

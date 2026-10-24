@@ -1,7 +1,9 @@
 // Boot. Builds the app context, attaches every service in order (SPEC 7) and
 // mounts the UI. One part failing never takes the rest down: each step is
 // isolated, logged and reported once in a toast. Only a failure of the core
-// (store, storage) shows the fatal screen.
+// (store, storage) shows the fatal screen. Views most sessions open late or
+// never (export, feed preview, quick tools, Settings, the background removal
+// internals) are not imported here: they load on first use (SPEC 2).
 
 import { createContext } from "./app/context.js";
 import { createThemes } from "./ui/theme.js";
@@ -17,19 +19,16 @@ import { filters } from "./core/filters.js";
 import { createAutosave } from "./core/project.js";
 import { loadPresets } from "./features/presets.js";
 import { createBgService } from "./features/bgremove/index.js";
-import * as exporter from "./features/compress.js";
 import { createEditor } from "./editor/index.js";
 import { mountInspector } from "./ui/inspector.js";
 import { mountLayers } from "./ui/layers.js";
 import { mountQuickbar } from "./ui/quickbar.js";
 import { openColorPicker } from "./ui/colorpicker.js";
 import { openFontPicker } from "./ui/fontpicker.js";
-import { openExportDialog, registerExportCommands } from "./ui/exportdialog.js";
-import { openFeedPreview } from "./ui/feedpreview.js";
-import { openQuickTool } from "./ui/quicktools.js";
-import { loadMods, registerModCommands, validateIndex } from "./mods/loader.js";
+// Export, feed preview, quick tools, the encoders and Settings load on first use.
+import { registerExportCommands, openExport, openFeedPreview, openQuickTool, loadedCompress, warmOnIntent, pinOnDemand } from "./ui/ondemand.js";
+import { loadMods, loadSettings, openSettings, registerModCommands, validateIndex } from "./mods/loader.js";
 import { defaultModsBase } from "./mods/paths.js";
-import { openSettings } from "./ui/settings.js";
 import { createPalette } from "./ui/palette.js";
 import { mountShell } from "./ui/shell.js";
 import { mountHome } from "./ui/home.js";
@@ -256,8 +255,12 @@ async function serviceWorker(ctx) {
       },
     });
   try {
+    // Either kind of update: the modules this page loads later are taken
+    // from the files it started with first (see pinOnDemand).
     sw.addEventListener("message", (e) => {
-      if (e.data?.type === "longitude-updated") offerReload();
+      if (e.data?.type !== "longitude-updated") return;
+      pinOnDemand();
+      offerReload();
     });
     sw.addEventListener("controllerchange", () => {
       if (switching) location.reload();
@@ -265,7 +268,11 @@ async function serviceWorker(ctx) {
     const reg = await sw.register("sw.js", { scope: "./" });
     const watch = (worker) => {
       if (!worker) return;
-      const check = () => worker.state === "installed" && sw.controller && offerWaiting(worker);
+      const check = () => {
+        if (worker.state !== "installed" || !sw.controller) return;
+        pinOnDemand();
+        offerWaiting(worker);
+      };
       check();
       worker.addEventListener("statechange", check);
     };
@@ -402,7 +409,8 @@ async function boot() {
   ctx.filters = filters;
   ctx.presets = await loadPresets(ctx);
   ctx.bg = attempt("Background removal", () => createBgService(ctx));
-  ctx.exporter = exporter;
+  // The encoders (features/compress.js) once the first export or quick tool loaded them, else null.
+  Object.defineProperty(ctx, "exporter", { get: loadedCompress, enumerable: true, configurable: true });
 
   // Canvas and panels.
   ctx.editor = attempt("Canvas", () => createEditor(ctx, { host: $("stage") }));
@@ -414,11 +422,13 @@ async function boot() {
   Object.assign(ctx.ui, {
     openColorPicker: (anchor, opts = {}) => openColorPicker(anchor, { ctx, ...opts }),
     openFontPicker: (anchor, opts = {}) => openFontPicker(anchor, { ctx, ...opts }),
-    openExport: (opts) => openExportDialog(ctx, opts),
+    openExport: (opts) => openExport(ctx, opts),
     openFeedPreview: (opts) => openFeedPreview(ctx, opts),
     openQuickTool: (kind, opts = {}) => openQuickTool(kind, ctx, opts),
     openSettings: (opts = {}) => openSettings(ctx, opts),
   });
+  // Pointing at Export, Preview, Settings or a quick tool starts loading it.
+  warmOnIntent(document, [['[data-cmd="app.settings"]', loadSettings]]);
   const palette = attempt("Command palette", () => createPalette(ctx));
   if (palette) {
     ctx.ui.openPalette = (q) => palette.open(q);

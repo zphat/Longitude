@@ -12,6 +12,7 @@ export const manifest = {
   name: "Classic meme",
   version: "1.0.0",
   author: "Longitude",
+  homepage: "https://github.com/zphat/Longitude/tree/main/web/mods/meme-classic",
   description: "Top and bottom text in Impact, white with a black outline. Adds a command and a Meme section for text.",
   apiVersion: 1,
 };

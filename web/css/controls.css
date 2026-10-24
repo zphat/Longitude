@@ -63,12 +63,12 @@ body.scrubbing * {
 .ctl-range::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 4px;
-  background: linear-gradient(90deg, var(--accent) 0 var(--pct), var(--panel2) var(--pct) 100%);
+  background: linear-gradient(90deg, var(--accent) 0 var(--pct), var(--line) var(--pct) 100%);
 }
 .ctl-range::-moz-range-track {
   height: 4px;
   border-radius: 4px;
-  background: var(--panel2);
+  background: var(--line);
 }
 .ctl-range::-moz-range-progress {
   height: 4px;
@@ -77,6 +77,7 @@ body.scrubbing * {
 }
 .ctl-range::-webkit-slider-thumb {
   -webkit-appearance: none;
+  box-sizing: border-box;
   width: 14px;
   height: 14px;
   margin-top: -5px;
@@ -84,25 +85,43 @@ body.scrubbing * {
   background: var(--text);
   border: 3px solid var(--panel);
   box-shadow: 0 0 0 1px var(--line), 0 2px 6px var(--shadow);
-  transition: transform var(--t-fast) var(--spring);
+  transition: transform var(--t-fast) var(--spring), box-shadow var(--t-fast);
 }
-.ctl-range:hover::-webkit-slider-thumb,
-.ctl-range:active::-webkit-slider-thumb {
+.ctl-range:hover::-webkit-slider-thumb {
   transform: scale(1.18);
 }
+.ctl-range:active::-webkit-slider-thumb {
+  transform: scale(1.18);
+  box-shadow: 0 0 0 1px var(--accent-line), 0 0 0 5px var(--accent-soft), 0 2px 6px var(--shadow);
+}
 .ctl-range::-moz-range-thumb {
-  width: 10px;
-  height: 10px;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: var(--text);
   border: 3px solid var(--panel);
-  box-shadow: 0 0 0 1px var(--line);
+  box-shadow: 0 0 0 1px var(--line), 0 2px 6px var(--shadow);
+  transition: transform var(--t-fast) var(--spring), box-shadow var(--t-fast);
+}
+.ctl-range:hover::-moz-range-thumb {
+  transform: scale(1.18);
+}
+.ctl-range:active::-moz-range-thumb {
+  transform: scale(1.18);
+  box-shadow: 0 0 0 1px var(--accent-line), 0 0 0 5px var(--accent-soft), 0 2px 6px var(--shadow);
 }
 .ctl-range:focus-visible {
   box-shadow: none;
 }
 .ctl-range:focus-visible::-webkit-slider-thumb {
   box-shadow: var(--focus);
+}
+.ctl-range:focus-visible::-moz-range-thumb {
+  box-shadow: var(--focus);
+}
+.ctl-range:disabled {
+  cursor: not-allowed;
 }
 
 /* Number field */
@@ -187,6 +206,20 @@ body.scrubbing * {
   transform: translateX(14px);
   background: var(--ink);
 }
+.ctl-switch:not(.on):hover {
+  border-color: var(--muted);
+}
+.ctl-switch:not(.on):hover .knob {
+  background: var(--text);
+}
+.ctl-switch.on:hover {
+  background: color-mix(in srgb, var(--accent) 88%, var(--text));
+}
+.ctl-switch.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 .ctl-switch.sm {
   width: 28px;
   height: 16px;
@@ -202,6 +235,7 @@ body.scrubbing * {
 /* Segmented */
 .ctl-seg {
   display: inline-flex;
+  align-items: center;
   padding: 2px;
   gap: 2px;
   border-radius: var(--r-s);
@@ -221,7 +255,7 @@ body.scrubbing * {
   justify-content: center;
   gap: 5px;
   min-width: 30px;
-  height: 26px;
+  height: 24px;
   padding: 0 9px;
   border-radius: 7px;
   color: var(--muted);
@@ -245,6 +279,14 @@ body.scrubbing * {
   height: 22px;
   min-width: 24px;
   padding: 0 6px;
+}
+.ctl-seg .seg:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ctl-seg .seg:disabled:not(.on):hover {
+  color: var(--muted);
+  background: transparent;
 }
 
 .ctl-select {
@@ -339,7 +381,11 @@ body.scrubbing * {
 }
 .sec-chev {
   color: var(--faint);
-  transition: transform var(--t) var(--ease);
+  transition: transform var(--t) var(--ease), color var(--t-fast);
+}
+.sec .sec-title:hover span,
+.sec-title:hover .sec-chev {
+  color: var(--text);
 }
 .sec.closed .sec-chev {
   transform: rotate(-90deg);

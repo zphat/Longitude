@@ -183,6 +183,93 @@ Deno.test("featherAlpha keeps flat areas and softens a hard edge", () => {
   }
 });
 
+// Reference for featherAlpha: the same separable passes (3 box blurs, or one
+// 1-2-1 tent below sigma 0.8), each summed directly over its clipped window.
+function referenceFeather(alpha, px) {
+  const { width: w, height: h } = alpha;
+  const sigma = px / 2;
+  let a = Float64Array.from(alpha.data);
+  let radii;
+  if (sigma < 0.8) radii = [0];
+  else {
+    const ideal = Math.sqrt((12 * sigma * sigma) / 3 + 1);
+    let wl = Math.floor(ideal);
+    if (wl % 2 === 0) wl--;
+    const wu = wl + 2;
+    const m = Math.round((12 * sigma * sigma - 3 * wl * wl - 12 * wl - 9) / (-4 * wl - 4));
+    radii = [0, 1, 2].map((i) => ((i < m ? wl : wu) - 1) / 2);
+  }
+  const line = (src, get, n, r) => {
+    const out = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      if (r === 0) {
+        const c = get(src, i);
+        out[i] = ((i > 0 ? get(src, i - 1) : c) + 2 * c + (i < n - 1 ? get(src, i + 1) : c)) * 0.25;
+        continue;
+      }
+      let sum = 0;
+      const lo = Math.max(0, i - r);
+      const hi = Math.min(n - 1, i + r);
+      for (let j = lo; j <= hi; j++) sum += get(src, j);
+      out[i] = sum / (hi - lo + 1);
+    }
+    return out;
+  };
+  for (const r of radii) {
+    const b = new Float64Array(w * h);
+    for (let y = 0; y < h; y++) line(a, (s, i) => s[y * w + i], w, r).forEach((v, x) => (b[y * w + x] = v));
+    for (let x = 0; x < w; x++) line(b, (s, i) => s[i * w + x], h, r).forEach((v, y) => (a[y * w + x] = v));
+  }
+  return a;
+}
+
+Deno.test("featherAlpha matches a direct separable blur (odd sizes, strips, tiny images)", () => {
+  const rand = rng(11);
+  for (const [w, h] of [[37, 23], [1, 9], [9, 1], [70, 5], [17, 40]]) {
+    const src = alphaMap(w, h, () => (rand() < 0.4 ? 255 : Math.floor(rand() * 256)));
+    for (const px of [0.6, 1, 3, 7, 25]) {
+      const got = featherAlpha(src, px);
+      const want = referenceFeather(src, px);
+      for (let i = 0; i < w * h; i++) near(got.data[i], want[i], 0.51, `${w}x${h} px ${px} at ${i}:`);
+    }
+  }
+});
+
+Deno.test("growAlpha: straight and diagonal passes agree with a brute-force octagon on wide images", () => {
+  const rand = rng(5);
+  for (const [w, h, r] of [[45, 7, 6], [6, 33, -4], [64, 64, 12]]) {
+    const src = alphaMap(w, h, () => (rand() < 0.1 ? Math.floor(rand() * 256) : r < 0 ? 255 : 0));
+    const got = growAlpha(src, r);
+    const R = Math.abs(r);
+    const u = Math.round(R * 0.2929);
+    const sq = R - 2 * u;
+    // Octagon: a square of half side sq plus a diamond of radius 2u.
+    const inShape = (dx, dy) => {
+      for (let a = -u; a <= u; a++) for (let b = -u; b <= u; b++) {
+        const ex = dx - a - b;
+        const ey = dy - a + b;
+        if (Math.abs(ex) <= sq && Math.abs(ey) <= sq) return true;
+      }
+      return false;
+    };
+    const offs = [];
+    for (let dy = -R; dy <= R; dy++) for (let dx = -R; dx <= R; dx++) if (inShape(dx, dy)) offs.push([dx, dy]);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        let m = r > 0 ? 0 : 255;
+        for (const [dx, dy] of offs) {
+          const sx = x + dx;
+          const sy = y + dy;
+          if (sx < 0 || sy < 0 || sx >= w || sy >= h) continue;
+          const v = at(src, sx, sy);
+          m = r > 0 ? Math.max(m, v) : Math.min(m, v);
+        }
+        assert(at(got, x, y) === m, `${w}x${h} r ${r} at ${x},${y}: ${at(got, x, y)} vs ${m}`);
+      }
+    }
+  }
+});
+
 Deno.test("growAlpha grows and shrinks by about the radius", () => {
   const dot = alphaMap(21, 21, (x, y) => (x === 10 && y === 10 ? 255 : 0));
   const g = growAlpha(dot, 3);

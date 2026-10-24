@@ -165,12 +165,30 @@ export function cleanPalettes(list, { alpha = true } = {}) {
 
 // ---- popover host ------------------------------------------------------------
 
+// Height (px) a popover can use next to anchor ({ top, bottom }) in a window
+// viewH tall. Beside the anchor (left/right) it may use the whole height; above
+// or below it keeps to the asked-for side while that side has at least `min`,
+// else it takes the roomier side. Either way it never has to cover its anchor.
+export function popoverRoom(anchor, viewH, placement = "bottom", { min = 320, gap = 8, margin = 8 } = {}) {
+  const full = Math.max(0, viewH - margin * 2);
+  const side = String(placement || "bottom").split("-")[0];
+  if (!anchor || side === "left" || side === "right") return full;
+  const above = anchor.top - gap - margin;
+  const below = viewH - anchor.bottom - gap - margin;
+  const want = side === "top" ? above : below;
+  const room = want >= min ? want : Math.max(above, below);
+  return Math.round(Math.max(0, Math.min(full, room)));
+}
+
 // Uses the shell's popover when there is one, otherwise a small fixed panel
 // that closes on Escape or a click outside. onEscape(e) lets the content use
 // Escape first (clear a search, revert a field): returning true keeps the
-// popover open.
-export function showPopover(ctx, anchorEl, content, { placement, onClose, onEscape, className } = {}) {
+// popover open. The content gets --pop-room (see popoverRoom) to size itself.
+export function showPopover(ctx, anchorEl, content, { placement, onClose, onEscape, className, minRoom } = {}) {
   const place = placement || (anchorEl?.closest?.(".insp") ? "left" : "bottom");
+  const ar = anchorEl?.getBoundingClientRect?.();
+  const viewH = document.documentElement?.clientHeight || globalThis.innerHeight || 0;
+  if (ar && viewH) content.style?.setProperty?.("--pop-room", `${popoverRoom(ar, viewH, place, { min: minRoom })}px`);
   if (typeof ctx?.ui?.popover === "function") {
     const pop = ctx.ui.popover(anchorEl, content, { placement: place, onClose, onEscape, class: className });
     if (className) pop?.el?.classList?.add(className);
@@ -222,7 +240,7 @@ export const DEAD_POPOVER = Object.freeze({ el: null, closed: true, close() {}, 
 // ---- the picker ----------------------------------------------------------------
 
 function swatchButton(color, tip, onPick) {
-  const b = h("button", { type: "button", class: "cp-sw", "data-tip": tip || color.toUpperCase(), "aria-label": tip || color.toUpperCase() }, h("span", { style: { background: color } }));
+  const b = h("button", { type: "button", class: "cp-sw", "data-tip": tip || color.toUpperCase(), "aria-label": tip || color.toUpperCase(), dataset: { c: color } }, h("span", { style: { background: color } }));
   b.addEventListener("click", () => onPick(color));
   return b;
 }
@@ -448,6 +466,21 @@ export function openColorPicker(anchorEl, { value = "#ffffff", alpha = true, onI
     if (e.key !== "Escape" && e.key !== "Tab") e.stopPropagation();
   });
 
+  // The swatches that match the current color wear a ring, so a staple or a
+  // design color you are on is easy to see. Only redrawn when the color moves.
+  const swatchEls = [...root.querySelectorAll(".cp-sw")];
+  let marked = null;
+  function markSwatches() {
+    if (marked === current) return;
+    marked = current;
+    for (const b of swatchEls) {
+      const on = b.dataset.c === current;
+      b.classList.toggle("on", on);
+      if (on) b.setAttribute("aria-current", "true");
+      else b.removeAttribute("aria-current");
+    }
+  }
+
   function paintFields(force = false) {
     if (force || document.activeElement !== hexInput) hexInput.value = current.slice(1).toUpperCase();
     alphaNum?.set(Math.round(st.a * 100));
@@ -470,12 +503,14 @@ export function openColorPicker(anchorEl, { value = "#ffffff", alpha = true, onI
     prevNew.style.setProperty("--c", current);
     sv.setAttribute("aria-valuetext", current.toUpperCase());
     paintFields();
+    markSwatches();
   }
   paint();
 
   let closed = false;
   const pop = showPopover(ctx, anchorEl, root, {
     placement,
+    minRoom: 340,
     className: "cp-pop",
     // Escape in a hex field that was typed in puts the color back; the next
     // Escape closes. (Closing with a half-typed value would commit it on blur.)

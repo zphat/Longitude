@@ -11,7 +11,7 @@
 
 import { svg } from "../../ui/dom.js";
 import { toLocal, fromLocal, setAlphaMap } from "../../core/geometry.js";
-import * as maskLib from "../../features/bgremove/mask.js";
+import { maskLib, loadMaskLib } from "./masklib.js";
 
 export const BRUSH_DEFAULTS = { size: 48, hardness: 0.6, mode: "erase" };
 const MIN_SIZE = 4;
@@ -73,7 +73,7 @@ export function refineTool(kit) {
   let target = null; // { id, mask, asset, canvas, w, h, opaque }
   let loadToken = 0;
   let stroke = null; // { last, mode, queue, pending, dirty }
-  let stale = false; // a cancelled stroke left paint on the canvas: reload after the saves
+  let stale = false; // a canceled stroke left paint on the canvas: reload after the saves
   let lastPt = null;
   let hover = null; // { client, alt }
   let saving = 0;
@@ -329,7 +329,7 @@ export function refineTool(kit) {
     t.mask = layer.mask;
     t.canvas = null;
     try {
-      const src = await ctx.assets.loadImage(layer.mask || layer.asset);
+      const [src] = await Promise.all([ctx.assets.loadImage(layer.mask || layer.asset), loadMaskLib()]);
       if (token !== loadToken || target !== t) return;
       const canvas = newCanvas(src.width, src.height);
       const g = canvas.getContext("2d", { willReadFrequently: true });
@@ -364,11 +364,12 @@ export function refineTool(kit) {
   // or restoring on a mask nothing was erased from, leaves no undo step.
   function paint(from, to) {
     const layer = kit.store.get(target.id);
-    if (!layer || !target.canvas || typeof maskLib.paintMask !== "function") return;
+    const lib = maskLib();
+    if (!layer || !target.canvas || typeof lib?.paintMask !== "function") return;
     const b = brush();
     const mode = stroke?.mode || b.mode;
     if (mode === "restore" && target.opaque) return;
-    const r = maskLib.paintMask(target.canvas, from, to, { radius: brushRadius(layer), hardness: b.hardness, mode });
+    const r = lib.paintMask(target.canvas, from, to, { radius: brushRadius(layer), hardness: b.hardness, mode });
     if (!r) return;
     if (stroke) stroke.dirty = true;
     if (mode === "erase") target.opaque = false;
@@ -392,7 +393,7 @@ export function refineTool(kit) {
     const s = stroke;
     stroke = null;
     lastPt = s.last;
-    maskLib.endMaskStroke?.(target.canvas);
+    maskLib()?.endMaskStroke?.(target.canvas);
     if (s.dirty) save();
   }
 
@@ -403,7 +404,7 @@ export function refineTool(kit) {
     stroke.pending?.();
     const s = stroke;
     stroke = null;
-    maskLib.endMaskStroke?.(target?.canvas);
+    maskLib()?.endMaskStroke?.(target?.canvas);
     if (!s.dirty || !target) return;
     if (saving) {
       stale = true;
@@ -427,7 +428,8 @@ export function refineTool(kit) {
     chain = chain
       .then(async () => {
         const id = await ctx.assets.addCanvas(copy);
-        if (typeof maskLib.maskAlphaMap === "function") setAlphaMap(id, maskLib.maskAlphaMap(copy));
+        const lib = maskLib();
+        if (typeof lib?.maskAlphaMap === "function") setAlphaMap(id, lib.maskAlphaMap(copy));
         const layer = kit.store.get(t.id);
         if (!layer || layer.type !== "image") return;
         t.mask = id;
@@ -465,11 +467,17 @@ export function refineTool(kit) {
   }
 
   // Two layers in the tool overlay: the ghost (rebuilt only when the view,
-  // the layer or the mode changes) and the brush ring (moves with the pointer).
+  // the layer or the mode changes) and the brush ring, built once and moved
+  // with the pointer (a pointer move only rewrites its transform).
   function overlayEls(api) {
     if (els && els.root === api.overlay && els.ghost.isConnected) return els;
     kit.clearOverlay(api);
-    els = { root: api.overlay, ghost: svg("g", { class: "refine-ghost" }), cursor: svg("g"), key: "" };
+    const part = (tag, cls) => svg(tag, { class: cls });
+    const ring = [part("circle", "halo"), part("circle", "ring")];
+    const sign = [part("path", "sign-halo"), part("path", "sign")];
+    const cursor = svg("g", { class: "brush-cursor" }, ...ring, ...sign);
+    cursor.style.display = "none";
+    els = { root: api.overlay, ghost: svg("g", { class: "refine-ghost" }), cursor, ring, sign, key: "", shape: "" };
     api.overlay.append(els.ghost, els.cursor);
     return els;
   }
@@ -520,21 +528,25 @@ export function refineTool(kit) {
     const m = kit.overlayMap(api);
     drawGhost(api, m);
     const e = overlayEls(api);
-    while (e.cursor.firstChild) e.cursor.firstChild.remove();
-    if (!hover) return;
+    if (!hover) {
+      e.cursor.style.display = "none";
+      return;
+    }
     const mode = currentMode();
     const c = m.client(hover.client);
-    const r = (brush().size / 2) * m.unit;
-    const g = svg("g", { class: `brush-cursor ${mode}${target?.canvas ? "" : " loading"}`, transform: `translate(${f(c.x)} ${f(c.y)})` });
-    const s = Math.min(5, Math.max(3, r * 0.3));
-    const sign = mode === "restore" ? `M${-s} 0H${s}M0 ${-s}V${s}` : `M${-s} 0H${s}`;
-    g.append(
-      svg("circle", { class: "halo", r: f(r) }),
-      svg("circle", { class: "ring", r: f(r) }),
-      svg("path", { class: "sign-halo", d: sign }),
-      svg("path", { class: "sign", d: sign }),
-    );
-    e.cursor.append(g);
+    const r = f((brush().size / 2) * m.unit);
+    const cls = `brush-cursor ${mode}${target?.canvas ? "" : " loading"}`;
+    if (e.cursor.getAttribute("class") !== cls) e.cursor.setAttribute("class", cls);
+    e.cursor.setAttribute("transform", `translate(${f(c.x)} ${f(c.y)})`);
+    const shape = `${r}|${mode}`;
+    if (shape !== e.shape) {
+      e.shape = shape;
+      const s = f(Math.min(5, Math.max(3, r * 0.3)));
+      const sign = mode === "restore" ? `M${-s} 0H${s}M0 ${-s}V${s}` : `M${-s} 0H${s}`;
+      for (const el of e.ring) el.setAttribute("r", r);
+      for (const el of e.sign) el.setAttribute("d", sign);
+    }
+    e.cursor.style.display = "";
   }
 
   return def;

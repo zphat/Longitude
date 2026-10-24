@@ -11,12 +11,29 @@ import { resizeCursor, rotateCursor } from "./cursors.js";
 const RAD = Math.PI / 180;
 const KNOB_GAP = 26;
 const SIDE_LEN = 7;
+const CORNER = 10; // corner handle size: even, so it centers on a crisp outline
+const LINE = 1.5; // selection stroke width (editor.css .ed-sel)
+const PILL_H = 22; // .ed-pill height (11 px mono, 3 px padding, 1 px border)
 
 const f2 = (v) => (Math.round(v * 100) / 100).toString();
 const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
 const angleOf = (c, p) => Math.atan2(p.y - c.y, p.x - c.x) / RAD;
 const poly = (pts) => `M${pts.map((p) => `${f2(p.x)} ${f2(p.y)}`).join("L")}Z`;
-const crisp = (v) => Math.round(v - 0.5) + 0.5;
+
+// Whole-pixel placement for overlay strokes. A line w CSS px wide covers
+// floor(w * dpr) device px: an odd count is crisp centered on a device pixel,
+// an even one on the boundary between two. Keeps hairline outlines, guides
+// and handles sharp, and stops them shimmering while a box moves.
+export function snapLine(v, w = 1, dpr = 1) {
+  const n = Math.floor(w * dpr + 1e-6);
+  return n % 2 ? (Math.floor(v * dpr) + 0.5) / dpr : Math.round(v * dpr) / dpr;
+}
+
+// True when a layer's box is axis-aligned on screen (0, 90, 180, 270 degrees).
+export function axisAligned(l) {
+  const r = (((l?.rotation || 0) % 90) + 90) % 90;
+  return r < 0.01 || r > 89.99;
+}
 
 // Reuse children of `group` for `items`, creating and removing as needed.
 function sync(group, items, tag, set) {
@@ -73,6 +90,23 @@ export function createSelectionOverlay(core) {
 
   const store = core.store;
   const L = (p) => core.viewport.docToLocal(p);
+  const px = (v, w = LINE) => snapLine(v, w, core.viewport.dpr || 1);
+  const snapPt = (p, w) => ({ x: px(p.x, w), y: px(p.y, w) });
+
+  // A layer's corners on screen, on the pixel grid when the box is
+  // axis-aligned (w: the width of the stroke drawn along them).
+  function screenCorners(l, w = LINE) {
+    const cs = corners(l).map(L);
+    return axisAligned(l) ? cs.map((p) => snapPt(p, w)) : cs;
+  }
+
+  // The union box of several layers on screen, on the pixel grid.
+  function groupCorners(sel) {
+    const b = unionBox(sel.map(aabb));
+    return [L({ x: b.l, y: b.t }), L({ x: b.r, y: b.t }), L({ x: b.r, y: b.b }), L({ x: b.l, y: b.b })].map((p) => snapPt(p));
+  }
+
+  const outline = (l, w = LINE) => (l.type === "arrow" ? outlinePath(l, L) : poly(screenCorners(l, w)));
 
   // ---- handle geometry ---------------------------------------------------------
 
@@ -86,8 +120,10 @@ export function createSelectionOverlay(core) {
         { kind: "bend", handle: "c", ...L(p.mid), curved: !!p.c },
       ];
     }
-    const cs = corners(l).map(L);
-    const pos = { nw: cs[0], ne: cs[1], se: cs[2], sw: cs[3], n: mid(cs[0], cs[1]), e: mid(cs[1], cs[2]), s: mid(cs[2], cs[3]), w: mid(cs[3], cs[0]) };
+    const aligned = axisAligned(l);
+    const cs = screenCorners(l);
+    const side = (a, b) => (aligned ? snapPt(mid(a, b)) : mid(a, b));
+    const pos = { nw: cs[0], ne: cs[1], se: cs[2], sw: cs[3], n: side(cs[0], cs[1]), e: side(cs[1], cs[2]), s: side(cs[2], cs[3]), w: side(cs[3], cs[0]) };
     const c = L({ x: l.x, y: l.y });
     const sw = Math.hypot(cs[1].x - cs[0].x, cs[1].y - cs[0].y);
     const sh = Math.hypot(cs[2].x - cs[1].x, cs[2].y - cs[1].y);
@@ -99,8 +135,12 @@ export function createSelectionOverlay(core) {
       out.push({ kind: "resize", handle: id, ...pos[id], angle: angleOf(c, pos[id]), corner, edge });
     }
     const r = (l.rotation || 0) * RAD;
-    const kx = pos.s.x - Math.sin(r) * KNOB_GAP;
-    const ky = pos.s.y + Math.cos(r) * KNOB_GAP;
+    let kx = pos.s.x - Math.sin(r) * KNOB_GAP;
+    let ky = pos.s.y + Math.cos(r) * KNOB_GAP;
+    if (aligned) {
+      kx = px(kx);
+      ky = px(ky);
+    }
     out.push({ kind: "rotate", handle: "rot", x: kx, y: ky, stem: pos.s, angle: angleOf(c, { x: kx, y: ky }) });
     return out;
   }
@@ -112,9 +152,9 @@ export function createSelectionOverlay(core) {
     if (!sel.length) return [];
     if (sel.length === 1) return singleHandles(sel[0]);
     if (sel.some((l) => l.locked) || sel.every((l) => l.hidden)) return [];
-    const b = unionBox(sel.map(aabb));
-    const c = L({ x: b.cx, y: b.cy });
-    const pts = { nw: L({ x: b.l, y: b.t }), ne: L({ x: b.r, y: b.t }), se: L({ x: b.r, y: b.b }), sw: L({ x: b.l, y: b.b }) };
+    const [nw, ne, se, sw] = groupCorners(sel);
+    const c = mid(nw, se);
+    const pts = { nw, ne, se, sw };
     return CORNER_IDS.map((id) => ({ kind: "scale", handle: id, ...pts[id], angle: angleOf(c, pts[id]), corner: true, edge: 0 }));
   }
 
@@ -126,10 +166,9 @@ export function createSelectionOverlay(core) {
     if (sel.length === 1) {
       const l = sel[0];
       if (l.type === "arrow") return null;
-      return corners(l).map(L);
+      return screenCorners(l);
     }
-    const b = unionBox(sel.map(aabb));
-    return [L({ x: b.l, y: b.t }), L({ x: b.r, y: b.t }), L({ x: b.r, y: b.b }), L({ x: b.l, y: b.b })];
+    return groupCorners(sel);
   }
 
   function cursorFor(hd) {
@@ -229,13 +268,14 @@ export function createSelectionOverlay(core) {
   function drawGuides(S) {
     const lines = [];
     for (const g of S.guides || []) {
+      const w = g.canvas ? 1.25 : 1;
       if (g.axis === "x") {
-        const x = crisp(L({ x: g.v, y: 0 }).x);
+        const x = f2(px(L({ x: g.v, y: 0 }).x, w));
         const a = L({ x: g.v, y: g.from }).y;
         const b = L({ x: g.v, y: g.to }).y;
         lines.push({ d: `M${x} ${f2(a)}L${x} ${f2(b)}`, cls: g.canvas ? "ed-guide canvas" : "ed-guide" });
       } else {
-        const y = crisp(L({ x: 0, y: g.v }).y);
+        const y = f2(px(L({ x: 0, y: g.v }).y, w));
         const a = L({ x: g.from, y: g.v }).x;
         const b = L({ x: g.to, y: g.v }).x;
         lines.push({ d: `M${f2(a)} ${y}L${f2(b)} ${y}`, cls: g.canvas ? "ed-guide canvas" : "ed-guide" });
@@ -252,13 +292,15 @@ export function createSelectionOverlay(core) {
       if (s.axis === "x") {
         const a = L({ x: s.from, y: s.at });
         const b = L({ x: s.to, y: s.at });
-        const y = crisp(a.y);
-        segs.push(`M${f2(a.x)} ${y - 4}L${f2(a.x)} ${y + 4}M${f2(a.x)} ${y}L${f2(b.x)} ${y}M${f2(b.x)} ${y - 4}L${f2(b.x)} ${y + 4}`);
+        const y = px(a.y, 1);
+        const [y0, y1, ym] = [f2(y - 4), f2(y + 4), f2(y)];
+        segs.push(`M${f2(a.x)} ${y0}L${f2(a.x)} ${y1}M${f2(a.x)} ${ym}L${f2(b.x)} ${ym}M${f2(b.x)} ${y0}L${f2(b.x)} ${y1}`);
       } else {
         const a = L({ x: s.at, y: s.from });
         const b = L({ x: s.at, y: s.to });
-        const x = crisp(a.x);
-        segs.push(`M${x - 4} ${f2(a.y)}L${x + 4} ${f2(a.y)}M${x} ${f2(a.y)}L${x} ${f2(b.y)}M${x - 4} ${f2(b.y)}L${x + 4} ${f2(b.y)}`);
+        const x = px(a.x, 1);
+        const [x0, x1, xm] = [f2(x - 4), f2(x + 4), f2(x)];
+        segs.push(`M${x0} ${f2(a.y)}L${x1} ${f2(a.y)}M${xm} ${f2(a.y)}L${xm} ${f2(b.y)}M${x0} ${f2(b.y)}L${x1} ${f2(b.y)}`);
       }
     }
     const flatS = [];
@@ -275,11 +317,11 @@ export function createSelectionOverlay(core) {
     const sides = resize.filter((hd) => !hd.corner);
     sync(gCorners, cornersList, "rect", (el, hd) => {
       attr(el, "class", "ed-h-corner");
-      attr(el, "x", f2(hd.x - 4.5));
-      attr(el, "y", f2(hd.y - 4.5));
-      attr(el, "width", 9);
-      attr(el, "height", 9);
-      attr(el, "rx", 2.6);
+      attr(el, "x", f2(hd.x - CORNER / 2));
+      attr(el, "y", f2(hd.y - CORNER / 2));
+      attr(el, "width", CORNER);
+      attr(el, "height", CORNER);
+      attr(el, "rx", 3);
       attr(el, "transform", `rotate(${f2(hd.edge || 0)} ${f2(hd.x)} ${f2(hd.y)})`);
     });
     const sideItems = [];
@@ -313,32 +355,55 @@ export function createSelectionOverlay(core) {
     });
   }
 
+  // The part of the host the floating chrome leaves free (8 px in), so
+  // pills never hide under the top bar, the panel or the zoom island.
+  function freeBox() {
+    const vp = core.viewport;
+    if (!(vp.width > 0) || !(vp.height > 0)) return null;
+    const i = core.freeArea?.()?.insets || { top: 0, right: 0, bottom: 0, left: 0 };
+    return { l: i.left + 8, t: i.top + 8, r: vp.width - i.right - 8, b: vp.height - i.bottom - 8 };
+  }
+
   function drawPills(S, list) {
     const items = [];
     const g = S.gesture;
     const rect = selectionRect();
+    const box = freeBox();
+    // A pill centered on x stays inside the free area (half: about half its width).
+    const midX = (x, half = 44) => (box ? Math.max(box.l + half, Math.min(x, box.r - half)) : x);
+    // Under the selection when there is room, else above it, else at the
+    // bottom of the free area.
+    const belowOrAbove = (y) => {
+      if (!box || y + PILL_H <= box.b) return y;
+      const above = rect.t - 12 - PILL_H;
+      return above >= box.t ? above : Math.max(box.t, box.b - PILL_H);
+    };
     if (g?.pill) {
       if (g.pillAt === "pointer" && S.pointer) {
-        items.push({ text: g.pill, x: S.pointer.x + 20, y: S.pointer.y + 22, cls: "ed-pill", anchor: "left" });
+        // Beside the pointer, flipped to the other side near the edges.
+        const p = S.pointer;
+        const left = box && p.x + 20 + 64 > box.r;
+        const y = box && p.y + 22 + PILL_H > box.b ? p.y - 22 - PILL_H : p.y + 22;
+        items.push({ text: g.pill, x: left ? p.x - 16 : p.x + 20, y, cls: "ed-pill", anchor: left ? "right" : "left" });
       } else if (rect) {
         const rot = list.find((hd) => hd.kind === "rotate");
         let y = rect.b + 12;
         if (rot && rot.y + 12 > y - 4) y = rot.y + 16;
-        items.push({ text: g.pill, x: (rect.l + rect.r) / 2, y, cls: "ed-pill", anchor: "top" });
+        items.push({ text: g.pill, x: midX((rect.l + rect.r) / 2), y: belowOrAbove(y), cls: "ed-pill", anchor: "top" });
       }
     }
     const sel = store.selected();
     if (!g && S.mode === "normal" && sel.length === 1 && sel[0].locked && rect) {
-      items.push({ text: "Locked", x: (rect.l + rect.r) / 2, y: rect.b + 10, cls: "ed-pill muted", anchor: "top" });
+      items.push({ text: "Locked", x: midX((rect.l + rect.r) / 2, 32), y: belowOrAbove(rect.b + 10), cls: "ed-pill muted", anchor: "top" });
     }
     for (const gd of S.guides || []) {
       if (!gd.center) continue;
       if (gd.axis === "x") {
         const top = L({ x: gd.v, y: 0 });
-        items.push({ text: "Center", x: top.x, y: Math.max(top.y + 10, 10), cls: "ed-pill accent", anchor: "top" });
+        items.push({ text: "Center", x: top.x, y: Math.max(top.y + 10, box ? box.t : 10), cls: "ed-pill accent", anchor: "top" });
       } else {
         const left = L({ x: 0, y: gd.v });
-        items.push({ text: "Center", x: Math.max(left.x + 10, 10), y: left.y, cls: "ed-pill accent", anchor: "left-mid" });
+        items.push({ text: "Center", x: Math.max(left.x + 10, box ? box.l : 10), y: left.y, cls: "ed-pill accent", anchor: "left-mid" });
       }
     }
     for (const s of S.spacing || []) {
@@ -348,7 +413,7 @@ export function createSelectionOverlay(core) {
     sync(pills, items, "div", (el, it) => {
       if (el.textContent !== it.text) el.textContent = it.text;
       if (el.className !== it.cls) el.className = it.cls;
-      const shift = it.anchor === "left" ? "0, 0" : it.anchor === "left-mid" ? "0, -50%" : it.anchor === "center" ? "-50%, -50%" : "-50%, 0";
+      const shift = { left: "0, 0", right: "-100%, 0", "left-mid": "0, -50%", center: "-50%, -50%" }[it.anchor] || "-50%, 0";
       const tf = `translate(${Math.round(it.x)}px, ${Math.round(it.y)}px) translate(${shift})`;
       if (el.style.transform !== tf) el.style.transform = tf;
     });
@@ -366,10 +431,13 @@ export function createSelectionOverlay(core) {
     let hid = S.panelHoverId;
     if (!hid && toolSelect && S.mode === "normal" && !quiet && S.hoverId && !store.selection.includes(S.hoverId)) hid = S.hoverId;
     const hl = hid ? store.get(hid) : null;
-    if (hl && !hl.hidden) hover.push(outlinePath(hl, L));
-    sync(gHover, hover, "path", (el, d) => {
-      attr(el, "d", d);
-      attr(el, "class", "ed-hover");
+    if (hl && !hl.hidden) {
+      const d = outline(hl);
+      hover.push({ d, cls: "ed-hover ed-halo" }, { d, cls: "ed-hover" });
+    }
+    sync(gHover, hover, "path", (el, it) => {
+      attr(el, "d", it.d);
+      attr(el, "class", it.cls);
     });
 
     const lines = [];
@@ -377,11 +445,10 @@ export function createSelectionOverlay(core) {
       if (sel.length === 1) {
         const l = sel[0];
         const cls = l.locked ? "ed-sel locked" : editing === l.id ? "ed-sel editing" : l.type === "arrow" ? "ed-sel arrow" : "ed-sel";
-        lines.push({ d: outlinePath(l, L), cls });
+        lines.push({ d: outline(l, editing === l.id ? 1 : LINE), cls });
       } else {
-        for (const l of sel) lines.push({ d: outlinePath(l, L), cls: "ed-sel member" });
-        const b = unionBox(sel.map(aabb));
-        lines.push({ d: poly([L({ x: b.l, y: b.t }), L({ x: b.r, y: b.t }), L({ x: b.r, y: b.b }), L({ x: b.l, y: b.b })]), cls: "ed-sel" });
+        for (const l of sel) lines.push({ d: outline(l, 1), cls: "ed-sel member" });
+        lines.push({ d: poly(groupCorners(sel)), cls: "ed-sel" });
       }
     }
     drawLines(lines);
@@ -389,11 +456,13 @@ export function createSelectionOverlay(core) {
 
     if (S.marquee) {
       const m = S.marquee;
+      const x0 = px(Math.min(m.x0, m.x1), 1);
+      const y0 = px(Math.min(m.y0, m.y1), 1);
       marquee.style.display = "";
-      attr(marquee, "x", f2(Math.min(m.x0, m.x1)));
-      attr(marquee, "y", f2(Math.min(m.y0, m.y1)));
-      attr(marquee, "width", f2(Math.abs(m.x1 - m.x0)));
-      attr(marquee, "height", f2(Math.abs(m.y1 - m.y0)));
+      attr(marquee, "x", f2(x0));
+      attr(marquee, "y", f2(y0));
+      attr(marquee, "width", f2(Math.max(0, px(Math.max(m.x0, m.x1), 1) - x0)));
+      attr(marquee, "height", f2(Math.max(0, px(Math.max(m.y0, m.y1), 1) - y0)));
     } else {
       marquee.style.display = "none";
     }

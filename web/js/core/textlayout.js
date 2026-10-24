@@ -1,7 +1,10 @@
 // Text layout: font strings, measuring, wrapping and the store normalizer
 // that keeps text layer boxes hugging their text. Layouts are cached by the
-// props that affect them; the cache is dropped whenever fonts change (a font
-// face loads, or store.remeasure() runs).
+// props that affect them; the cache is dropped whenever the fonts they use
+// change (a face of a family they name loads, the font list changes, or
+// store.remeasure() runs after a font became ready). Faces that load for
+// other families (the font picker's samples) leave layouts and the
+// renderer's text composites alone.
 //
 // Box model, in content space (box centered on 0,0):
 //   content block = the lines (first line ascent to last line descent)
@@ -16,6 +19,13 @@ let lsSupported = false;
 const cache = new Map();
 const metricsCache = new Map();
 const CACHE_LIMIT = 400;
+// Faces laid out since the last bump, one entry per face (style, weight and
+// stack at a fixed size: readiness does not depend on the size, so a resize
+// drag adds nothing): face -> document.fonts.check() at the time (null when it
+// cannot be told), and the stacks lowercased for fontInUse().
+const fontReady = new Map();
+const usedFonts = new Set();
+let fontsOverflow = false;
 
 const FALLBACKS = {
   anton: '"Anton", Impact, "Arial Narrow Bold", sans-serif',
@@ -32,12 +42,15 @@ export function useFonts(fonts) {
   unsubscribe = null;
   registry = fonts || null;
   if (registry?.addEventListener) {
-    const onLoad = () => bumpTextEpoch();
+    const onLoad = (e) => {
+      if (fontInUse(e?.detail?.family)) bumpTextEpoch();
+    };
+    const onChange = () => bumpTextEpoch();
     registry.addEventListener("load", onLoad);
-    registry.addEventListener("change", onLoad);
+    registry.addEventListener("change", onChange);
     unsubscribe = () => {
       registry.removeEventListener("load", onLoad);
-      registry.removeEventListener("change", onLoad);
+      registry.removeEventListener("change", onChange);
     };
   }
   bumpTextEpoch();
@@ -56,6 +69,49 @@ export function bumpTextEpoch() {
   epoch++;
   cache.clear();
   metricsCache.clear();
+  fontReady.clear();
+  usedFonts.clear();
+  fontsOverflow = false;
+}
+
+const familyKey = (family) => String(family ?? "").trim().replace(/^["']+|["']+$/g, "").toLowerCase();
+
+// Whether a face of `family` loading can change a layout made since the last
+// bump (true when unsure). Over-matching ("Inter" in "Interstate") only costs
+// a re-layout.
+export function fontInUse(family) {
+  const key = familyKey(family);
+  if (!key || fontsOverflow) return true;
+  for (const f of usedFonts) if (f.includes(key)) return true;
+  return false;
+}
+
+function checkFont(font) {
+  try {
+    const set = globalThis.document?.fonts;
+    return typeof set?.check === "function" ? !!set.check(font) : null;
+  } catch {
+    return null;
+  }
+}
+
+function noteFont(layer) {
+  const face = fontString(layer, 16);
+  if (fontReady.has(face) || fontsOverflow) return;
+  if (fontReady.size >= CACHE_LIMIT) {
+    fontsOverflow = true;
+    return;
+  }
+  fontReady.set(face, checkFont(face));
+  usedFonts.add(fontStack(layer.font).toLowerCase());
+}
+
+// Whether a font laid out since the last bump changed readiness, or that
+// cannot be told (no document.fonts): then cached layouts may be stale.
+export function fontsChanged() {
+  if (fontsOverflow) return true;
+  for (const [font, was] of fontReady) if (was === null || checkFont(font) !== was) return true;
+  return false;
 }
 
 let docFontsHooked = false;
@@ -63,7 +119,10 @@ function hookDocumentFonts() {
   if (docFontsHooked) return;
   docFontsHooked = true;
   try {
-    globalThis.document?.fonts?.addEventListener?.("loadingdone", () => bumpTextEpoch());
+    globalThis.document?.fonts?.addEventListener?.("loadingdone", (e) => {
+      const faces = e?.fontfaces ? Array.from(e.fontfaces) : [];
+      if (!faces.length || faces.some((f) => fontInUse(f?.family))) bumpTextEpoch();
+    });
   } catch {}
 }
 
@@ -295,6 +354,7 @@ export function layoutText(layer, fonts) {
   const hit = cache.get(key);
   if (hit) return hit;
 
+  noteFont(layer);
   const size = layer.size;
   const measure = makeMeasurer(font, size, spacing);
   const { ascent, descent } = fontMetrics(font, size);
@@ -430,7 +490,11 @@ export function textNormalizer(layer, doc, prev) {
 export function installTextNormalizer(store, fonts) {
   if (fonts) useFonts(fonts);
   const off = store.addNormalizer(textNormalizer);
-  const onRemeasure = () => bumpTextEpoch();
+  // Font loads trigger remeasures for every family (the font picker loads
+  // dozens of samples); only a change to a font the text uses drops layouts.
+  const onRemeasure = () => {
+    if (fontsChanged()) bumpTextEpoch();
+  };
   store.addEventListener("remeasure", onRemeasure);
   store.remeasure();
   return () => {

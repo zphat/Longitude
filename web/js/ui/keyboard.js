@@ -237,7 +237,7 @@ export function openShortcuts(ctx) {
     if (gestures.length) {
       cols.append(h("section", { class: "sheet-group" }, h("h3", { class: "micro" }, "Mouse and trackpad"), gestures.map(([a, b]) => h("div", { class: "sheet-row" }, h("span", { class: "sheet-title" }, a), h("span", { class: "sheet-gesture" }, b)))));
     }
-    if (!cols.childElementCount) cols.append(h("p", { class: "muted sheet-empty" }, `No shortcuts match "${search.value.trim()}".`));
+    if (!cols.childElementCount) cols.append(h("p", { class: "muted sheet-empty" }, `No shortcuts match “${search.value.trim()}”.`));
   }
 
   search.addEventListener("input", render);

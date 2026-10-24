@@ -150,7 +150,8 @@ function readOuter(ctx) {
 
 // How far (doc px) a layer's pixels can reach outside its box: content
 // overflow (glyph overhang, outlines, arrow heads) and effects (glow, shadow).
-function margins(layer) {
+// Writes into `out` (drawLayer reuses one object instead of allocating per layer per frame).
+function margins(layer, out = { content: 0, effects: 0 }) {
   let content = 0;
   switch (layer.type) {
     case "text":
@@ -172,8 +173,12 @@ function margins(layer) {
   let effects = 0;
   if (layer.glow?.on && layer.glow.opacity > 0) effects = Math.max(effects, layer.glow.size * 1.6);
   if (layer.shadow?.on && layer.shadow.opacity > 0) effects = Math.max(effects, layer.shadow.blur * 1.6 + Math.max(Math.abs(layer.shadow.dx), Math.abs(layer.shadow.dy)));
-  return { content, effects };
+  out.content = content;
+  out.effects = effects;
+  return out;
 }
+
+const marginsOut = { content: 0, effects: 0 };
 
 // ---- public API -----------------------------------------------------------------------
 
@@ -339,7 +344,7 @@ function drawLayer(ctx, layer, o) {
   const cx = layer.x * o.scale;
   const cy = layer.y * o.scale;
 
-  const m = margins(layer);
+  const m = margins(layer, marginsOut);
   const r = (layer.rotation || 0) * RAD;
   const ac = Math.abs(Math.cos(r));
   const as = Math.abs(Math.sin(r));
@@ -406,20 +411,20 @@ function depsReady(deps, assets) {
 
 function composite(layer, k, o, x0, y0, x1, y1, fx0, fy0) {
   const cache = o.cache;
-  const epoch = `${layer.type === "text" ? textEpoch() : 0}:${regEpoch}`;
   if (!cache) {
     const out = fx.getScratch("r-out", x1 - x0, y1 - y0);
     paint(out, layer, k, o, x0, y0, fx0, fy0);
     return { canvas: out };
   }
+  const te = layer.type === "text" ? textEpoch() : 0;
   let e = cache.entries.get(layer.id);
-  if (e && e.layer === layer && e.k === k && e.epoch === epoch && e.x0 === x0 && e.y0 === y0 && e.x1 === x1 && e.y1 === y1) {
+  if (e && e.layer === layer && e.k === k && e.te === te && e.re === regEpoch && e.x0 === x0 && e.y0 === y0 && e.x1 === x1 && e.y1 === y1) {
     if (e.complete || !depsReady(e.deps, o.assets)) {
       e.frame = cache.frame;
       return e;
     }
   }
-  const key = `${k.toFixed(5)}|${epoch}|${x0},${y0},${x1},${y1}|${layerKey(layer)}`;
+  const key = `${k.toFixed(5)}|${te}:${regEpoch}|${x0},${y0},${x1},${y1}|${layerKey(layer)}`;
   if (e && e.key === key && (e.complete || !depsReady(e.deps, o.assets))) {
     e.layer = layer;
     e.k = k;
@@ -428,7 +433,7 @@ function composite(layer, k, o, x0, y0, x1, y1, fx0, fy0) {
   }
   const canvas = fx.sizedCanvas(e?.canvas || null, x1 - x0, y1 - y0);
   const res = paint(canvas, layer, k, o, x0, y0, 0, 0);
-  e = { key, layer, k, epoch, x0, y0, x1, y1, canvas, complete: res.complete, deps: res.deps, frame: cache.frame };
+  e = { key, layer, k, te, re: regEpoch, x0, y0, x1, y1, canvas, complete: res.complete, deps: res.deps, frame: cache.frame };
   cache.entries.set(layer.id, e);
   return e;
 }

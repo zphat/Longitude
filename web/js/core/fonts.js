@@ -333,7 +333,7 @@ function idbStorage(getDb) {
     await new Promise((resolve, reject) => {
       tx.oncomplete = resolve;
       tx.onerror = () => reject(tx.error);
-      tx.onabort = () => reject(tx.error || Error("Saving the font was cancelled."));
+      tx.onabort = () => reject(tx.error || Error("Saving the font was canceled."));
     });
     return result;
   };
@@ -368,6 +368,7 @@ export class FontRegistry extends EventTarget {
     this.assets = assets;
     this._env = env;
     this._families = new Map(); // key -> family record
+    this._stacks = new Map(); // family -> CSS font stack (text layout asks on every layout)
     this._infoCache = null;
     this._installed = new Map(); // key -> bool, for families we only measure
     this._storage = env.storage || null;
@@ -441,6 +442,8 @@ export class FontRegistry extends EventTarget {
   }
 
   stack(family) {
+    const hit = this._stacks.get(family);
+    if (hit !== undefined) return hit;
     const f = this._families.get(keyOf(family));
     const name = f ? f.family : String(family || "").trim() || "sans-serif";
     const parts = [name, ...splitFamilies(f?.fallback)];
@@ -453,7 +456,10 @@ export class FontRegistry extends EventTarget {
       out.push(quoteFamily(p));
     }
     if (!out.some((p) => GENERIC.has(p))) out.push("sans-serif");
-    return out.join(", ");
+    const css = out.join(", ");
+    if (this._stacks.size >= 500) this._stacks.clear();
+    this._stacks.set(family, css);
+    return css;
   }
 
   nearestWeight(family, weight = 400) {
@@ -591,6 +597,7 @@ export class FontRegistry extends EventTarget {
     if (!f || f.source !== "custom") return false;
     for (const face of f.faces) this._dropFace(face);
     this._families.delete(keyOf(family));
+    this._stacks.clear();
     try {
       await this._store()?.delete(f.family);
     } catch (err) {
@@ -656,6 +663,7 @@ export class FontRegistry extends EventTarget {
       if (this._families.get(keyOf(f.family)) !== f) return;
       for (const face of f.faces) this._dropFace(face);
       this._families.delete(keyOf(f.family));
+      this._stacks.clear();
       this._changed("mod");
     };
   }
@@ -761,10 +769,12 @@ export class FontRegistry extends EventTarget {
   _add(f) {
     this._families.set(keyOf(f.family), f);
     this._infoCache = null;
+    this._stacks.clear();
   }
 
   _changed(reason) {
     this._infoCache = null;
+    this._stacks.clear();
     this.dispatchEvent(new CustomEvent("change", { detail: { reason } }));
   }
 

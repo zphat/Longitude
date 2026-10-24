@@ -126,3 +126,12 @@ Deno.test("an empty list makes an empty but valid zip", async () => {
   assertEquals(bytes.length, 22);
   assertEquals(readZip(bytes).files.length, 0);
 });
+
+Deno.test("compress.js makeZip loads the zip writer on first use", async () => {
+  const exporter = await import("../web/js/features/compress.js");
+  const blob = await exporter.makeZip([{ name: "a.txt", text: "hi" }]);
+  assertEquals(blob.type, "application/zip");
+  const direct = await makeZip([{ name: "a.txt", text: "hi", date: new Date(2024, 0, 1) }]);
+  const lazy = await exporter.makeZip([{ name: "a.txt", text: "hi", date: new Date(2024, 0, 1) }]);
+  assertEquals(new Uint8Array(await lazy.arrayBuffer()), new Uint8Array(await direct.arrayBuffer()));
+});

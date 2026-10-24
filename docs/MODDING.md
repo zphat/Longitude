@@ -20,9 +20,9 @@ Contents: [Packs](#packs) · [Code mods](#code-mods) · [The mod API](#the-mod-a
 
 ## Packs
 
-A pack is one `.json` file, up to 1 MB. Import it from Settings > Packs (drop
-it on the drop zone or choose it). Longitude shows what the pack adds before
-anything changes. Packs are stored in this browser (IndexedDB database
+A pack is one `.json` file, up to 1 MB. Import it from Settings > Packs
+(choose it, or drop it anywhere on Settings or on the canvas). Longitude shows
+what the pack adds before anything changes. Packs are stored in this browser (IndexedDB database
 `longitude`, store `kv`, key `packs`) and applied again on every start.
 Removing a pack removes everything it added. Your designs are never changed.
 
@@ -181,7 +181,7 @@ export const manifest = {
   version: "1.0.0",
   author: "Your name",      // optional
   description: "Says hello.", // optional, one or two sentences
-  homepage: "https://…",    // optional, https only
+  homepage: "https://…",    // optional, https only; linked from Settings > Mods
   apiVersion: 1,            // required; this Longitude speaks API 1
 };
 
@@ -304,13 +304,15 @@ loader disposes everything when the mod stops.
 | `presets` | `register(def)`, `get(id)`, `list()`, `groups()` |
 | `fonts` | `register(def)`, `get(family)`, `list()`, `load(family, weight, style) -> Promise<bool>`, `stack(family)`, `on(type, fn) -> off` (`"load"`, `"change"`) |
 | `themes` | `register(def)`, `list()`, `current()`, `apply(id)` |
-| `bg` | `providers.register(def)`, `providers.get(id)`, `providers.list()`, `config`, `masks`, `defaultProvider`, `removeLayerBackground(layerId, opts)`, `removeFromImage(source, opts)`, `restoreLayer(layerId)` |
+| `bg` | `providers.register(def)`, `providers.get(id)`, `providers.list()`, `config`, `masks`, `loadMasks()`, `defaultProvider`, `removeLayerBackground(layerId, opts)`, `removeFromImage(source, opts)`, `restoreLayer(layerId)` |
 
 `bg.config` is the live background removal config (model and runtime URLs,
 see `web/js/features/bgremove/config.js`). Change it before the first
 removal to point at your own files. `bg.masks` holds the mask helpers
 (`magicMask`, `paintMask`, `featherMask`, `growMask`, `maskToCutout`,
-`maskAlphaMap`).
+`maskAlphaMap`). They load with the first background removal, before any
+provider's `run()` is called, so `bg.masks` is always there inside `run()`.
+Anywhere else, `await api.bg.loadMasks()` resolves to them.
 
 ### Document: `api.store`
 
@@ -489,8 +491,8 @@ when the selection changes, not on every edit, so a section whose content
 depends on the layers' values should update itself: listen with
 `api.store.on("change", fn)` and return a cleanup that removes the listener
 (see `web/mods/deep-fry/index.js`), or return `{ update(layers, api),
-destroy() }`. If `render` throws, the section shows a short error instead of
-breaking the inspector. `order` places the section: the built-in sections use
+destroy() }`. If `render` throws, the section shows a short error with a link
+to Settings > Mods instead of breaking the inspector. `order` places the section: the built-in sections use
 10 to 15 for the main controls, 30 to 32 for image adjustments, 50 and 51 for
 effects, 80 for Arrange and 90 for Layer; the default is 60.
 
@@ -619,8 +621,8 @@ api.bg.providers.register({
 3. Put the folder in a GitHub repository or a zip. To install, people copy the
    folder into their `web/mods/`, add the line to `mods.json` and press
    **Check for new mods**.
-4. Set `homepage` in the manifest so people can find updates. Raise `version`
-   when you change behavior. If a future Longitude changes the API, it will
+4. Set `homepage` in the manifest so people can find updates: the mod's card
+   in Settings > Mods links to it. Raise `version` when you change behavior. If a future Longitude changes the API, it will
    ask for a new `apiVersion` and tell the user which mods need an update.
 
 Want it in Longitude itself? Open a pull request at
@@ -638,6 +640,7 @@ line in `mods.json` set to `"enabled": false`.
 | `web/js/mods/api.js` | Builds the per-mod `api` and tracks registrations |
 | `web/js/mods/packs.js` | Validates, stores and applies packs |
 | `web/js/mods/paths.js` | The rules for paths inside `web/mods/` |
-| `web/js/ui/settings.js` | Settings: General, Fonts, Mods, Packs, Shortcuts, About |
+| `web/js/mods/ui.js` | The mod stylesheet and fallback icons, without loading Settings |
+| `web/js/ui/settings.js` | Settings: General, Fonts, Mods, Packs, Shortcuts, About (loaded the first time it opens) |
 | `web/js/ui/theme.js` | Built-in themes and the theme pack format |
 | `docs/SPEC.md` | The document model and every module's contract |

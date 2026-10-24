@@ -8,7 +8,7 @@ import { hasIcon, registerIcons } from "../ui/icons.js";
 import { keysLabel } from "../app/context.js";
 import { pickLayer, refitArrow, arrowPoints } from "../core/geometry.js";
 import { createRenderCache } from "../core/render.js";
-import { createViewport, detectInsets, fitView, fitRectView, zoomAround, stepZoom, clampZoom, clampPan, wheelZoomFactor } from "./viewport.js";
+import { createViewport, detectInsets, freeArea, refitPlan, fitView, fitRectView, zoomAround, stepZoom, clampZoom, clampPan, wheelZoomFactor } from "./viewport.js";
 import { createStage, backgroundLightness } from "./stage.js";
 import { createSelectionOverlay } from "./selection.js";
 import { SNAP_PX, buildTargets, snapPoint as snapPt, pointGuides } from "./snapping.js";
@@ -139,8 +139,10 @@ export function createEditor(ctx, { host } = {}) {
   let owner = null; // who the active pointer belongs to: "crop" | "tool", fixed at press
   let interacting = null;
   let homeOpen = false;
-  let autoFit = true;
+  let autoFit = true; // the view is the automatic fit until the user zooms or pans
   let fitPending = true;
+  let fitArea = null; // the free area (host size + chrome insets) last fitted to
+  let chromeArea = null; // the free area as last measured (layout changes update it)
   let explicitInsets = null;
   let docId = store.doc.id;
   let docW = store.doc.width;
@@ -165,10 +167,9 @@ export function createEditor(ctx, { host } = {}) {
       if (active !== null && currentId === "select") selectTool.refresh({});
       requestRender();
     },
-    onResize: () => {
-      if (fitPending || autoFit) fitNow(false);
-      requestRender();
-    },
+    // The host or the free area between the chrome changed (window resize,
+    // the panel shown or hidden, the interface hidden, a DPR change).
+    onResize: ({ resized } = {}) => layoutChanged(resized),
   });
 
   // ---- rendering ---------------------------------------------------------------------
@@ -176,10 +177,24 @@ export function createEditor(ctx, { host } = {}) {
   let scheduled = false;
   let phase = null; // "jobs" | "draw" while a frame runs
   let rerender = false;
+  let canvasDirty = true; // the canvas pass must run (else only the SVG overlay updates)
   let rafId = 0;
   let timerId = 0;
 
+  // Anything that can change the pixels: the doc, the view, the selection
+  // (off-artboard ghosts), modes and overlays.
   function requestRender() {
+    canvasDirty = true;
+    requestFrame();
+  }
+
+  // Overlay-only changes (hover outline, guides, marquee, pills): the canvas
+  // keeps its pixels, so hovering over a big design costs next to nothing.
+  function requestOverlay() {
+    requestFrame();
+  }
+
+  function requestFrame() {
     // Changes made by this frame's queued pointer moves are drawn by it;
     // requests while drawing (a tool's overlay animating) get a next frame.
     if (phase === "jobs") return;
@@ -214,7 +229,10 @@ export function createEditor(ctx, { host } = {}) {
       jobs.clear();
       for (const fn of run) fn();
       phase = "draw";
-      again = stage.draw(now) || again;
+      if (canvasDirty) {
+        canvasDirty = false;
+        again = stage.draw(now) || again;
+      }
       overlay.update();
       crop.drawOverlay(overlay.cropGroup);
       const def = ctx.tools.get(currentId);
@@ -225,12 +243,27 @@ export function createEditor(ctx, { host } = {}) {
     } finally {
       phase = null;
     }
-    if (again || rerender || state.scanning.size) requestRender();
+    if (again || state.scanning.size) requestRender();
+    else if (rerender) requestFrame();
   }
 
+  // Runs fn at the start of the next frame. Jobs that change the doc or the
+  // view mark the canvas through their change events.
   function schedule(fn) {
     jobs.add(fn);
-    requestRender();
+    requestFrame();
+  }
+
+  // Draws now rather than next frame: a resize clears the canvas, and inside
+  // a ResizeObserver callback the next frame would come after this paint.
+  function renderNow() {
+    if (phase || destroyed) {
+      requestRender();
+      return;
+    }
+    canvasDirty = true;
+    scheduled = true;
+    frame();
   }
 
   function placeHint() {
@@ -265,6 +298,9 @@ export function createEditor(ctx, { host } = {}) {
     return explicitInsets || detectInsets(host);
   }
 
+  // The host size and chrome insets, measured now (and kept for the pills).
+  const area = () => (chromeArea = freeArea(viewport.width, viewport.height, insets()));
+
   function setView(view, opts) {
     const v = clampPan({ zoom: clampZoom(view.zoom), panX: view.panX, panY: view.panY }, store.doc.width, store.doc.height, viewport.width, viewport.height);
     viewport.set(v, opts);
@@ -280,8 +316,28 @@ export function createEditor(ctx, { host } = {}) {
       }
     }
     fitPending = false;
-    viewport.set(fitView(store.doc.width, store.doc.height, viewport.width, viewport.height, insets(), { maxZoom: 8 }), { animate });
+    fitArea = area();
+    viewport.set(fitView(store.doc.width, store.doc.height, viewport.width, viewport.height, fitArea.insets, { maxZoom: 8 }), { animate, ms: 200 });
     requestRender();
+  }
+
+  // Fits again when the free area changed while the view is still the
+  // automatic fit (no zoom or pan by the user since). The chrome moving on
+  // its own (the panel shown or hidden) glides along with it; a window
+  // resize follows at once.
+  function refit() {
+    const now = area();
+    if (isHomeOpen()) return;
+    const plan = refitPlan(fitArea, now, { auto: autoFit, pending: fitPending });
+    if (plan) fitNow(plan.animate);
+  }
+
+  // resized: the canvas backing store changed (undefined: measure now).
+  function layoutChanged(resized) {
+    if (destroyed) return;
+    if (resized === undefined) resized = viewport.syncSize();
+    refit();
+    if (resized) renderNow();
   }
 
   // Center of the free area (between the chrome), host-local.
@@ -636,7 +692,7 @@ export function createEditor(ctx, { host } = {}) {
       }
     }
     applyCursor();
-    if (state.gesture?.pillAt === "pointer") requestRender();
+    if (state.gesture?.pillAt === "pointer") requestOverlay();
   }
 
   function onPointerUp(e) {
@@ -680,7 +736,7 @@ export function createEditor(ctx, { host } = {}) {
     if (active !== null || panning) return;
     if (state.hoverId) {
       state.hoverId = null;
-      requestRender();
+      requestOverlay();
     }
     hoverCursor = null;
     state.pointer = null;
@@ -866,7 +922,10 @@ export function createEditor(ctx, { host } = {}) {
       return lastPointer;
     },
     requestRender,
+    requestOverlay,
     schedule,
+    // The free area between the chrome as last measured ({ w, h, insets }).
+    freeArea: () => chromeArea,
     toLocal: (e) => viewport.clientToLocal(e.clientX, e.clientY),
     clientToDoc: (e) => viewport.clientToDoc(e.clientX, e.clientY),
     pick: (p) => pick(p, { pointerType: lastPointer?.pointerType }),
@@ -875,7 +934,7 @@ export function createEditor(ctx, { host } = {}) {
     setHover(id) {
       if (state.hoverId === id) return;
       state.hoverId = id;
-      requestRender();
+      requestOverlay();
     },
     setHoverCursor(css) {
       hoverCursor = css || null;
@@ -932,13 +991,14 @@ export function createEditor(ctx, { host } = {}) {
       const out = { x: s.x, y: s.y };
       state.guides = s.sx || s.sy ? pointGuides(out, T) : [];
       state.spacing = [];
-      requestRender();
+      requestOverlay();
       return out;
     },
     clearGuides() {
+      if (!state.guides.length && !state.spacing.length) return;
       state.guides = [];
       state.spacing = [];
-      requestRender();
+      requestOverlay();
     },
     pick: (e) => pick(viewport.clientToDoc(e.clientX, e.clientY), { pointerType: e.pointerType }),
     setStatus,
@@ -983,6 +1043,7 @@ export function createEditor(ctx, { host } = {}) {
     },
     setInsets(v) {
       explicitInsets = v ? { top: v.top || 0, right: v.right || 0, bottom: v.bottom || 0, left: v.left || 0 } : null;
+      refit();
     },
     docToScreen: (pt) => viewport.docToClient(pt),
     screenToDoc: (pt) => viewport.clientToDoc(pt.x, pt.y),
@@ -1078,7 +1139,7 @@ export function createEditor(ctx, { host } = {}) {
       const next = id || null;
       if (state.panelHoverId === next) return;
       state.panelHoverId = next;
-      requestRender();
+      requestOverlay();
     },
 
     importFiles: (files, opts) => importer.importFiles(files, opts),
@@ -1192,10 +1253,11 @@ export function createEditor(ctx, { host } = {}) {
   on(window, "keydown", onKeyDown, true);
   on(window, "keyup", onKeyUp, true);
   on(window, "blur", onBlur);
-  on(window, "resize", () => {
-    if (viewport.syncSize() && autoFit) fitNow(false);
-    requestRender();
-  });
+  // Settled at the start of the next frame: by then the shell's media
+  // queries have moved the chrome (the panel folds away under 1100 px), so
+  // the fit sees the new insets. The ResizeObserver catches the rest.
+  const onWindowResize = () => layoutChanged();
+  on(window, "resize", () => schedule(onWindowResize));
 
   let remeasureTimer = 0;
   const onFontLoad = () => {

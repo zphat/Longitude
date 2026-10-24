@@ -244,7 +244,7 @@ export function createPalette(ctx) {
         group: "Themes",
         icon: t.scheme === "light" ? "sun" : "moon",
         hint: t.id === current ? "Current" : t.note || "",
-        keywords: "theme color color appearance look dark light",
+        keywords: "theme color colors appearance look dark light",
         queryOnly: true,
         run: () => ctx.commands.run("view.theme", { id: t.id }),
       });
@@ -373,7 +373,7 @@ export function createPalette(ctx) {
         h(
           "div",
           { class: "palette-empty" },
-          h("div", { class: "palette-empty-title" }, `Nothing matches "${q.trim()}"`),
+          h("div", { class: "palette-empty-title" }, `Nothing matches “${q.trim()}”`),
           h("div", { class: "muted" }, "Try a shorter word, like “align” or “export”."),
         ),
       );

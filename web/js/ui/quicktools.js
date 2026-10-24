@@ -22,6 +22,7 @@ import {
   safeFileName,
 } from "../features/compress.js";
 import { createDoc, createLayer } from "../core/model.js";
+import { keysLabel } from "../app/context.js";
 
 // ---- icons ------------------------------------------------------------------
 
@@ -203,7 +204,7 @@ export function normalizeConvertSettings(raw = {}) {
 
 // ---- processing (browser) ---------------------------------------------------
 
-const abortError = () => (typeof DOMException === "function" ? new DOMException("Cancelled", "AbortError") : Object.assign(Error("Cancelled"), { name: "AbortError" }));
+const abortError = () => (typeof DOMException === "function" ? new DOMException("Canceled", "AbortError") : Object.assign(Error("Canceled"), { name: "AbortError" }));
 const isAbort = (err) => err?.name === "AbortError" || err?.code === "cancelled";
 const checkAbort = (signal) => {
   if (signal?.aborted) throw abortError();
@@ -294,7 +295,9 @@ export async function convertFile(file, settings, signal) {
 
 // ---- sheet (modal) ----------------------------------------------------------
 
-const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+// Unselected segmented buttons carry tabindex -1 (one tab stop per switch),
+// so every alternative leaves those out, matching the browser's tab order.
+const FOCUSABLE = ["button:not([disabled])", "[href]", "input:not([disabled])", "select:not([disabled])", "textarea:not([disabled])", "[tabindex]"].map((s) => `${s}:not([tabindex="-1"])`).join(", ");
 // Key events and clipboard events inside a sheet stay inside it, so app
 // shortcuts and the editor's paste handler do not act behind the dialog.
 const CONTAINED = ["keyup", "keypress", "paste", "copy", "cut", "wheel"];
@@ -466,6 +469,7 @@ export function pickFiles({ multiple = true } = {}, onFiles) {
   input.click();
 }
 
+// The whole zone is a click target; the button is there for the keyboard.
 function dropZone({ title, hint, multiple = true, onFiles }) {
   const pick = () => pickFiles({ multiple }, onFiles);
   const el = h(
@@ -473,12 +477,12 @@ function dropZone({ title, hint, multiple = true, onFiles }) {
     { class: "qt-drop" },
     h("div", { class: "qt-drop-icon" }, icon("upload", { size: "lg" })),
     h("div", { class: "qt-drop-title" }, title),
-    h("div", { class: "qt-drop-hint" }, hint),
+    h("div", { class: "qt-drop-hint" }, `${hint} You can also paste with ${keysLabel("Mod+V")}.`),
     button({ label: multiple ? "Choose images" : "Choose an image", kind: "primary", big: true, onClick: pick }),
     h("div", { class: "qt-drop-formats" }, "PNG, JPG, WebP, GIF, AVIF, BMP or SVG"),
   );
   el.addEventListener("click", (e) => {
-    if (e.target === el) pick();
+    if (!e.target.closest("button")) pick();
   });
   return el;
 }
@@ -489,18 +493,19 @@ const dprNow = () => Math.max(1, Math.min(3, globalThis.devicePixelRatio || 1));
 
 // Two images over each other with a draggable split. Click toggles between
 // fit and 100 %; at 100 % drag pans. Sources are canvases or ImageBitmaps;
-// the after image is stretched to the before image's size.
-export function createCompare({ checker = false, pad = 28 } = {}) {
+// the after image is stretched to the before image's size. padBottom keeps
+// room under the image for overlays (hints, pills) so they never cover it.
+export function createCompare({ checker = false, pad = 28, padBottom = pad } = {}) {
   ensureIcons();
   const beforeSlot = h("div", { class: "xp-cmp-layer before" });
   const afterSlot = h("div", { class: "xp-cmp-layer after" });
   const handle = h(
     "div",
-    { class: "xp-cmp-handle", role: "slider", tabindex: "0", "aria-label": "Before and after", "aria-valuemin": "0", "aria-valuemax": "100", "data-tip": "Drag to compare" },
+    { class: "xp-cmp-handle", role: "slider", tabindex: "0", "aria-label": "Before and after", "aria-valuemin": "0", "aria-valuemax": "100", "data-tip": "Drag to compare. Double-click to center." },
     h("span", { class: "xp-cmp-knob" }, icon("chevrons-left-right", { size: "sm" })),
   );
   const frame = h("div", { class: "xp-cmp-frame" }, beforeSlot, afterSlot, handle);
-  const scroller = h("div", { class: "xp-cmp-scroll" }, frame);
+  const scroller = h("div", { class: "xp-cmp-scroll", style: { padding: `${pad}px ${pad}px ${padBottom}px` } }, frame);
   const tagA = h("span", { class: "xp-cmp-tag a" });
   const tagB = h("span", { class: "xp-cmp-tag b" });
   const zoomText = h("span", { class: "num" }, "100%");
@@ -540,7 +545,7 @@ export function createCompare({ checker = false, pad = 28 } = {}) {
     const { w: nw, h: nh } = size(before);
     if (!nw || !nh || !scroller.clientWidth) return;
     const aw = Math.max(40, scroller.clientWidth - pad * 2);
-    const ah = Math.max(40, scroller.clientHeight - pad * 2);
+    const ah = Math.max(40, scroller.clientHeight - pad - padBottom);
     fitScale = Math.min(1, aw / nw, ah / nh);
     if (fitScale >= 1 && mode === "actual") mode = "fit";
     const s = mode === "fit" ? fitScale : 1;
@@ -571,13 +576,21 @@ export function createCompare({ checker = false, pad = 28 } = {}) {
     timer = setTimeout(layout, 40);
   };
 
-  function setSplit(v) {
+  // The label of a side that is nearly hidden fades out; the first use of the
+  // split or the zoom retires the "drag to compare" hint.
+  function setSplit(v, { user = false } = {}) {
     split = clamp(v, 0, 1);
     const pct = `${(split * 100).toFixed(2)}%`;
     afterSlot.style.clipPath = `inset(0 0 0 ${pct})`;
     handle.style.left = pct;
     handle.setAttribute("aria-valuenow", String(Math.round(split * 100)));
+    el.classList.toggle("hide-a", split < 0.12);
+    el.classList.toggle("hide-b", split > 0.88);
+    if (user) el.classList.add("used");
   }
+
+  // Split from a pointer x; the frame's box is read once per drag.
+  const splitAt = (r, x) => setSplit((x - r.left) / (r.width || 1), { user: true });
 
   function toggleZoom(e) {
     if (fitScale >= 1) return;
@@ -585,6 +598,7 @@ export function createCompare({ checker = false, pad = 28 } = {}) {
     const fx = e ? clamp((e.clientX - r.left) / r.width, 0, 1) : 0.5;
     const fy = e ? clamp((e.clientY - r.top) / r.height, 0, 1) : 0.5;
     mode = mode === "fit" ? "actual" : "fit";
+    el.classList.add("used");
     layout();
     if (mode === "actual") {
       scroller.scrollLeft = fx * frame.offsetWidth + pad - scroller.clientWidth / 2;
@@ -601,10 +615,8 @@ export function createCompare({ checker = false, pad = 28 } = {}) {
     } catch {}
     handle.focus({ preventScroll: true });
     el.classList.add("dragging");
-    const move = (ev) => {
-      const r = frame.getBoundingClientRect();
-      setSplit((ev.clientX - r.left) / r.width);
-    };
+    const r = frame.getBoundingClientRect();
+    const move = (ev) => splitAt(r, ev.clientX);
     const up = () => {
       handle.removeEventListener("pointermove", move);
       handle.removeEventListener("pointerup", up);
@@ -617,12 +629,16 @@ export function createCompare({ checker = false, pad = 28 } = {}) {
   });
   handle.addEventListener("keydown", (e) => {
     const step = e.shiftKey ? 0.2 : 0.05;
-    if (e.key === "ArrowLeft" || e.key === "ArrowDown") setSplit(split - step);
-    else if (e.key === "ArrowRight" || e.key === "ArrowUp") setSplit(split + step);
-    else if (e.key === "Home") setSplit(0);
-    else if (e.key === "End") setSplit(1);
+    if (e.key === "ArrowLeft" || e.key === "ArrowDown") setSplit(split - step, { user: true });
+    else if (e.key === "ArrowRight" || e.key === "ArrowUp") setSplit(split + step, { user: true });
+    else if (e.key === "Home") setSplit(0, { user: true });
+    else if (e.key === "End") setSplit(1, { user: true });
     else return;
     e.preventDefault();
+  });
+  handle.addEventListener("dblclick", (e) => {
+    e.stopPropagation();
+    setSplit(0.5, { user: true });
   });
 
   frame.addEventListener("pointerdown", (e) => {
@@ -632,6 +648,7 @@ export function createCompare({ checker = false, pad = 28 } = {}) {
     const sy = e.clientY;
     const sl = scroller.scrollLeft;
     const st = scroller.scrollTop;
+    const r = frame.getBoundingClientRect();
     let moved = false;
     try {
       frame.setPointerCapture(e.pointerId);
@@ -646,15 +663,15 @@ export function createCompare({ checker = false, pad = 28 } = {}) {
         scroller.scrollLeft = sl - dx;
         scroller.scrollTop = st - dy;
       } else if (after) {
-        const r = frame.getBoundingClientRect();
-        setSplit((ev.clientX - r.left) / r.width);
+        el.classList.add("dragging");
+        splitAt(r, ev.clientX);
       }
     };
     const up = (ev) => {
       frame.removeEventListener("pointermove", move);
       frame.removeEventListener("pointerup", up);
       frame.removeEventListener("pointercancel", up);
-      el.classList.remove("panning");
+      el.classList.remove("panning", "dragging");
       if (!moved && ev.type === "pointerup") toggleZoom(ev);
     };
     frame.addEventListener("pointermove", move);
@@ -774,10 +791,13 @@ function createBatchMode(ctx, cfg) {
   const summary = h("div", { class: "qt-summary" });
   const downloadBtn = button({ label: "Download all", icon: "download", kind: "primary", onClick: () => downloadAll() });
   const footer = h("div", { class: "qt-foot" }, smallPrint(), h("div", { class: "qt-foot-actions" }, summary, downloadBtn));
-  const main = h("div", { class: "qt-main" }, listHead, noteEl, listEl);
+  // The settings stay in view while the list is empty, so the defaults are
+  // visible (and can be changed) before the first file arrives.
+  const main = h("div", { class: "qt-main" });
   const work = h("div", { class: "qt-work" }, settingsEl, main);
   const empty = dropZone({ title: cfg.emptyTitle, hint: cfg.emptyHint, multiple: true, onFiles: addFiles });
-  const body = h("div", { class: "qt-body" }, empty);
+  let showingList = null;
+  const body = h("div", { class: "qt-body" }, work);
   const el = h("div", { class: ["qt-mode", `qt-${cfg.id}`] }, body, footer);
 
   let webpOk = true;
@@ -916,11 +936,16 @@ function createBatchMode(ctx, cfg) {
     return h("div", { class: "qt-row", role: "listitem" }, thumb, h("div", { class: "qt-row-main" }, name, meta), status, h("div", { class: "qt-row-actions" }, dl, rm));
   }
 
+  // A row repaints only when what it shows changes: a long list stays cheap
+  // and a finished row's chip fades in once.
   function paintRow(row) {
     const { meta, status, dl } = row.parts;
-    row.el.dataset.status = row.status;
     const out = row.out;
-    const fresh = out && row.version === version && (row.status === "done" || row.status === "kept");
+    const fresh = !!out && row.version === version && (row.status === "done" || row.status === "kept");
+    const sig = `${row.status}|${fresh}|${row.error || ""}|${fresh ? `${out.bytes}|${out.width}x${out.height}` : ""}`;
+    if (row.sig === sig) return;
+    row.sig = sig;
+    row.el.dataset.status = row.status;
     meta.replaceChildren();
     if (fresh) meta.append(...cfg.meta(row, out));
     else meta.append(formatBytes(row.size));
@@ -966,8 +991,11 @@ function createBatchMode(ctx, cfg) {
 
   function paintAll() {
     const has = rows.length > 0;
-    if (has && empty.isConnected) body.replaceChildren(work);
-    if (!has && !empty.isConnected) body.replaceChildren(empty);
+    if (showingList !== has) {
+      showingList = has;
+      // The note (skipped files) shows above the drop zone too.
+      main.replaceChildren(...(has ? [listHead, noteEl, listEl] : [noteEl, empty]));
+    }
     footer.classList.toggle("empty", !has);
     noteEl.textContent = note;
     noteEl.hidden = !note;
@@ -983,6 +1011,7 @@ function createBatchMode(ctx, cfg) {
       return;
     }
     downloadBtn.setDisabled(true);
+    downloadBtn.setLabel("Zipping");
     try {
       const zip = await makeZip(ready.map((r) => ({ name: r.out.name, blob: r.out.blob })));
       download(zip, cfg.zipName);
@@ -1017,7 +1046,7 @@ function compressMode(ctx) {
     workingLabel: "Compressing",
     zipName: "compressed-images.zip",
     emptyTitle: "Drop images to make them smaller",
-    emptyHint: "One or many. Paste with Ctrl V works too.",
+    emptyHint: "One image or many at once.",
     load: () => normalizeCompressSettings(prefsFor(ctx, "compress")),
     save: (s) => savePrefs(ctx, "compress", s),
     process: compressFile,
@@ -1068,7 +1097,7 @@ function convertMode(ctx) {
     workingLabel: "Converting",
     zipName: "resized-images.zip",
     emptyTitle: "Drop images to resize or convert",
-    emptyHint: "Pick a size and a format. Paste with Ctrl V works too.",
+    emptyHint: "Every image gets the size and format you set.",
     load: () => normalizeConvertSettings(prefsFor(ctx, "convert")),
     save: (s) => savePrefs(ctx, "convert", s),
     process: convertFile,
@@ -1196,7 +1225,7 @@ function bgMode(ctx, sheet) {
   let loadToken = 0;
 
   const compare = createCompare({ checker: true });
-  const empty = dropZone({ title: "Drop an image to remove its background", hint: "People, products, pets. Paste with Ctrl V works too.", multiple: false, onFiles: addFiles });
+  const empty = dropZone({ title: "Drop an image to remove its background", hint: "People, products, pets.", multiple: false, onFiles: addFiles });
   const stage = h("div", { class: "qt-bg-stage" }, empty);
   const side = h("aside", { class: "qt-side" });
   const body = h("div", { class: "qt-body" }, h("div", { class: "qt-work qt-bg-work" }, side, stage));
@@ -1500,7 +1529,8 @@ export function openQuickTool(kind, ctx, { files } = {}) {
   const closeBtn = iconButton({ icon: "x", tip: "Close", kbd: "Esc", onClick: () => sheet.close() });
   const head = h("header", { class: "xp-head" }, h("h2", { class: "xp-title" }, "Quick tools"), tabs, h("div", { class: "xp-head-end" }, closeBtn));
   const host = h("div", { class: "qt-host" });
-  const dropHint = h("div", { class: "xp-drop-hint" }, icon("upload", { size: "lg" }), h("span", null, "Drop to add"));
+  const dropText = h("span", null, "Drop to add");
+  const dropHint = h("div", { class: "xp-drop-hint" }, icon("upload", { size: "lg" }), dropText);
   sheet.panel.append(head, host, dropHint);
 
   function mode(id) {
@@ -1515,6 +1545,8 @@ export function openQuickTool(kind, ctx, { files } = {}) {
     if (active === id) return;
     active = id;
     tabs.value = id;
+    // Remove background works on one image: a drop replaces it.
+    dropText.textContent = id === "remove-bg" ? "Drop to use this image" : "Drop to add";
     const m = mode(id);
     host.replaceChildren(m.el);
     m.shown?.();

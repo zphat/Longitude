@@ -1,10 +1,12 @@
 /* Inspector, layers panel, color picker, font picker and quick bar
    (js/ui/inspector.js, layers.js, colorpicker.js, fontpicker.js, quickbar.js).
-   The right island is about 292 px wide; everything sits on a 4 px grid. */
+   The right island is about 292 px wide; everything sits on a 4 px grid, and
+   every control in a section body is one height (--ctl-h) so rows line up. */
 
 /* ---- inspector ----------------------------------------------------------- */
 
 .insp {
+  --ctl-h: 32px;
   width: 100%;
   min-width: 0;
   padding-bottom: 8px;
@@ -16,13 +18,45 @@
   padding-bottom: 4px;
 }
 .insp .sec-head {
-  min-height: 40px;
+  min-height: 36px;
 }
 .insp .sec-body {
   gap: 8px;
 }
 .insp-dyn {
   display: contents;
+}
+
+/* One row height for fields, swatches, selects, segmented switches and
+   buttons (a 34 px Crop button no longer sits 2 px proud of the 32 px frame
+   switch beside it). */
+.insp .ctl-number,
+.insp .ctl-select,
+.insp .insp-name {
+  height: var(--ctl-h);
+  min-height: 0;
+}
+.insp .ctl-select,
+.insp .insp-name {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.insp .ctl-swatch:not(.sm) {
+  width: var(--ctl-h);
+  height: var(--ctl-h);
+}
+/* Segmented switches too: 26 px buttons in 2 px padding and a 1 px border. */
+.insp .ctl-seg:not(.sm) .seg {
+  height: calc(var(--ctl-h) - 6px);
+}
+.insp .sec-body .btn:not(.big):not(.sm) {
+  min-height: var(--ctl-h);
+  padding-top: 0;
+  padding-bottom: 0;
+}
+/* Slider values end flush with the track and the fields above them. */
+.insp .ctl-slider .ctl-num-input {
+  margin-right: -7px;
 }
 
 /* "Mixed" values across a multi-selection */
@@ -35,6 +69,24 @@
 }
 .icon-btn.mixed {
   box-shadow: inset 0 0 0 1px var(--accent-line);
+}
+/* A mixed slider shows no single value: empty track, hollow thumb. */
+.ctl-slider.mixed .ctl-range::-webkit-slider-runnable-track {
+  background: var(--line);
+}
+.ctl-slider.mixed .ctl-range::-moz-range-progress {
+  background: transparent;
+}
+.ctl-slider.mixed .ctl-range::-webkit-slider-thumb {
+  background: var(--panel2);
+  box-shadow: 0 0 0 1px var(--muted);
+}
+.ctl-slider.mixed .ctl-range::-moz-range-thumb {
+  background: var(--panel2);
+  box-shadow: 0 0 0 1px var(--muted);
+}
+.ctl-slider.mixed .ctl-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: var(--focus);
 }
 
 .btn.sm {
@@ -123,8 +175,9 @@
 
 .insp-text-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 8px 4px;
 }
 .insp-text-row > .ctl-number {
   flex: 1;
@@ -145,7 +198,7 @@
   min-width: 0;
   display: flex;
   align-items: center;
-  height: 30px;
+  height: var(--ctl-h, 32px);
   border-radius: var(--r-s);
   background: var(--panel2);
   border: 1px solid var(--line-soft);
@@ -197,7 +250,7 @@
 .insp-grad-bar {
   flex: 1;
   min-width: 24px;
-  height: 30px;
+  height: var(--ctl-h, 32px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -266,7 +319,6 @@
 
 .insp-name {
   width: 100%;
-  min-height: 30px;
   font-size: 12.5px;
 }
 
@@ -398,6 +450,34 @@
   pointer-events: none;
 }
 
+/* Sections added by mods (always loaded; css/mods.css only styles Settings). */
+/* Shown by the mod API when a mod's section throws. */
+.mod-section-error {
+  margin: 0;
+  color: var(--red);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+.mod-section-error button {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+/* A column with the inspector's spacing, for mod section content. */
+.mod-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+/* A short explanation line mods can use inside inspector sections. */
+.mod-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
 /* Dialogs opened by the inspector */
 .insp-dlg {
   display: flex;
@@ -466,8 +546,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  height: 40px;
-  padding: 0 4px 0 8px;
+  height: 36px;
+  padding: 0 4px 0 6px;
   border-radius: var(--r-s);
   transition: background var(--t-fast), opacity var(--t-fast);
 }
@@ -764,11 +844,13 @@
 .cp .cp-hex:focus {
   box-shadow: none;
 }
+/* The swatch lists give up height first when the window is short (the rest
+   of the picker is about 280 px). */
 .cp-lists {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 228px;
+  max-height: clamp(52px, calc(var(--pop-room, 620px) - 280px), 228px);
   margin: 0 -4px;
   padding: 0 4px 2px;
   overflow-y: auto;
@@ -811,15 +893,21 @@
   transform: scale(1.14);
   z-index: 1;
 }
+/* The swatch you are on */
+.cp-sw.on::after {
+  box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 3px var(--panel);
+}
 .cp-sw:focus-visible {
   box-shadow: var(--focus);
 }
 
 /* ---- font picker --------------------------------------------------------- */
 
+/* --pop-room (set when it opens) keeps the picker on its side of the anchor,
+   so it never covers the text it previews on a short window. */
 .fp {
   width: 304px;
-  height: min(468px, 72vh);
+  height: clamp(240px, var(--pop-room, 468px), min(468px, 72vh));
   display: flex;
   flex-direction: column;
   border-radius: var(--r);
@@ -863,22 +951,20 @@
 .fp-search-input::-webkit-search-cancel-button {
   -webkit-appearance: none;
 }
+/* All seven categories stay visible: the pills wrap to a second row instead
+   of scrolling out of sight. */
 .fp-tabs {
   flex: none;
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
-  padding: 0 12px 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  padding: 0 12px 10px;
   border-bottom: 1px solid var(--line-soft);
-}
-.fp-tabs::-webkit-scrollbar {
-  display: none;
 }
 .fp-tab {
   flex: none;
   height: 24px;
-  padding: 0 9px;
+  padding: 0 10px;
   border-radius: 99px;
   color: var(--muted);
   font-size: 11.5px;
@@ -889,6 +975,9 @@
 .fp-tab:hover {
   color: var(--text);
   background: var(--hover);
+}
+.fp-tab:focus-visible {
+  border-radius: 99px;
 }
 .fp-tab.on {
   color: var(--accent);

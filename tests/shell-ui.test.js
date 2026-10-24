@@ -3,9 +3,9 @@
 
 import assert from "node:assert/strict";
 import { placeFloating, splitKeys } from "../web/js/ui/menus.js";
-import { relativeTime, fitBox } from "../web/js/ui/home.js";
+import { relativeTime, fitBox, rowCapacity } from "../web/js/ui/home.js";
 import { allowedOnHome, shortcutGroups, swallowCombo, boundCommand } from "../web/js/ui/keyboard.js";
-import { rovingIndex, shapeCommandId } from "../web/js/ui/shell.js";
+import { rovingIndex, shapeCommandId, shortLabel } from "../web/js/ui/shell.js";
 import { iconNames, iconBody, hasIcon } from "../web/js/ui/icons.js";
 import { normalizeEvent } from "../web/js/app/context.js";
 import { fieldOwnsCombo, isTextEntry } from "../web/js/ui/dom.js";
@@ -64,6 +64,27 @@ Deno.test("fitBox: keeps the aspect inside the box", () => {
   assert.deepEqual(fitBox(1280, 720, 104, 58), { w: 103.1, h: 58 });
   assert.deepEqual(fitBox(1080, 1920, 104, 58), { w: 32.6, h: 58 });
   assert.deepEqual(fitBox(3000, 3000, 104, 58), { w: 58, h: 58 });
+});
+
+Deno.test("shortLabel: drops the group name its heading already shows", () => {
+  assert.equal(shortLabel("YouTube channel banner", "YouTube"), "Channel banner");
+  assert.equal(shortLabel("Spotify artist profile picture", "Spotify"), "Artist profile picture");
+  assert.equal(shortLabel("youtube Shorts", "YouTube"), "Shorts");
+  // Not a prefix, the whole label, or no group: unchanged.
+  assert.equal(shortLabel("Square post", "Social"), "Square post");
+  assert.equal(shortLabel("YouTube", "YouTube"), "YouTube");
+  assert.equal(shortLabel("YouTubers wall", "YouTube"), "YouTubers wall");
+  assert.equal(shortLabel("Story", ""), "Story");
+  assert.equal(shortLabel("Story"), "Story");
+});
+
+Deno.test("rowCapacity: the column count CSS auto-fill makes", () => {
+  // 4 cards of 256 px with 10 px gaps need 4 * 256 + 3 * 10 = 1054 px.
+  assert.equal(rowCapacity(1054, 256, 10), 4);
+  assert.equal(rowCapacity(1053, 256, 10), 3);
+  assert.equal(rowCapacity(100, 256, 10), 1);
+  assert.equal(rowCapacity(0, 256, 10), 0);
+  assert.equal(rowCapacity(NaN, 256, 10), 0);
 });
 
 Deno.test("allowedOnHome: only start-up commands run over Home", () => {

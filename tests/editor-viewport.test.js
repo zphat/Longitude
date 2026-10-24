@@ -2,7 +2,7 @@
 //   deno test --allow-read tests/editor-viewport.test.js
 
 import assert from "node:assert/strict";
-import { MIN_ZOOM, MAX_ZOOM, clampZoom, zoomAround, fitView, fitRectView, stepZoom, clampPan, wheelZoomFactor } from "../web/js/editor/viewport.js";
+import { MIN_ZOOM, MAX_ZOOM, clampZoom, zoomAround, fitView, fitRectView, stepZoom, clampPan, wheelZoomFactor, freeArea, refitPlan } from "../web/js/editor/viewport.js";
 
 const near = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) <= eps, `${a} != ${b}`);
 
@@ -62,4 +62,37 @@ Deno.test("wheelZoomFactor: mouse notches step, pinches are smooth", () => {
   near(wheelZoomFactor({ deltaY: 100, deltaMode: 0 }), 1 / 1.2);
   const pinch = wheelZoomFactor({ deltaY: -3.5, deltaMode: 0 });
   assert.ok(pinch > 1 && pinch < 1.06);
+});
+
+Deno.test("freeArea keys the host size and chrome insets in whole px", () => {
+  const a = freeArea(1920.3, 1080, { top: 68, right: 316, bottom: 64, left: 72 });
+  assert.equal(a.w, 1920);
+  assert.equal(a.h, 1080);
+  assert.deepEqual(a.insets, { top: 68, right: 316, bottom: 64, left: 72 });
+  assert.equal(freeArea(1920, 1080.2, { top: 68, right: 316.4, bottom: 64, left: 72 }).key, a.key, "sub-pixel noise is not a change");
+  assert.notEqual(freeArea(1920, 1080, { top: 68, right: 10, bottom: 64, left: 72 }).key, a.key);
+  assert.deepEqual(freeArea(800, 600).insets, { top: 0, right: 0, bottom: 0, left: 0 });
+});
+
+Deno.test("refitPlan: the automatic fit follows the free area, never the user's view", () => {
+  const wide = freeArea(1920, 1080, { top: 68, right: 316, bottom: 64, left: 72 });
+  const panelHidden = freeArea(1920, 1080, { top: 68, right: 10, bottom: 64, left: 72 });
+  const narrow = freeArea(1024, 700, { top: 68, right: 10, bottom: 64, left: 72 });
+  assert.equal(refitPlan(wide, wide), null, "nothing changed");
+  assert.deepEqual(refitPlan(wide, panelHidden), { animate: true }, "the panel folding away glides");
+  assert.deepEqual(refitPlan(narrow, wide), { animate: false }, "a window resize snaps (and sees the new insets)");
+  assert.deepEqual(refitPlan(wide, narrow), { animate: false });
+  assert.equal(refitPlan(wide, narrow, { auto: false }), null, "the user zoomed or panned: leave the view alone");
+  assert.deepEqual(refitPlan(null, wide), { animate: false }, "first fit");
+  assert.deepEqual(refitPlan(wide, wide, { auto: false, pending: true }), { animate: false }, "a fit waiting for a size runs");
+});
+
+Deno.test("refitPlan + fitView: coming back from a narrow window keeps the artboard clear of the panel", () => {
+  // 1024 px: the panel is folded away. 1920 px: it is back, 316 px wide.
+  const narrow = freeArea(1024, 700, { top: 68, right: 10, bottom: 64, left: 72 });
+  const wide = freeArea(1920, 1080, { top: 68, right: 316, bottom: 64, left: 72 });
+  assert.ok(refitPlan(narrow, wide));
+  const v = fitView(1280, 720, wide.w, wide.h, wide.insets, { maxZoom: 8 });
+  assert.ok(v.panX + 1280 * v.zoom <= 1920 - 316, "right edge stays left of the inspector");
+  assert.ok(v.panX >= 72);
 });

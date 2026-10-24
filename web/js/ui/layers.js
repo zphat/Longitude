@@ -563,6 +563,19 @@ export function mountLayers(el, ctx) {
     d(() => ctx.fonts.removeEventListener("load", onFont));
   }
   d(ctx.on("theme", () => redrawWhere(() => true)));
+  // Moving the window to a screen with another pixel ratio redraws the
+  // thumbnails sharp (the query is for the current ratio, so it fires once).
+  const watchDpr = () => {
+    const mq = globalThis.matchMedia?.(`(resolution: ${globalThis.devicePixelRatio || 1}dppx)`);
+    if (typeof mq?.addEventListener !== "function") return;
+    const onDpr = () => {
+      redrawWhere(() => true);
+      watchDpr();
+    };
+    mq.addEventListener("change", onDpr, { once: true });
+    d(() => mq.removeEventListener("change", onDpr));
+  };
+  watchDpr();
   d(() => clearTimeout(thumbTimer));
   d(() => endDrag(false));
 

@@ -430,3 +430,13 @@ Deno.test("register adds a mod font and dispose removes it", async () => {
   assert(reg.list().some((f) => f.family === "Georgia"), "installed system font is listed");
   sys();
 });
+
+Deno.test("stack follows families that are added and removed", async () => {
+  const { reg } = await registry();
+  eq(reg.stack("Shiny Mod Font"), '"Shiny Mod Font", sans-serif');
+  const off = reg.register({ family: "Shiny Mod Font", fallback: "Georgia, serif", faces: [{ url: "data:font/woff2;base64,AAAA", weight: 400 }] });
+  eq(reg.stack("Shiny Mod Font"), '"Shiny Mod Font", "Georgia", serif');
+  eq(reg.stack("Shiny Mod Font"), '"Shiny Mod Font", "Georgia", serif', "cached answer is the same");
+  off();
+  eq(reg.stack("Shiny Mod Font"), '"Shiny Mod Font", sans-serif');
+});

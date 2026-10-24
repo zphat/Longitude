@@ -99,6 +99,42 @@ export function debounce(fn, ms) {
   return wrapped;
 }
 
+// Adds a stylesheet once and resolves when it has loaded (or failed, or after
+// `timeout` ms), so a dialog it styles never shows unstyled. A link already
+// in the page counts. Without a browser (tests, a fake DOM) it resolves at once.
+const styles = new Map(); // absolute href -> Promise
+export function loadStyle(href, { timeout = 4000 } = {}) {
+  const doc = globalThis.document;
+  if (!doc?.head) return Promise.resolve();
+  const url = new URL(href, doc.baseURI).href;
+  if (styles.has(url)) return styles.get(url);
+  const abs = (l) => new URL(l.getAttribute("href") || "", doc.baseURI).href;
+  const found = [...doc.querySelectorAll('link[rel="stylesheet"]')].find((l) => abs(l) === url);
+  const link = found || h("link", { rel: "stylesheet", href: url });
+  const p = new Promise((resolve) => {
+    // A browser sets link.sheet once the file is in; a fake DOM has no such property.
+    if (link.sheet || !("sheet" in link)) return resolve();
+    const done = (ok) => {
+      clearTimeout(timer);
+      link.removeEventListener("load", onLoad);
+      link.removeEventListener("error", onError);
+      if (!ok && !found) {
+        styles.delete(url); // tried again next time
+        link.remove();
+      }
+      resolve();
+    };
+    const onLoad = () => done(true);
+    const onError = () => done(false);
+    const timer = setTimeout(() => done(true), timeout);
+    link.addEventListener("load", onLoad);
+    link.addEventListener("error", onError);
+  });
+  styles.set(url, p);
+  if (!found) doc.head.append(link);
+  return p;
+}
+
 // Pointer drag helper with capture. onMove/onUp receive (e, start).
 export function drag(e, { onMove, onUp, cursor } = {}) {
   const start = { x: e.clientX, y: e.clientY, e };

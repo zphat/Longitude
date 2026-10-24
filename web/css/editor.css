@@ -37,13 +37,19 @@
   pointer-events: none;
 }
 
-/* Hover and selection */
+/* Hover and selection. Outlines of upright boxes are placed on whole
+   pixels by selection.js, so they stay sharp at any zoom. */
 .ed-hover {
   fill: none;
   stroke: var(--accent);
   stroke-width: 1.5;
   opacity: 0.85;
   stroke-linejoin: round;
+}
+.ed-hover.ed-halo {
+  stroke: var(--ed-halo);
+  stroke-width: 3.5;
+  opacity: 0.35;
 }
 .ed-sel {
   fill: none;

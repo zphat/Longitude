@@ -60,6 +60,10 @@ const { createRegistry, createCommands } = await import("../web/js/app/context.j
 const { Store } = await import("../web/js/core/store.js");
 const { createLayer } = await import("../web/js/core/model.js");
 const { registerDrawTools } = await import("../web/js/editor/tools/draw.js");
+const { maskLib } = await import("../web/js/editor/tools/masklib.js");
+// The tools load the mask helpers on first use; having them in the module
+// map already keeps the short waits below deterministic.
+await import("../web/js/features/bgremove/mask.js");
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -141,6 +145,16 @@ function dab(t, x, y, extra = {}) {
   t.tool.pointerUp({ ...ev(x, y, { buttons: 0 }), ...extra }, t.api);
 }
 
+Deno.test("the brush loads the mask helpers when it is picked, not at boot", async () => {
+  const t = setup();
+  assert.equal(maskLib(), null, "registering the tools loads nothing");
+  t.tool.activate(t.api);
+  await wait(5);
+  assert.equal(typeof maskLib()?.paintMask, "function");
+  t.tool.deactivate(t.api);
+  t.dispose();
+});
+
 Deno.test("a refine dab that changes nothing stores no mask and no undo step", async () => {
   const t = setup();
   t.tool.activate(t.api);
@@ -164,7 +178,7 @@ Deno.test("a refine dab that changes nothing stores no mask and no undo step", a
   t.dispose();
 });
 
-Deno.test("a cancelled refine stroke is taken back, not saved", async () => {
+Deno.test("a canceled refine stroke is taken back, not saved", async () => {
   const t = setup();
   t.tool.activate(t.api);
   await wait(5);

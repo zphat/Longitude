@@ -86,7 +86,7 @@ Deno.test("planModel uses the GPU-only file only where it fits", async () => {
 
 Deno.test("friendlyError gives plain messages", () => {
   const abort = friendlyError(Object.assign(Error("x"), { name: "AbortError" }));
-  assert(abort.code === "cancelled" && abort.message === "Cancelled", "cancel");
+  assert(abort.code === "cancelled" && abort.message === "Canceled", "cancel");
   const oom = friendlyError(Error("failed to call OrtRun(). error code = 6. std::bad_alloc"));
   assert(oom.code === "memory" && !/OrtRun/.test(oom.message), "memory");
   const other = friendlyError(Error("Unexpected input data type"));

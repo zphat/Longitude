@@ -356,7 +356,7 @@ async function chooseProvider(ctx, preferred) {
 }
 
 // The whole flow for one or more image layers: consent before a download,
-// then one layer at a time. Cancelling is quiet; errors become a toast.
+// then one layer at a time. Canceling is quiet; errors become a toast.
 export async function removeBackground(ctx, ids, { provider } = {}) {
   const bg = ctx.bg;
   if (!bg) {
@@ -403,8 +403,10 @@ export function edgeState(layer) {
 
 async function applyEdge(ctx, layerId, next) {
   const layer = ctx.store.get(layerId);
-  const masks = ctx.bg?.masks;
-  if (!layer?.mask || !masks) return;
+  if (!layer?.mask || !ctx.bg) return;
+  // The mask helpers load with the first removal or edge change (a few ms).
+  const masks = ctx.bg.masks || (await ctx.bg.loadMasks?.().catch(() => null));
+  if (!masks) return;
   const st = edgeState(layer);
   const soften = next.soften ?? st.soften;
   const grow = next.grow ?? st.grow;
@@ -966,7 +968,17 @@ export class Panel {
       };
     }
     const s = section({ title, id, open: remembered ?? o.open ?? true, toggle: tg, actions: o.actions || [] });
-    if (o.toggle) this.onUpdate(() => s.setOn(this.every(o.toggle.get)));
+    if (o.toggle) {
+      // Switched on from anywhere (the quick bar, the palette, undo): the
+      // section opens so its settings are right there.
+      let wasOn = tg.value;
+      this.onUpdate(() => {
+        const on = this.every(o.toggle.get);
+        s.setOn(on);
+        if (on && !wasOn) s.setOpen(true);
+        wasOn = on;
+      });
+    }
     s.head.querySelector(".sec-title")?.addEventListener("click", () => openState.set(id, !s.el.classList.contains("closed")));
     s.el.classList.add("insp-sec");
     return s;
@@ -1124,19 +1136,21 @@ function textSections(p) {
   main.body.append(fontButton(p), h("div", { class: "insp-text-row" }, size, align, italic, upper), weight);
   out.push(sec(main, 10));
 
-  const color = p.section("text-color", "Color");
+  // Solid or gradient sits in the header, so the color itself is the first
+  // row (one row less above Stroke on short windows).
+  const fillKind = p.seg({
+    options: [
+      { value: "solid", label: "Solid" },
+      { value: "gradient", label: "Gradient" },
+    ],
+    get: (l) => (l.gradient.on ? "gradient" : "solid"),
+    set: (v) => ({ gradient: { on: v === "gradient" } }),
+    undo: "Text fill",
+    size: "sm",
+  });
+  fillKind.setAttribute("aria-label", "Text fill");
+  const color = p.section("text-color", "Color", { actions: [fillKind] });
   color.body.append(
-    p.seg({
-      options: [
-        { value: "solid", label: "Solid" },
-        { value: "gradient", label: "Gradient" },
-      ],
-      get: (l) => (l.gradient.on ? "gradient" : "solid"),
-      set: (v) => ({ gradient: { on: v === "gradient" } }),
-      undo: "Text fill",
-      full: true,
-      size: "sm",
-    }),
     p.dyn(
       () => (p.read((l) => l.gradient.on).value ? "g" : "s"),
       (sp, k) =>
@@ -1214,16 +1228,26 @@ function modelLine(p, { again = false } = {}) {
   if (!bg?.providers?.list) return null;
   const pick = h("button", { type: "button", class: "insp-model-pick", "aria-haspopup": "menu", "data-tip": "Choose the background remover" });
   const meta = h("span", { class: "insp-model-meta" });
-  const paint = () => {
+  // Working out a model's download size loads the removal engine and asks
+  // for the graphics card, so selecting an image does not do it: the size
+  // shows once the engine is loaded anyway, or the pointer or focus reaches
+  // the Remove button or this line (row.warm).
+  let wanted = false;
+  const fill = () => {
     const id = bg.defaultProvider;
     const prov = bg.providers.get(id);
-    pick.replaceChildren(h("span", null, providerShort(prov?.label)), icon("chevron-down", { size: "sm" }));
+    if (!wanted && prov?.kind === "ml" && bg.engineLoaded === false) return;
     bg.modelInfo(id)
       .then((info) => {
         if (bg.defaultProvider !== id) return;
         meta.textContent = !info ? "" : info.kind === "local" ? "No download" : info.cached ? "Runs on this computer" : `${info.downloadMB || info.sizeMB} MB, once`;
       })
       .catch(() => (meta.textContent = ""));
+  };
+  const paint = () => {
+    const prov = bg.providers.get(bg.defaultProvider);
+    pick.replaceChildren(h("span", null, providerShort(prov?.label)), icon("chevron-down", { size: "sm" }));
+    fill();
   };
   paint();
   pick.addEventListener("click", () => {
@@ -1241,7 +1265,25 @@ function modelLine(p, { again = false } = {}) {
     if (typeof ctx.ui?.menu === "function") ctx.ui.menu(items, { x: r.left, y: r.bottom + 6 });
     else items[(items.findIndex((i) => i.icon === "check") + 1) % items.length].run();
   });
-  return h("div", { class: "insp-model" }, h("span", { class: "insp-model-label" }, "Model"), pick, meta);
+  const row = h("div", { class: "insp-model" }, h("span", { class: "insp-model-label" }, "Model"), pick, meta);
+  row.warm = () => {
+    if (wanted) return;
+    wanted = true;
+    fill();
+  };
+  onIntent(row, row.warm);
+  return row;
+}
+
+// Calls fn once, the first time the pointer or keyboard focus reaches el.
+function onIntent(el, fn) {
+  const go = () => {
+    el.removeEventListener("pointerenter", go);
+    el.removeEventListener("focusin", go);
+    fn();
+  };
+  el.addEventListener("pointerenter", go);
+  el.addEventListener("focusin", go);
 }
 
 function cutoutBlock(sp, state) {
@@ -1269,23 +1311,23 @@ function cutoutBlock(sp, state) {
     });
     out.push(h("div", { class: "insp-job" }, ring, text, cancel));
   } else if (!state.mask) {
-    out.push(
-      sp.cmd("image.remove-bg", {
-        label: layers.length > 1 ? `Remove ${layers.length} backgrounds` : "Remove background",
-        icon: "remove-bg",
-        kind: "primary",
-        wide: true,
-        big: true,
-      }),
-      modelLine(sp)
-    );
+    const remove = sp.cmd("image.remove-bg", {
+      label: layers.length > 1 ? `Remove ${layers.length} backgrounds` : "Remove background",
+      icon: "remove-bg",
+      kind: "primary",
+      wide: true,
+      big: true,
+    });
+    const line = modelLine(sp);
+    if (remove && line?.warm) onIntent(remove, line.warm);
+    out.push(remove, line);
   } else {
     out.push(sp.cmd("image.restore", { label: "Restore original", icon: "reset", wide: true }));
     // Masks made before trimming existed, or after Refine brought parts back.
     if (layers.length === 1 && typeof ctx.bg?.fitToCutout === "function" && first.frame !== "ellipse" && !(first.radius > 0)) {
       out.push(button({ label: "Fit box to cutout", kind: "ghost", wide: true, onClick: () => ctx.bg.fitToCutout(first.id).catch(console.error) }));
     }
-    if (state.tool !== "refine" && layers.length === 1 && ctx.bg?.masks) out.push(edgeControls(sp, first.id));
+    if (state.tool !== "refine" && layers.length === 1 && (ctx.bg?.masks || ctx.bg?.loadMasks)) out.push(edgeControls(sp, first.id));
     out.push(modelLine(sp, { again: true }));
   }
   return out;
@@ -1501,7 +1543,7 @@ function imageSections(p) {
           : null
     )
   );
-  out.push(sec(frame, 11));
+  out.push(sec(frame, 12));
 
   const filters = filterControls(p);
   if (filters) out.push(filters);
@@ -1511,8 +1553,8 @@ function imageSections(p) {
   reset.classList.add("sm");
   p.onUpdate(() => (reset.disabled = p.every(neutral)));
   reset.disabled = p.every(neutral);
-  // Six rarely used sliders start folded so Outline, Shadow and Glow stay in
-  // view; a layer that already has adjustments opens with them showing.
+  // Six rarely used sliders start folded so Shadow and Glow stay in view; a
+  // layer that already has adjustments opens with them showing.
   const adjust = p.section("image-adjust", "Adjust", { open: !p.every(neutral), actions: [reset] });
   const adj = (key, label, min = -100, max = 100, unit = "") =>
     p.range(label, { get: (l) => l.adjust[key], set: (v) => ({ adjust: { [key]: v } }), min, max, unit, def: 0, undo: label, tip: "Double-click to reset" });
@@ -1532,7 +1574,9 @@ function imageSections(p) {
     p.range("Width", { get: (l) => l.outline.width, set: (v) => ({ outline: { width: v } }), min: 1, max: 80, unit: " px", undo: "Outline width", def: 14 }),
     note("Follows the edge of a cutout, like a sticker.")
   );
-  out.push(sec(outline, 32));
+  // The sticker outline is what a cutout usually gets next, so it follows
+  // Background, ahead of Frame and the rarely used Filters and Adjust.
+  out.push(sec(outline, 11));
   return out;
 }
 

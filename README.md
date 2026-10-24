@@ -6,6 +6,8 @@ stroked text, circle and arrow the thing that matters, cut out the
 background, and export under the platform's size limit. No account, no
 subscription, no stock library, nothing uploaded.
 
+![The Longitude editor with a YouTube thumbnail: stroked headline, sticker burst, cutout with an outline, highlight circle and a bent arrow](docs/images/editor.webp)
+
 Longitude is the sibling of [Latitude](https://github.com/zphat/Latitude)
 (screen recorder) and [Sundial](https://github.com/zphat/Sundial) (planner)
 and shares their look: graphite surfaces, one acid-lime accent, sun-gold for
@@ -67,9 +69,15 @@ the background-removal model, once, when you first ask for it.
   the duration badge on a thumbnail.
 - **Everything is a command.** Ctrl K (or `/`) finds any action, layer or
   preset. Tooltips show the shortcut.
-- **Autosave.** Designs save to the browser as you work and appear on the home
-  screen. Save a portable `.longitude` file (images and custom fonts
-  included) to back up or move a design.
+- **Autosave.** Designs save to the browser as you work and appear at the top
+  of the home screen. Save a portable `.longitude` file (images and custom
+  fonts included) to back up or move a design.
+- **Light on your machine.** Plain files, no frameworks. The editor loads
+  about 1.1 MB of code at start; export, quick tools, the feed preview,
+  settings and background removal load the first time you use them. Works
+  offline once it has opened.
+
+![The home screen: recent designs, size presets drawn to scale, a drop zone and quick tools](docs/images/home.webp)
 
 ## Shortcuts
 

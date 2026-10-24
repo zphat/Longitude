@@ -38,6 +38,25 @@ export function fitView(docW, docH, viewW, viewH, insets = {}, { pad = 40, maxZo
   return { zoom, panX: cx - (docW * zoom) / 2, panY: cy - (docH * zoom) / 2 };
 }
 
+// The free area of a viewW x viewH host with chrome insets, keyed for
+// comparing (whole px, so sub-pixel layout noise is not a change).
+export function freeArea(viewW, viewH, insets = {}) {
+  const r = (v) => Math.round(Number(v) || 0);
+  const i = { top: insets.top || 0, right: insets.right || 0, bottom: insets.bottom || 0, left: insets.left || 0 };
+  return { w: r(viewW), h: r(viewH), insets: i, key: [viewW, viewH, i.top, i.right, i.bottom, i.left].map(r).join(",") };
+}
+
+// Whether the automatic fit should run again now that the free area is
+// `next` (last: the area it last fitted). null while the view is the
+// user's (they zoomed or panned) or nothing changed. Only the chrome moving
+// (the panel shown or hidden, same host size) glides; a resize snaps.
+export function refitPlan(last, next, { auto = true, pending = false } = {}) {
+  if (!auto && !pending) return null;
+  if (pending || !last) return { animate: false };
+  if (last.key === next.key) return null;
+  return { animate: last.w === next.w && last.h === next.h };
+}
+
 // Rect fit: the doc rect { l, t, r, b } fills the free area.
 export function fitRectView(rect, viewW, viewH, insets = {}, opts = {}) {
   const w = Math.max(1, rect.r - rect.l);
@@ -76,29 +95,38 @@ export function wheelZoomFactor(e) {
 const lerp = (a, b, t) => a + (b - a) * t;
 const easeOut = (t) => 1 - Math.pow(1 - t, 3);
 
-let insetProbe = null;
+let probeEl = null;
 
-// The shell's --inset-top/right/bottom/left on body (calc() expressions),
-// resolved to px through a hidden fixed element. null when they are not set.
-function cssInsets(hr) {
-  const body = document.body;
+// A hidden fixed element sized by the shell's --inset-top/right/bottom/left
+// (calc() expressions on body), or null when they are not set. Its box is
+// the free area between the chrome, so it resizes whenever that area does
+// (window resize, the panel showing or hiding, the interface hidden).
+export function insetProbe() {
+  if (probeEl?.isConnected) return probeEl;
+  const body = typeof document !== "undefined" ? document.body : null;
   if (!body || !getComputedStyle(body).getPropertyValue("--inset-top").trim()) return null;
-  if (!insetProbe || !insetProbe.isConnected) {
-    insetProbe = document.createElement("div");
-    insetProbe.setAttribute("aria-hidden", "true");
-    Object.assign(insetProbe.style, {
-      position: "fixed",
-      top: "var(--inset-top)",
-      right: "var(--inset-right)",
-      bottom: "var(--inset-bottom)",
-      left: "var(--inset-left)",
-      visibility: "hidden",
-      pointerEvents: "none",
-      zIndex: "-1",
-    });
-    body.append(insetProbe);
-  }
-  const r = insetProbe.getBoundingClientRect();
+  probeEl = document.createElement("div");
+  probeEl.className = "ed-inset-probe";
+  probeEl.setAttribute("aria-hidden", "true");
+  Object.assign(probeEl.style, {
+    position: "fixed",
+    top: "var(--inset-top)",
+    right: "var(--inset-right)",
+    bottom: "var(--inset-bottom)",
+    left: "var(--inset-left)",
+    visibility: "hidden",
+    pointerEvents: "none",
+    zIndex: "-1",
+  });
+  body.append(probeEl);
+  return probeEl;
+}
+
+// The insets resolved to px through the probe, relative to the host rect.
+function cssInsets(hr) {
+  const probe = insetProbe();
+  if (!probe) return null;
+  const r = probe.getBoundingClientRect();
   if (!(r.width > 0) || !(r.height > 0)) return null;
   return {
     top: Math.max(0, r.top - hr.top),
@@ -187,8 +215,10 @@ export function createViewport({ host, canvas, onChange, onResize }) {
     }
     if (canvas.width !== W) canvas.width = W;
     if (canvas.height !== H) canvas.height = H;
-    canvas.style.width = `${vp.width}px`;
-    canvas.style.height = `${vp.height}px`;
+    const cw = `${vp.width}px`;
+    const ch = `${vp.height}px`;
+    if (canvas.style.width !== cw) canvas.style.width = cw;
+    if (canvas.style.height !== ch) canvas.style.height = ch;
     return changed;
   };
 
@@ -202,7 +232,7 @@ export function createViewport({ host, canvas, onChange, onResize }) {
     }
   }
   function onDpr() {
-    if (vp.syncSize()) onResize?.();
+    if (vp.syncSize()) onResize?.({ resized: true });
   }
 
   vp.docToLocal = (p) => ({ x: vp.panX + p.x * vp.zoom, y: vp.panY + p.y * vp.zoom });
@@ -265,13 +295,29 @@ export function createViewport({ host, canvas, onChange, onResize }) {
 
   Object.defineProperty(vp, "animating", { get: () => !!anim });
 
+  // Watches the host and the free area between the chrome. onResize gets
+  // { resized } (true when the canvas backing store changed, which clears
+  // it) after layout settles, so the insets it reads are current.
   let ro = null;
+  let probe = null;
+  function watchProbe() {
+    if (!ro || probe?.isConnected) return;
+    try {
+      if (probe) ro.unobserve(probe);
+      probe = insetProbe();
+      if (probe) ro.observe(probe);
+    } catch {
+      probe = null;
+    }
+  }
   vp.observe = () => {
     if (typeof ResizeObserver === "function") {
       ro = new ResizeObserver(() => {
-        if (vp.syncSize()) onResize?.();
+        watchProbe();
+        onResize?.({ resized: vp.syncSize() });
       });
       ro.observe(host);
+      watchProbe();
     }
     watchDpr();
   };

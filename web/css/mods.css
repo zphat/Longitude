@@ -27,10 +27,23 @@
   height: min(700px, 100%);
   overflow: hidden;
   background: var(--glass-strong);
+  /* 96% opaque: the island's backdrop blur would not show, and it would
+     re-blur the whole panel on every frame of the open animation. */
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   box-shadow: var(--pop-shadow);
   opacity: 0;
   transform: translateY(8px) scale(0.96);
-  transition: opacity var(--t) var(--ease), transform var(--t) var(--spring);
+  transition: opacity var(--t) var(--ease), transform var(--t) var(--spring), box-shadow var(--t-fast);
+}
+/* Files hovering Settings: fonts and packs dropped anywhere on it are taken. */
+.settings.dropping {
+  box-shadow: var(--pop-shadow), 0 0 0 2px var(--accent);
+}
+.settings.dropping .pack-drop,
+.settings.dropping .drop-target {
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 .settings-layer.open .settings-scrim {
   opacity: 1;
@@ -124,10 +137,21 @@
 }
 .settings-body {
   overflow-y: auto;
+  /* Same width whether a tab scrolls or not: no sideways jump between tabs. */
+  scrollbar-gutter: stable;
   padding: 20px 26px 30px;
   outline: none;
   user-select: text;
   -webkit-user-select: text;
+}
+.settings-body > * {
+  animation: set-in var(--t) var(--ease);
+}
+@keyframes set-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
 }
 
 /* ---- Building blocks -------------------------------------------------- */
@@ -213,6 +237,14 @@ a.btn {
   color: var(--text);
   font-size: 12px;
   line-height: 1.45;
+}
+/* Error messages often carry a full file URL: wrap it instead of overflowing. */
+.set-callout > div,
+.set-row-sub,
+.set-row-warn,
+.mod-status span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .set-callout svg {
   margin-top: 1px;
@@ -341,7 +373,10 @@ a.btn {
   height: 100%;
   border-radius: inherit;
   background: color-mix(in srgb, var(--text) 55%, transparent);
-  transition: width var(--t) var(--ease);
+  transition: width var(--t) var(--ease), background var(--t-fast);
+}
+.set-meter.high .set-meter-fill {
+  background: var(--highlight);
 }
 
 /* Search */
@@ -391,6 +426,10 @@ button.theme-card:hover {
 .theme-card.on {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent), 0 10px 26px -14px var(--accent-line);
+}
+/* The card's own shadow would hide the focus ring: keep both. */
+.theme-card.on:focus-visible {
+  box-shadow: var(--focus), 0 10px 26px -14px var(--accent-line);
 }
 .tc-preview {
   position: relative;
@@ -628,27 +667,6 @@ button.theme-card:hover {
   }
 }
 
-/* Shown by the mod API when a mod's inspector section throws. */
-.mod-section-error {
-  margin: 0;
-  color: var(--red);
-  font-size: 11.5px;
-  line-height: 1.45;
-}
-/* A column with the inspector's spacing, for mod section content. */
-.mod-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-/* A short explanation line mods can use inside inspector sections. */
-.mod-hint {
-  margin: 0;
-  color: var(--muted);
-  font-size: 11.5px;
-  line-height: 1.45;
-}
-
 /* ---- Packs ------------------------------------------------------------ */
 
 .pack-drop {
@@ -663,10 +681,6 @@ button.theme-card:hover {
   text-align: center;
   transition: border-color var(--t-fast), background var(--t-fast);
 }
-.pack-drop.over {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-}
 .pack-drop-icon {
   display: grid;
   place-items: center;
@@ -676,6 +690,25 @@ button.theme-card:hover {
   border-radius: 12px;
   background: var(--panel2);
   color: var(--faint);
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.settings.dropping .pack-drop-icon {
+  background: var(--accent);
+  color: var(--ink);
+}
+.drop-target {
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+/* "Use theme" on a pack row; shows a check once one of its themes is on. */
+.set-use svg {
+  display: none;
+}
+.set-use[aria-pressed="true"] {
+  color: var(--muted);
+}
+.set-use[aria-pressed="true"] svg {
+  display: block;
+  color: var(--accent);
 }
 .pack-drop-title {
   color: var(--text);
