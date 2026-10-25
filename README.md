@@ -41,8 +41,9 @@ for it. The desktop app also looks once a day for a newer release (below).
 
 ## Desktop app (Windows)
 
-Download `Longitude-Setup.exe` from the
-[latest release](https://github.com/zphat/Longitude/releases/latest). It
+**[Download Longitude-Setup.exe](https://github.com/zphat/Longitude/releases/latest/download/Longitude-Setup.exe)**
+(about 36 MB; release notes on the
+[latest release](https://github.com/zphat/Longitude/releases/latest) page). It
 installs for your Windows account only (no admin rights), and background
 removal is included, so it works offline right after install. Best, the
 larger model, stays an optional download inside the app.
