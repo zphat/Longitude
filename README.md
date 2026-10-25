@@ -204,6 +204,7 @@ web/                            the app (static files)
 tools/                          font build, model fetch, module checker
 tests/                          Deno unit tests
 docs/                           SPEC (architecture contract), modding, fonts, background removal, desktop app
+brand/                          the logo (SVG and PNG) and when to use which file
 ```
 
 ## Development

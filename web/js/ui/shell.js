@@ -13,14 +13,42 @@ import { session } from "./commands-core.js";
 
 // ---- small shared pieces -----------------------------------------------------------
 
-// The Longitude mark: a globe with a lime meridian (Latitude's has a lime equator).
-export function logoMark({ size = 22, className = "" } = {}) {
+// The Longitude mark: a matte black sphere with five lime lines of longitude
+// meeting at the poles, the counterpart to Latitude's horizontal equator. It
+// is brand/longitude-logo-ui.svg, drawn inline. Its colors are fixed, so it
+// is the same logo in every theme; the faint light rim keeps it apart from
+// dark panels. Gradient ids are numbered per mark because several marks can
+// be on screen at once (top bar, home, About).
+//
+// Small sizes are picked so the stripes land on whole pixels: at 21, 27 and
+// 32 px each stripe fills one pixel column (two at 32), while at 22 or 26 px
+// the center stripe splits across two columns and turns olive. Hence 21 px
+// in the top bar and 27 px on the home screen.
+const MARK_SHADE = [[".46", "#5c5b55"], [".54", "#363631"], [".64", "#1e1f1b"], [".8", "#131410"], ["1", "#0e0f0b"]];
+const MARK_LIME = [["0", "#cbee30"], [".14", "#d7fa3e"], [".8", "#d6fa3c"], ["1", "#c2ec22"]];
+const MARK_STRIPES =
+  "M12,0.49C7.49,0.66 3.75,5.48 3.75,12C3.75,18.91 8.06,23.51 12,23.51C7.72,23.51 2.25,19.11 2.25,12C2.25,6.06 6.04,0.87 12,0.49Z" +
+  "M12,0.49C10.46,0.81 8.25,4.81 8.25,12C8.25,20.72 11.45,23.51 12,23.51C11.4,23.51 6.75,20.81 6.75,12C6.75,5.5 9.21,1.16 12,0.49Z" +
+  "M12,0.49C12.75,1.54 12.75,9.53 12.75,12C12.75,20.22 12.17,23.21 12,23.51C11.83,23.21 11.25,20.22 11.25,12C11.25,9.53 11.25,1.54 12,0.49Z" +
+  "M12,0.49C14.79,1.16 17.25,5.5 17.25,12C17.25,20.81 12.6,23.51 12,23.51C12.55,23.51 15.75,20.72 15.75,12C15.75,4.81 13.54,0.81 12,0.49Z" +
+  "M12,0.49C17.96,0.87 21.75,6.06 21.75,12C21.75,19.11 16.28,23.51 12,23.51C15.94,23.51 20.25,18.91 20.25,12C20.25,5.48 16.51,0.66 12,0.49Z";
+let markCount = 0;
+
+export function logoMark({ size = 21, className = "" } = {}) {
+  const id = `logo-mark-${++markCount}`;
+  const stops = (list) => list.map(([offset, color]) => svg("stop", { offset, "stop-color": color }));
   return svg(
     "svg",
     { viewBox: "0 0 24 24", width: size, height: size, class: ["logo-mark", className].filter(Boolean).join(" "), "aria-hidden": "true" },
-    svg("circle", { cx: "12", cy: "12", r: "9.2", class: "logo-globe" }),
-    svg("path", { d: "M2.8 12h18.4", class: "logo-equator" }),
-    svg("ellipse", { cx: "12", cy: "12", rx: "3.9", ry: "9.2", class: "logo-meridian" }),
+    svg(
+      "defs",
+      null,
+      svg("radialGradient", { id: `${id}-shade`, gradientUnits: "userSpaceOnUse", cx: "-7.03", cy: "-14.06", r: "44.06" }, stops(MARK_SHADE)),
+      svg("linearGradient", { id: `${id}-lime`, x1: "0", y1: "0", x2: "0", y2: "1" }, stops(MARK_LIME)),
+    ),
+    svg("circle", { cx: "12", cy: "12", r: "11.6", fill: `url(#${id}-shade)`, stroke: "none" }),
+    svg("path", { d: MARK_STRIPES, fill: `url(#${id}-lime)`, stroke: "none" }),
+    svg("circle", { cx: "12", cy: "12", r: "11.25", fill: "none", stroke: "#fff", "stroke-opacity": "0.14", "stroke-width": "0.7" }),
   );
 }
 
@@ -222,7 +250,7 @@ export function mountShell(ctx, regions = {}) {
   const menuBtn = h(
     "button",
     { type: "button", class: "brand-btn", "data-tip": "Menu", "aria-label": "Main menu", "aria-haspopup": "menu" },
-    logoMark({ size: 22 }),
+    logoMark({ size: 21 }),
     h("span", { class: "wordmark" }, "Longitude"),
   );
   menuBtn.addEventListener("click", () => openMainMenu(menuBtn));

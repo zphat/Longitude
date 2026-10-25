@@ -920,10 +920,6 @@ button.theme-card:hover {
   width: 46px;
   height: 46px;
   flex: none;
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 1.8;
-  stroke-linecap: round;
 }
 .about-word {
   font-family: var(--f-display);

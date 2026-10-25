@@ -14,7 +14,7 @@ src-tauri/
   src/lib.rs             the native layer (below); src/main.rs only calls it
   capabilities/          what the page may call (core APIs, the window title)
   icons/                 app and file icons; installer/  installer art and license
-  make_art.py            draws icons/ and installer/ (Pillow, numpy)
+  make_art.py            draws icons/, installer/ and web/icons/ (Pillow, numpy)
   stage_vendor.py        moves the checked background remover into src-tauri/vendor/
   vendor/                (git-ignored) what the installer bundles
 package.json             only the Tauri CLI, for CI: npm run tauri build
@@ -260,9 +260,13 @@ programs: "More info", then "Run anyway". The release text says so.
 ## Icons and installer art
 
 `python src-tauri/make_art.py` redraws `icons/` (icon.ico with 16 to 256 px
-frames, and the PNGs Tauri wants) and `installer/header.bmp` (150 x 57) and
-`installer/sidebar.bmp` (164 x 314), the sizes NSIS's Modern UI expects, from
-the Longitude mark: the graphite tile with the white globe and the lime
-meridian. The wordmark uses Syne from `tools/fonts/cache`. The outputs are
-committed. `installer/license.txt` is `LICENSE` with Windows line endings for
+frames, and the PNGs Tauri wants), `installer/header.bmp` (150 x 57) and
+`installer/sidebar.bmp` (164 x 314), the sizes NSIS's Modern UI expects, and
+the web app's icons in `web/icons/`, all from the Longitude logo: the black
+sphere with five lime lines of longitude. Sizes from 40 px up come from
+`brand/longitude-logo-1024.png`; 32 px and below come from
+`brand/longitude-logo-small.svg`, with the 16, 20 and 24 px frames fitted to
+the pixel grid so each stripe is one sharp pixel wide. The browser tab icon,
+`web/icons/favicon.svg`, is a copy of that small SVG. The wordmark uses Syne
+from `tools/fonts/cache`. The outputs are committed. `installer/license.txt` is `LICENSE` with Windows line endings for
 the installer's license page (the test suite keeps the two equal).

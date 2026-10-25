@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<defs>
+<radialGradient id="b" gradientUnits="userSpaceOnUse" cx="-7.03" cy="-14.06" r="44.06"><stop offset=".46" stop-color="#5c5b55"/><stop offset=".54" stop-color="#363631"/><stop offset=".64" stop-color="#1e1f1b"/><stop offset=".8" stop-color="#131410"/><stop offset="1" stop-color="#0e0f0b"/></radialGradient>
+<linearGradient id="l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cbee30"/><stop offset=".14" stop-color="#d7fa3e"/><stop offset=".8" stop-color="#d6fa3c"/><stop offset="1" stop-color="#c2ec22"/></linearGradient>
+</defs>
+<circle cx="12" cy="12" r="11.6" fill="url(#b)"/>
+<path d="M12,0.49C7.49,0.66 3.75,5.48 3.75,12C3.75,18.91 8.06,23.51 12,23.51C7.72,23.51 2.25,19.11 2.25,12C2.25,6.06 6.04,0.87 12,0.49ZM12,0.49C10.46,0.81 8.25,4.81 8.25,12C8.25,20.72 11.45,23.51 12,23.51C11.4,23.51 6.75,20.81 6.75,12C6.75,5.5 9.21,1.16 12,0.49ZM12,0.49C12.75,1.54 12.75,9.53 12.75,12C12.75,20.22 12.17,23.21 12,23.51C11.83,23.21 11.25,20.22 11.25,12C11.25,9.53 11.25,1.54 12,0.49ZM12,0.49C14.79,1.16 17.25,5.5 17.25,12C17.25,20.81 12.6,23.51 12,23.51C12.55,23.51 15.75,20.72 15.75,12C15.75,4.81 13.54,0.81 12,0.49ZM12,0.49C17.96,0.87 21.75,6.06 21.75,12C21.75,19.11 16.28,23.51 12,23.51C15.94,23.51 20.25,18.91 20.25,12C20.25,5.48 16.51,0.66 12,0.49Z" fill="url(#l)"/>
+<circle cx="12" cy="12" r="11.25" fill="none" stroke="#fff" stroke-opacity=".14" stroke-width=".7"/>
+</svg>

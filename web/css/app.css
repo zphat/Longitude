@@ -219,27 +219,12 @@ body.ui-hidden .zoombar {
 
 /* ---- logo -------------------------------------------------------------------- */
 
-.logo-globe {
-  fill: none;
-  stroke: var(--text);
-  stroke-width: 1.7;
-}
-.logo-equator {
-  fill: none;
-  stroke: var(--text);
-  stroke-opacity: 0.32;
-  stroke-width: 1.2;
-  stroke-linecap: round;
-}
-.logo-meridian {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 2;
-}
+/* The mark (shell.js logoMark, and the boot and error screens in index.html)
+   carries its own colors: the same black sphere with lime meridians in every
+   theme, so no theme or state recolors it. */
 .logo-mark {
   flex: none;
   display: block;
-  overflow: visible;
 }
 .wordmark {
   font-family: var(--f-display);
@@ -299,11 +284,11 @@ body.ui-hidden .zoombar {
 .brand-btn:hover {
   background: var(--hover);
 }
-.brand-btn:hover .logo-meridian {
-  stroke-width: 2.4;
+.brand-btn .logo-mark {
+  transition: transform var(--t) var(--spring);
 }
-.brand-btn .logo-meridian {
-  transition: stroke-width var(--t) var(--spring);
+.brand-btn:hover .logo-mark {
+  transform: scale(1.08);
 }
 .brand-btn:focus-visible {
   border-radius: 11px;

@@ -145,7 +145,7 @@ export function mountHome(ctx, el = document.getElementById("home")) {
   const header = h(
     "header",
     { class: "home-top" },
-    h("div", { class: "home-brand" }, logoMark({ size: 26 }), h("span", { class: "wordmark" }, "Longitude")),
+    h("div", { class: "home-brand" }, logoMark({ size: 27 }), h("span", { class: "wordmark" }, "Longitude")),
     h("div", { class: "home-actions" }, openBtn, themeBtn, settingsBtn, closeBtn),
   );
 

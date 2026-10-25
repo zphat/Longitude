@@ -5,9 +5,10 @@
 // The app loads this module on demand (mods/loader.js openSettings), so it
 // imports nothing that is not already loaded at boot.
 
-import { h, svg, clear, disposer, isMac } from "./dom.js";
+import { h, clear, disposer, isMac } from "./dom.js";
 import { button, iconButton, toggle, segmented } from "./controls.js";
 import { icon } from "./icons.js";
+import { logoMark } from "./shell.js";
 import { keysLabel } from "../app/context.js";
 import { THEMES } from "./theme.js";
 import { countsText, packCounts, plural, listText } from "../mods/packs.js";
@@ -1434,23 +1435,13 @@ function shortcutsTab(ctx, env) {
 
 // ---- About ---------------------------------------------------------------------
 
-function logoMark() {
-  return svg(
-    "svg",
-    { class: "about-mark", viewBox: "0 0 40 40", "aria-hidden": "true" },
-    svg("circle", { cx: "20", cy: "20", r: "15" }),
-    svg("ellipse", { cx: "20", cy: "20", rx: "6.5", ry: "15" }),
-    svg("path", { d: "M20 5v30" })
-  );
-}
-
 function aboutTab(ctx) {
   const el = h("div", { class: "set-stack" });
   el.append(
     h(
       "div",
       { class: "about-hero" },
-      logoMark(),
+      logoMark({ size: 46, className: "about-mark" }),
       h("div", null, h("div", { class: "about-word" }, "Longitude"), h("div", { class: "about-ver num" }, `Version ${ctx.version || "0.1.0"}`))
     ),
     h(
