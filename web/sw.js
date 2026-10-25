@@ -24,7 +24,7 @@
 // tests/shell-boot.test.js checks that PRECACHE lists every file main.js can
 // reach (static and dynamic imports, the worker, stylesheets, the UI fonts).
 
-const VERSION = "0.1.0-5";
+const VERSION = "0.1.1";
 const SHELL = `longitude-shell-${VERSION}`;
 const DATA = `longitude-data-${VERSION}`;
 const NEXT = `longitude-next-${VERSION}`;

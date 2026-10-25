@@ -3,7 +3,7 @@
 
 import { isMac, fieldOwnsCombo } from "../ui/dom.js";
 
-export const VERSION = "0.1.0";
+export const VERSION = "0.1.1";
 const ID_RE = /^[a-z][a-z0-9._-]{0,63}$/;
 
 // A keyed list with change events. register() returns a dispose function.

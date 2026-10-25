@@ -1,6 +1,6 @@
 {
   "name": "longitude",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "private": true,
   "description": "Longitude: thumbnails and covers. The app is static files in ./web; the desktop shell is in ./src-tauri (docs/DESKTOP.md).",

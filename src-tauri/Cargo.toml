@@ -1,6 +1,6 @@
 [package]
 name = "longitude"
-version = "0.1.0"
+version = "0.1.1"
 description = "Longitude: thumbnails and covers, made on your computer"
 authors = ["zphat"]
 edition = "2021"
