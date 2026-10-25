@@ -359,7 +359,8 @@ Deno.test("service: prepare downloads without a layer, and shares the runtime", 
   const states = ctx.models().filter((m) => m.id === "fast").map((m) => m.state);
   assert.deepEqual([...new Set(states)], ["not-downloaded", "downloading", "ready-cached"]);
   const progress = ctx.models().filter((m) => m.state === "downloading");
-  assert.ok(progress.length >= 2 && progress.length < 20, `progress is sent, but not for every chunk (${progress.length})`);
+  // Progress is throttled by time, so a fast machine can finish inside one window: at least one, never one per chunk.
+  assert.ok(progress.length >= 1 && progress.length < 20, `progress is sent, but not for every chunk (${progress.length})`);
   // The first one goes out at once, before the engine has planned (total not known yet).
   assert.equal(progress[0].total, 0);
   assert.ok(progress.slice(1).every((m) => m.total === FAST_CPU));
