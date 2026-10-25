@@ -1,5 +1,6 @@
-// Settings: one modal with six tabs. General (theme, canvas aids, background
-// removal, storage), Fonts, Mods, Packs, Shortcuts and About.
+// Settings: one modal with seven tabs. General (theme, canvas aids, storage),
+// Background removal (models, downloads, default), Fonts, Mods, Packs,
+// Shortcuts and About.
 // openSettings(ctx, { tab }) opens it, or switches tabs when it is open.
 // The app loads this module on demand (mods/loader.js openSettings), so it
 // imports nothing that is not already loaded at boot.
@@ -23,6 +24,7 @@ export const LINKS = Object.freeze({
 
 const TABS = [
   { id: "general", label: "General", icon: "sliders-horizontal", render: generalTab },
+  { id: "background", label: "Background removal", icon: "remove-bg", render: bgTab },
   { id: "fonts", label: "Fonts", icon: "type", render: fontsTab },
   { id: "mods", label: "Mods", icon: "puzzle", render: modsTab },
   { id: "packs", label: "Packs", icon: "package", render: packsTab },
@@ -88,7 +90,8 @@ export function openSettings(ctx, { tab = "general", pack = null } = {}) {
   ensureModStyles();
   ensureModIcons();
   if (!current) current = createSettings(ctx);
-  current.show(TABS.some((t) => t.id === tab) ? tab : "general");
+  const want = tab === "bg" ? "background" : tab;
+  current.show(TABS.some((t) => t.id === want) ? want : "general");
   if (pack) current.reviewPack(pack);
   return { close: current.close };
 }
@@ -393,9 +396,63 @@ function simpleRow(title, sub, ...extra) {
 function generalTab(ctx, env) {
   const el = h("div", { class: "set-stack" });
   el.append(themeGroup(ctx, env), canvasGroup(ctx, env));
-  if (ctx.bg?.providers) el.append(bgGroup(ctx, env));
+  if (ctx.bg?.providers) el.append(bgPointer(ctx, env));
+  // The desktop app registers the update check (app/desktop.js); a browser has none.
+  if (ctx.commands?.get?.("app.check-updates")) el.append(updatesGroup(ctx, env));
   el.append(storageGroup(ctx, env));
   return el;
+}
+
+// The desktop app's daily look at GitHub's latest release (prefs updateCheck, on by default).
+function updatesGroup(ctx, env) {
+  const sw = toggle({
+    value: ctx.prefs.get("updateCheck", true) !== false,
+    tip: "Check for updates once a day",
+    onChange: (on) => ctx.prefs.set("updateCheck", on),
+  });
+  const label = h(
+    "div",
+    { class: "set-row-main" },
+    h("div", { class: "set-row-title" }, "Check for updates once a day"),
+    h("div", { class: "set-row-sub" }, "Once a day, Longitude asks GitHub whether a newer version is out. Nothing about you or your designs is sent."),
+  );
+  label.addEventListener("click", () => sw.click());
+  env.d(ctx.on("prefs", ({ key, value } = {}) => {
+    if (key === "updateCheck") sw.value = value !== false;
+  }));
+  const now = button({ label: "Check now", kind: "ghost", onClick: () => ctx.commands.run("app.check-updates") });
+  const version = ctx.version ? `This is Longitude ${ctx.version}.` : "";
+  return group(
+    "Updates",
+    version || null,
+    h(
+      "div",
+      { class: "set-list plain" },
+      h("div", { class: "set-row toggle-row" }, label, sw),
+      h("div", { class: "set-row" }, h("div", { class: "set-row-main" }, h("div", { class: "set-row-title" }, "Look now"), h("div", { class: "set-row-sub" }, "Your designs never leave this computer.")), now),
+    ),
+  );
+}
+
+// Where background removal stands, with the way to its own tab.
+function bgPointer(ctx, env) {
+  const sub = h("div", { class: "set-row-sub" });
+  const paint = () => {
+    const s = ctx.bg.status?.();
+    const p = ctx.bg.providers.get(ctx.bg.defaultProvider);
+    const words = s && ctx.bg.describe ? ctx.bg.describe(s) : null;
+    const state = !s ? "" : s.kind !== "ml" ? "no download" : s.state === "checking" ? "" : words.label.toLowerCase();
+    sub.textContent = [p ? shortName(p.label) : "", state].filter(Boolean).join(", ");
+  };
+  paint();
+  env.d(ctx.on("bg-model", (s) => s?.id === ctx.bg.defaultProvider && paint()));
+  env.d(ctx.on("prefs", ({ key } = {}) => key === "bgProvider" && paint()));
+  const open = button({ label: "Manage", kind: "ghost", onClick: () => env.show("background") });
+  return group(
+    "Background removal",
+    null,
+    h("div", { class: "set-list plain" }, h("div", { class: "set-row" }, h("div", { class: "set-row-main" }, h("div", { class: "set-row-title" }, "Default model"), sub), open)),
+  );
 }
 
 function themeGroup(ctx, env) {
@@ -474,72 +531,255 @@ function canvasGroup(ctx, env) {
   return group("Canvas", "These stay on or off until you change them, here or under the canvas.", list);
 }
 
-function bgGroup(ctx, env) {
-  const providers = ctx.bg.providers.list();
-  const text = h("p", { class: "set-note" });
-  let token = 0;
-  const describe = async (id) => {
-    const p = providers.find((x) => x.id === id);
-    const mine = ++token;
-    text.textContent = p?.note || "";
-    if (!p) return;
-    let extra = "";
-    if (p.kind !== "ml") extra = "No download needed.";
-    else {
-      try {
-        const info = await p.info?.();
-        if (info) extra = info.cached ? "Downloaded and ready." : `Downloads about ${Math.max(1, Math.round(info.downloadMB))} MB once, then works offline.`;
-        else if (p.sizeMB) extra = `Downloads about ${Math.round(p.sizeMB)} MB once.`;
-      } catch {
-        if (p.sizeMB) extra = `Downloads about ${Math.round(p.sizeMB)} MB once.`;
-      }
-    }
-    if (mine === token) text.textContent = [p.note, extra].filter(Boolean).join(" ");
-  };
-  const seg = segmented({
-    options: providers.map((p) => ({ value: p.id, label: p.label })),
-    value: ctx.bg.defaultProvider,
-    full: true,
-    onChange: (id) => {
-      ctx.bg.setDefaultProvider?.(id);
-      describe(id);
-    },
-  });
-  describe(ctx.bg.defaultProvider);
+const shortName = (label) => String(label || "").replace(/\s*\(.*\)\s*$/, "") || "Model";
 
-  const cacheRow = h("div", { class: "set-row" });
-  const paintCache = async () => {
-    let usage = null;
-    try {
-      usage = await ctx.bg.cacheUsage?.();
-    } catch {}
-    clear(cacheRow);
-    if (!usage || !usage.bytes) {
-      cacheRow.append(h("div", { class: "set-row-main" }, h("div", { class: "set-row-sub" }, "Nothing downloaded yet. The model downloads the first time you remove a background.")));
+// The Background removal tab's privacy note, the Models subtitle and the
+// runtime line, from the model statuses: what is already on this computer
+// (the desktop installer, or tools/fetch_model.py's web/vendor/) never
+// downloads, so the copy names only what still does. Models built from
+// BG_CONFIG only (status.model); Magic and mods' providers do not count.
+export function bgCopy(statuses = []) {
+  const ml = statuses.filter((s) => s?.kind === "ml" && s.model);
+  const here = ml.filter((s) => s.state === "ready-bundled");
+  const join = (n) => (n.length > 1 ? `${n.slice(0, -1).join(", ")} and ${n.at(-1)}` : n[0] || "");
+  const names = (list, ...more) => join([...list.map((s) => shortName(s.label)), ...more]);
+  const lead = "Background removal runs on this computer. Your images are never uploaded.";
+  if (!here.length) {
+    return {
+      note: `${lead} Its only network requests are these one-time downloads: models from Hugging Face, the runtime from jsDelivr.`,
+      models: "Each model downloads once, then works offline.",
+      runtime: "which comes once, with the first one",
+    };
+  }
+  // The installer bundles the runtime with Fast; fetch_model.py fetches both too.
+  const where = here.some((s) => s.bundledBy !== "vendor") ? "included with the app" : "already on this computer (web/vendor)";
+  const rest = ml.filter((s) => s.state !== "ready-bundled");
+  const one = rest.length === 1;
+  return {
+    note: `${lead} ${names(here, "the runtime")} are ${where}.${rest.length ? ` Only ${names(rest)} ${one ? "downloads" : "download"}, once, from Hugging Face.` : " Nothing here needs a download."}`,
+    models: rest.length ? `${names(rest)} ${one ? "downloads" : "download"} once, then ${one ? "works" : "work"} offline.` : "Everything here works offline.",
+    runtime: `which is ${where}`,
+  };
+}
+
+// ---- Background removal ----------------------------------------------------------
+
+function bgTab(ctx, env) {
+  const el = h("div", { class: "set-stack" });
+  const bg = ctx.bg;
+  if (!bg?.providers) {
+    el.append(note("Background removal is not available here.", "error"));
+    return el;
+  }
+  // The engine's exact sizes (the runtime build and model file this machine
+  // uses); until they arrive the status shows its estimate.
+  for (const p of bg.providers.list()) if (p.kind === "ml") bg.modelInfo?.(p.id).catch(() => {});
+  bg.refreshStatus?.().catch?.(() => {});
+  // The copy follows what is here; the first paint is often still "checking".
+  const copy = () => bgCopy(bg.providers.list().map((p) => bg.status?.(p.id)));
+  const privacy = note(copy().note, "attention", "shield");
+  el.append(modelsGroup(ctx, env, copy), defaultGroup(ctx, env), bgStorageGroup(ctx, env), privacy);
+  env.d(ctx.on("bg-model", () => {
+    privacy.lastChild.textContent = copy().note;
+  }));
+  return el;
+}
+
+function modelsGroup(ctx, env, copy = () => bgCopy([])) {
+  const bg = ctx.bg;
+  const list = h("div", { class: "set-list bg-models" });
+  const rows = new Map(); // providerId -> { el, key, paint }
+
+  const meta = (p) => {
+    const bits = [];
+    if (p.license) bits.push(h("span", null, p.license));
+    const link = (label, href) => h("a", { class: "set-link", href, target: "_blank", rel: "noopener noreferrer" }, label, icon("external-link", { size: "sm", class: "set-ext" }));
+    if (p.page) bits.push(link("Model page", p.page));
+    if (p.source && p.source !== p.page) bits.push(link("Project", p.source));
+    return h("div", { class: "bg-model-meta" }, bits.flatMap((b, i) => (i ? [h("span", { class: "dotsep", "aria-hidden": "true" }, "·"), b] : [b])));
+  };
+
+  function actionsFor(p, s) {
+    // Only models built from BG_CONFIG (s.model) can be downloaded or deleted here.
+    if (s.kind !== "ml" || !s.model) return [];
+    if (s.state === "downloading") return [button({ label: "Cancel", kind: "ghost", onClick: () => bg.cancelDownload?.(p.id) })];
+    // Nothing to keep in a browser that keeps no downloads for this site.
+    if ((s.state === "not-downloaded" || s.state === "error") && s.storable !== false) {
+      return [
+        button({
+          label: s.state === "error" ? "Try again" : "Download",
+          icon: s.state === "error" ? "refresh-cw" : "download",
+          kind: "ghost",
+          onClick: () => bg.prepare?.(p.id).catch(() => {}),
+        }),
+      ];
+    }
+    if (s.state === "ready-cached") {
+      return [
+        removeButton({
+          label: "Delete",
+          question: "Delete this download?",
+          tip: `Delete the ${shortName(p.label)} download`,
+          onConfirm: async () => {
+            await bg.remove?.(p.id);
+            toast(ctx, `Deleted. ${shortName(p.label)} downloads again the next time you use it.`, { kind: "ok" });
+          },
+        }),
+      ];
+    }
+    return [];
+  }
+
+  function rowFor(p) {
+    const s = bg.status?.(p.id);
+    if (!s) return null;
+    const words = bg.describe(s);
+    const chip = h("span", { class: ["bg-chip", s.state, s.kind !== "ml" && "local"] }, words.label);
+    // While downloading the progress line says it all, and the row's key stays
+    // the same, so the row (and its Cancel) is updated in place, not rebuilt.
+    // A ready model counts its own file: the runtime is shared (the foot says so).
+    let sizeText = "";
+    if (s.kind !== "ml" || s.state === "checking" || s.state === "downloading") sizeText = "";
+    else if (s.state === "ready-bundled") sizeText = s.bundledBy === "vendor" ? "In web/vendor. To remove it, run python tools/fetch_model.py --clean" : "";
+    else if (s.ready) sizeText = `${bg.format.mb(s.modelBytes || s.sizeBytes)} on this computer`;
+    else sizeText = words.short;
+    const main = h(
+      "div",
+      { class: "set-row-main" },
+      h("div", { class: "bg-model-title" }, h("span", { class: "set-row-title" }, shortName(p.label)), chip),
+      p.note ? h("div", { class: "set-row-sub" }, p.note) : null,
+      sizeText || s.state === "error" ? h("div", { class: ["set-row-sub", "num", s.state === "error" && "bg-model-err"] }, s.state === "error" ? words.detail : sizeText) : null,
+      meta(p),
+    );
+    const body = [main];
+    let live = null;
+    if (s.state === "downloading") {
+      const bar = h("span", { class: "bg-bar" });
+      const track = h("div", { class: "bg-track", role: "progressbar", "aria-label": `${shortName(p.label)} download`, "aria-valuemin": "0", "aria-valuemax": "100" }, bar);
+      const line = h("div", { class: "set-row-sub num" });
+      main.append(track, line);
+      live = (st) => {
+        const w = bg.describe(st);
+        bar.style.width = `${w.percent}%`;
+        track.setAttribute("aria-valuenow", String(w.percent));
+        line.textContent = w.detail;
+      };
+      live(s);
+    }
+    const acts = actionsFor(p, s);
+    if (acts.length) body.push(h("div", { class: "set-actions bg-model-actions" }, acts));
+    const el = h("div", { class: "set-row bg-model", "data-id": p.id }, body);
+    return { el, key: `${s.state}|${s.label}|${sizeText}|${s.error?.message || ""}`, live };
+  }
+
+  const paintAll = () => {
+    const hadFocus = list.contains(document.activeElement) ? document.activeElement.closest?.(".bg-model")?.dataset.id : null;
+    rows.clear();
+    clear(list);
+    for (const p of bg.providers.list()) {
+      const r = rowFor(p);
+      if (!r) continue;
+      rows.set(p.id, r);
+      list.append(r.el);
+    }
+    if (hadFocus) (rows.get(hadFocus)?.el.querySelector("button") || list).focus?.();
+  };
+
+  const paintOne = (s) => {
+    const r = rows.get(s?.id);
+    const p = bg.providers.get(s?.id);
+    if (!r || !p) return paintAll();
+    const next = rowFor(p);
+    if (!next) return;
+    if (next.key === r.key) {
+      r.live?.(s);
       return;
     }
-    const del = button({
-      label: "Delete download",
-      kind: "ghost danger",
-      icon: "trash-2",
-      onClick: async () => {
-        del.setDisabled(true);
-        try {
-          await ctx.bg.release?.();
-        } catch {}
-        const ok = await ctx.bg.clearCache?.();
-        toast(ctx, ok ? "Deleted. The model downloads again the next time you need it." : "The download could not be deleted.", { kind: ok ? "ok" : "error" });
-        paintCache();
-        describe(seg.value);
-      },
-    });
-    cacheRow.append(
-      h("div", { class: "set-row-main" }, h("div", { class: "set-row-title" }, "Downloaded models"), h("div", { class: "set-row-sub num" }, formatBytes(usage.bytes))),
-      del
+    const hadFocus = r.el.contains(document.activeElement);
+    r.el.replaceWith(next.el);
+    rows.set(p.id, next);
+    if (hadFocus) (next.el.querySelector("button") || next.el).focus?.();
+  };
+
+  const ort = bg.config?.ort;
+  const runtime = ort ? h("p", { class: "set-foot" }) : null;
+  const sec = group("Models", " ", list, runtime);
+  const sub = sec.querySelector(".set-group-head .set-note");
+  const paintCopy = () => {
+    const c = copy();
+    if (sub) sub.textContent = c.models;
+    if (runtime) runtime.textContent = `Every model runs on ONNX Runtime Web ${ort.version} (${ort.license || "MIT"}), ${c.runtime}.`;
+  };
+  paintAll();
+  paintCopy();
+  env.d(ctx.on("bg-model", (s) => {
+    paintOne(s);
+    paintCopy();
+  }));
+  if (typeof bg.providers.onChange === "function") env.d(bg.providers.onChange(paintAll));
+  return sec;
+}
+
+function defaultGroup(ctx, env) {
+  const bg = ctx.bg;
+  const providers = bg.providers.list();
+  const seg = segmented({
+    options: providers.map((p) => ({ value: p.id, label: shortName(p.label) })),
+    value: bg.defaultProvider,
+    full: true,
+    onChange: (id) => bg.setDefaultProvider?.(id),
+  });
+  env.d(ctx.on("prefs", ({ key } = {}) => {
+    if (key === "bgProvider" && seg.value !== bg.defaultProvider) seg.set?.(bg.defaultProvider);
+  }));
+  return group("Default model", "What Remove background uses in the editor and in quick tools. You can switch for one image there too.", seg);
+}
+
+function bgStorageGroup(ctx, env) {
+  const bg = ctx.bg;
+  const row = h("div", { class: "set-row" });
+  let busy = false;
+  const paint = async () => {
+    let usage = null;
+    try {
+      usage = (await bg.storage?.()) || (await bg.cacheUsage?.());
+    } catch {}
+    clear(row);
+    // The same rounding as the model rows above ("58 MB on this computer").
+    const size = (n) => (bg.format?.mb ? bg.format.mb(n) : formatBytes(n));
+    const parts = [];
+    if (usage?.bytes) parts.push(`${size(usage.bytes)} downloaded`);
+    if (usage?.bundledBytes) parts.push(`${size(usage.bundledBytes)} ${usage.bundledBy === "vendor" ? "in web/vendor" : "included with the app"}`);
+    const main = h("div", { class: "set-row-main" }, h("div", { class: "set-row-title" }, "Space used"), h("div", { class: "set-row-sub num" }, parts.join(" · ") || "Nothing downloaded yet."));
+    row.append(main);
+    if (!usage?.bytes) return;
+    row.append(
+      removeButton({
+        label: "Delete all",
+        question: "Delete all downloads?",
+        tip: "Delete every downloaded model",
+        onConfirm: async () => {
+          try {
+            await bg.release?.();
+          } catch {}
+          const ok = await bg.clearCache?.();
+          toast(ctx, ok ? "Deleted. A model downloads again the next time you need it." : "The downloads could not be deleted.", { kind: ok ? "ok" : "error" });
+          paint();
+        },
+      }),
     );
   };
-  paintCache();
-  return group("Background removal", "Runs on this device. Your images are never uploaded.", seg, text, h("div", { class: "set-list plain" }, cacheRow));
+  paint();
+  // Sizes change when a download finishes or one is deleted.
+  env.d(ctx.on("bg-model", (s) => {
+    if (busy || s?.state === "downloading" || s?.state === "checking") return;
+    busy = true;
+    setTimeout(() => {
+      busy = false;
+      paint();
+    }, 150);
+  }));
+  return group("Storage", "Downloads stay on this computer until you delete them.", h("div", { class: "set-list plain" }, row));
 }
 
 function storageGroup(ctx, env) {
@@ -556,7 +796,7 @@ function storageGroup(ctx, env) {
     } catch {}
     if (!est || !Number.isFinite(est.usage)) {
       meter.hidden = true;
-      usage.textContent = "This browser does not say how much space Longitude uses.";
+      usage.textContent = ctx.desktop ? "Longitude cannot tell how much space it uses." : "This browser does not say how much space Longitude uses.";
       return;
     }
     const pct = est.quota > 0 ? Math.min(100, (est.usage / est.quota) * 100) : 0;
@@ -565,13 +805,15 @@ function storageGroup(ctx, env) {
     meter.classList.toggle("high", pct >= 80);
     meter.setAttribute("aria-label", `${formatBytes(est.usage)} used`);
     usage.textContent = est.quota > 0
-      ? `Designs, images and fonts use ${formatBytes(est.usage)} of about ${formatBytes(est.quota)} this browser allows.`
+      ? `Designs, images and fonts use ${formatBytes(est.usage)} of about ${formatBytes(est.quota)} ${ctx.desktop ? "Longitude can use" : "this browser allows"}.`
       : `Designs, images and fonts use ${formatBytes(est.usage)}.`;
   };
 
   const paintKeep = async () => {
     clear(keepRow);
-    if (typeof storage?.persisted !== "function") return;
+    // The desktop app has a storage folder of its own; main.js asks for
+    // persistence once, quietly (keepStorage).
+    if (ctx.desktop || typeof storage?.persisted !== "function") return;
     let kept = false;
     try {
       kept = await storage.persisted();
@@ -705,7 +947,7 @@ function fontsTab(ctx, env) {
     const mod = all.filter((f) => f.source === "mod");
     clear(yours);
     if (custom.length) for (const f of custom) yours.append(row(f, true));
-    else yours.append(h("div", { class: "set-empty" }, "No fonts added yet. Fonts you add stay in this browser and travel inside .longitude files."));
+    else yours.append(h("div", { class: "set-empty" }, `No fonts added yet. Fonts you add stay ${ctx.desktop ? "in Longitude" : "in this browser"} and travel inside .longitude files.`));
     clear(fromMods);
     for (const f of mod) fromMods.append(row(f, false));
     modGroup.hidden = !mod.length;
@@ -1105,7 +1347,7 @@ function packsTab(ctx, env) {
     useButtons = [];
     const packs = ctx.mods?.packs?.list() || [];
     if (!packs.length) {
-      list.append(h("div", { class: "set-empty" }, "No packs yet. Packs you add stay in this browser."));
+      list.append(h("div", { class: "set-empty" }, `No packs yet. Packs you add stay ${ctx.desktop ? "in Longitude" : "in this browser"}.`));
       return;
     }
     for (const p of packs) list.append(packRow(p));
@@ -1214,7 +1456,7 @@ function aboutTab(ctx) {
     h(
       "p",
       { class: "set-lead" },
-      "A small editor for YouTube thumbnails, Spotify covers and any image that needs to be quick and sharp. It runs in your browser, saves to this device and never uploads your pictures. No accounts, no fees, no tracking."
+      `A small editor for YouTube thumbnails, Spotify covers and any image that needs to be quick and sharp. It runs ${ctx.desktop ? "on your computer" : "in your browser"}, saves to this device and never uploads your pictures. No accounts, no fees, no tracking.`
     ),
     h("div", { class: "set-actions" }, linkButton("Source code", LINKS.source, "code"), linkButton("Modding guide", LINKS.modding, "book-open")),
     group(

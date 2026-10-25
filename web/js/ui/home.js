@@ -95,6 +95,21 @@ const LEDE_FIRST = "Pick a size or drop an image to start.";
 const RECENT_MIN = 256;
 const RECENT_GAP = 10;
 const RECENT_ROW_MAX = 12;
+// The "Get background removal ready" card: its prefs key and how long "Not now" hides it.
+const BG_CARD_PREF = "bgReadyCard";
+export const BG_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
+
+// "Not now" on that card hides it for 7 days; the second "Not now" for good.
+// pref: what prefs holds under bgReadyCard ({ until, count, never } or nothing).
+export function bgCardSnoozed(pref, now = Date.now()) {
+  if (!pref || typeof pref !== "object") return false;
+  return !!pref.never || Number(pref.until) > now;
+}
+
+export function bgCardSnooze(pref, now = Date.now()) {
+  const count = (Number(pref?.count) || 0) + 1;
+  return { until: now + BG_SNOOZE_MS, count, never: count >= 2 };
+}
 
 export function mountHome(ctx, el = document.getElementById("home")) {
   let isOpen = false;
@@ -229,12 +244,14 @@ export function mountHome(ctx, el = document.getElementById("home")) {
   // ---- quick tools
 
   const toolsEl = h("div", { class: "tool-grid" });
+  // The remove-bg card says what the first use costs ("One-time 69 MB download") or how the download is going.
+  const bgToolStatus = h("span", { class: "tool-status", hidden: true });
   for (const t of QUICK_TOOLS) {
     const card = h(
       "button",
       { type: "button", class: "tool-card" },
       h("span", { class: "tool-icon" }, icon(t.icon)),
-      h("span", { class: "tool-text" }, h("span", { class: "tool-title" }, t.title), h("span", { class: "tool-desc" }, t.text)),
+      h("span", { class: "tool-text" }, h("span", { class: "tool-title" }, t.title), h("span", { class: "tool-desc" }, t.text), t.kind === "remove-bg" ? bgToolStatus : null),
     );
     card.addEventListener("click", () => ctx.ui.openQuickTool?.(t.kind, {}));
     card.addEventListener("dragover", (e) => {
@@ -255,6 +272,176 @@ export function mountHome(ctx, el = document.getElementById("home")) {
     toolsEl.append(card);
   }
   gridNav(toolsEl, ".tool-card");
+
+  // ---- background removal: get it ready before the first cutout
+  //
+  // While the default model is not on this computer a card offers the
+  // one-time download; it shows the progress (with Cancel), says "Ready" for
+  // a moment and goes. "Not now" hides it for 7 days, a second "Not now" for
+  // good. A download started anywhere else shows its progress here too.
+
+  const bgCard = h("section", { class: "home-bg", hidden: true, "aria-labelledby": "home-bg-title" });
+  let bgView = null; // { key, bar, track, line } of what the card shows
+  let bgReadyTimer = 0;
+  let bgLastState = null;
+
+  function snoozeBg() {
+    ctx.prefs.set(BG_CARD_PREF, bgCardSnooze(ctx.prefs.get(BG_CARD_PREF, null)));
+    hideBgCard();
+  }
+
+  const modelName = (label) => String(label || "").replace(/\s*\(.*\)\s*$/, "") || "background removal";
+
+  // True when some other downloadable model already works on this computer.
+  function otherModelReady(id) {
+    try {
+      return ctx.bg.providers.list().some((p) => p.id !== id && p.kind === "ml" && ctx.bg.status(p.id)?.ready);
+    } catch {
+      return false;
+    }
+  }
+
+  function hideBgCard() {
+    clearTimeout(bgReadyTimer);
+    bgReadyTimer = 0;
+    const hadFocus = bgCard.contains(document.activeElement);
+    bgCard.hidden = true;
+    bgView = null;
+    if (hadFocus) (presetsEl.querySelector(".preset-card") || el).focus({ preventScroll: true });
+  }
+
+  function bgStatus() {
+    try {
+      return ctx.bg?.status?.() || null;
+    } catch {
+      return null;
+    }
+  }
+
+  function bgButton(label, kind, onClick, iconName) {
+    const b = h("button", { type: "button", class: ["btn", kind] }, iconName ? icon(iconName, { size: "sm" }) : null, h("span", null, label));
+    b.addEventListener("click", onClick);
+    return b;
+  }
+
+  function bgFrame(key, { iconName, title, text, tone = "", body = [], actions = [] }) {
+    const hadFocus = bgCard.contains(document.activeElement);
+    bgCard.dataset.state = key.split(":")[0];
+    bgCard.className = ["home-bg", tone].filter(Boolean).join(" ");
+    const head = h(
+      "div",
+      { class: "home-bg-head" },
+      h("span", { class: "home-bg-icon", "aria-hidden": "true" }, icon(iconName, { size: "sm" })),
+      h("div", { class: "home-bg-copy" }, h("h2", { class: "home-bg-title", id: "home-bg-title" }, title), h("p", { class: "home-bg-text" }, text)),
+    );
+    // append() prints a null as text, so only real nodes go in.
+    clear(bgCard).append(head, ...body, ...(actions.length ? [h("div", { class: "home-bg-actions" }, actions)] : []));
+    bgCard.hidden = false;
+    // The keyboard stays in the card when it changes under it.
+    if (hadFocus) (bgCard.querySelector(".home-bg-actions button") || el).focus({ preventScroll: true });
+  }
+
+  function paintBgCard(s = bgStatus()) {
+    const bg = ctx.bg;
+    const was = bgLastState;
+    bgLastState = s?.state || null;
+    // Only models built from BG_CONFIG (s.model) have a download prepare() can
+    // run; a mod's provider fetches its own files when it runs.
+    if (!bg?.describe || !s || s.kind !== "ml" || !s.model) return hideBgCard();
+    const words = bg.describe(s);
+    if (s.state === "downloading") {
+      if (bgView?.key !== "downloading") {
+        clearTimeout(bgReadyTimer);
+        const bar = h("span", { class: "home-bg-bar" });
+        const track = h("div", { class: "home-bg-track", role: "progressbar", "aria-label": "Download progress", "aria-valuemin": "0", "aria-valuemax": "100" }, bar);
+        const line = h("p", { class: "home-bg-line num" });
+        bgFrame("downloading", {
+          iconName: "download",
+          tone: "busy",
+          title: "Downloading background removal",
+          text: "You can start a design meanwhile. It keeps going in the background.",
+          body: [track, line],
+          actions: [bgButton("Cancel", "ghost", () => bg.cancelDownload?.(s.id))],
+        });
+        bgView = { key: "downloading", bar, track, line };
+      }
+      bgView.bar.style.width = `${words.percent}%`;
+      bgView.track.setAttribute("aria-valuenow", String(words.percent));
+      bgView.line.textContent = words.detail;
+      return;
+    }
+    // Another model already works here (the user made Best the default, say):
+    // the card names the model instead of offering background removal itself.
+    const name = modelName(s.label);
+    const another = otherModelReady(s.id);
+    if (s.ready) {
+      // Just finished while the card was up: a short "Ready", then it goes.
+      if (was === "downloading" && !bgCard.hidden) {
+        bgFrame("ready", { iconName: "check-circle", tone: "done", title: another ? `${name} is ready` : "Background removal is ready", text: "It works offline now." });
+        bgView = { key: "ready" };
+        clearTimeout(bgReadyTimer);
+        bgReadyTimer = setTimeout(hideBgCard, 2400);
+      } else if (bgView?.key !== "ready") hideBgCard();
+      return;
+    }
+    // A browser that keeps no downloads for this site has nothing to get ready.
+    if (bgCardSnoozed(ctx.prefs.get(BG_CARD_PREF, null)) || s.state === "checking" || s.storable === false) return hideBgCard();
+    if (s.state === "error") {
+      const key = `error:${s.id}:${words.detail}`;
+      if (bgView?.key === key) return;
+      bgFrame(key, {
+        iconName: "alert-triangle",
+        tone: "warn",
+        title: "The download stopped",
+        text: words.detail,
+        actions: [bgButton("Try again", "primary", () => startBgDownload(s.id), "refresh"), bgButton("Not now", "ghost", snoozeBg)],
+      });
+      bgView = { key };
+      return;
+    }
+    const key = `idle:${s.id}:${words.short}:${another}`;
+    if (bgView?.key === key) return;
+    bgFrame(key, {
+      iconName: "remove-bg",
+      title: another ? `Download the ${name} model` : "Get background removal ready",
+      text: `${words.short}. It runs on this computer and works offline after.`,
+      actions: [bgButton("Download now", "primary", () => startBgDownload(s.id), "download"), bgButton("Not now", "ghost", snoozeBg)],
+    });
+    bgView = { key };
+  }
+
+  function startBgDownload(id) {
+    // A failure lands in the status, which the card shows.
+    ctx.bg?.prepare?.(id).catch(() => {});
+  }
+
+  function paintBgTool(s = bgStatus()) {
+    const words = s && ctx.bg?.describe ? ctx.bg.describe(s) : null;
+    const quiet = !words || s.kind !== "ml" || s.ready || s.state === "checking";
+    bgToolStatus.textContent = quiet ? "" : words.short;
+    bgToolStatus.hidden = quiet;
+    bgToolStatus.classList.toggle("busy", s?.state === "downloading");
+  }
+
+  ctx.on("bg-model", (s) => {
+    if (!s || !ctx.bg) return;
+    if (s.id !== ctx.bg.defaultProvider) {
+      // Another model got ready or went: the offer may name the model now.
+      if (!bgCard.hidden && bgView?.key?.startsWith("idle:")) paintBgCard();
+      return;
+    }
+    paintBgCard(s);
+    paintBgTool(s);
+  });
+  ctx.on("prefs", (d) => {
+    if (d?.key === "bgProvider") {
+      bgView = null;
+      bgLastState = null;
+      ctx.bg?.refreshStatus?.(ctx.bg.defaultProvider)?.catch?.(() => {});
+    } else if (d?.key !== BG_CARD_PREF) return;
+    paintBgCard();
+    paintBgTool();
+  });
 
   // ---- recent
 
@@ -357,7 +544,7 @@ export function mountHome(ctx, el = document.getElementById("home")) {
   async function remove(p) {
     const ok = await ctx.ui.confirm({
       title: "Delete this design?",
-      message: `“${p.name}” will be removed from this browser. This cannot be undone.`,
+      message: `“${p.name}” will be removed from ${ctx.desktop ? "Longitude" : "this browser"}. This cannot be undone.`,
       ok: "Delete",
       cancel: "Keep it",
       danger: true,
@@ -460,7 +647,7 @@ export function mountHome(ctx, el = document.getElementById("home")) {
         "div",
         { class: "home-grid" },
         h("div", { class: "home-main" }, presetsEl),
-        h("aside", { class: "home-side" }, drop, h("section", { class: "home-tools" }, h("h2", { class: "home-h micro" }, "Quick tools"), toolsEl)),
+        h("aside", { class: "home-side" }, drop, bgCard, h("section", { class: "home-tools" }, h("h2", { class: "home-h micro" }, "Quick tools"), toolsEl)),
       ),
       footer,
     ),
@@ -561,6 +748,11 @@ export function mountHome(ctx, el = document.getElementById("home")) {
     main.scrollTop = 0;
     renderPresets();
     refresh();
+    // Is background removal here yet? A light look (Cache Storage and
+    // web/vendor/, no engine); the answer comes back as a bg-model event.
+    paintBgCard();
+    paintBgTool();
+    ctx.bg?.refreshStatus?.(ctx.bg.defaultProvider)?.catch?.(() => {});
     // Fresh thumbnails for the design that was just open.
     Promise.resolve(session.autosave?.flush?.({ thumb: true }))
       .catch(() => {})

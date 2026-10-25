@@ -53,6 +53,12 @@ in the browser on the user's machine; images never leave it.
   server (`serve.py`). Chromium (Edge/Chrome) is the primary target; Firefox
   must work except where an API is missing (EyeDropper, ClipboardItem write
   of some types). Safari is best effort.
+- `package.json` exists only so GitHub Actions can install the Tauri CLI
+  (`npm run tauri build`) for the Windows desktop app (`src-tauri/`,
+  `docs/DESKTOP.md`). The web app still has no npm, no build step and no
+  runtime dependencies; nothing in `web/` imports from `node_modules`. The
+  desktop app serves the same `web/` folder; `app/desktop.js` does nothing in
+  a browser (`isDesktop()` false, `ctx.desktop` undefined).
 - One external runtime dependency, loaded lazily only for background removal:
   `onnxruntime-web` (pinned version, jsDelivr) unless `web/vendor/ort/` exists.
 - Start light: boot loads only what the first screen needs. The export
@@ -146,6 +152,11 @@ web/js/mods/**                 mods
 web/mods/**                    mods
 web/js/ui/settings.js          mods
 docs/MODDING.md                mods
+web/js/app/desktop.js          desktop (Save dialogs, opened files, links, close handshake, daily update check)
+src-tauri/**                   desktop (Tauri 2 shell, installer, stage_vendor.py)
+package.json                   desktop (CI only: the Tauri CLI)
+.github/**                     desktop (build.yml: checks, Windows installer, releases)
+docs/DESKTOP.md                desktop
 tests/**                       whoever owns the module under test (name tests after the module)
 ```
 
@@ -560,6 +571,7 @@ only when they set `allowInFields: true`; plain-letter shortcuts never do.
 `tool` { id } · `zoom` { zoom } · `home` { open } · `project` { id, name } ·
 `saved` { at } · `theme` { id } · `textedit` { id|null } · `mode` { mode: "normal"|"crop"|"refine"|"magic" } ·
 `bg-progress` { layerId, phase: "download"|"run"|"done"|"error", progress: 0..1, message } ·
+`bg-model` { id, state, ... } (a provider's download status, docs/BGREMOVE.md "Download status") ·
 `prefs` { key, value } · `mods` {} · `panel` { visible } (after the right panel's slide ends)
 
 ## 8. Editor (web/js/editor/)
@@ -711,6 +723,14 @@ bg = {
   restoreLayer(layerId)                    // mask -> null (undoable)
   masks                                    // mask.js once loaded (the first removal or cutout edit), else null
   loadMasks() -> Promise<module>           // mask.js, loading it if needed
+  // Download status, one per provider, the same in every view (docs/BGREMOVE.md "Download status"):
+  status(id?) -> snapshot                  // state: "checking"|"ready-bundled"|"ready-cached"|"downloading"|"not-downloaded"|"error"
+  refreshStatus(id?) -> Promise            // look again (all providers without an id)
+  prepare(id?, { signal, onProgress })     // download now, without a layer
+  cancelDownload(id?) -> bool ; remove(id?) // delete a downloaded model
+  storage() -> { bytes, files, bundledBytes, bundledBy } ; downloading() -> statuses
+  describe(status) -> { short, label, detail, tip, percent }   // the shared copy
+  format { mb, speed, eta, progress }
 }
 // pixels.js: sourceSize, makeCanvas, readPixels (always loaded; mask.js re-exports them)
 // mask.js (pure helpers, loaded on first use)
@@ -720,8 +740,11 @@ export function featherMask(mask, px) ; export function growMask(mask, px) ; exp
 export function maskAlphaMap(maskCanvas, maxSide = 256) -> { w, h, data: Uint8Array }   // for hit testing
 ```
 Model choice: permissive license only (MIT/Apache/BSD). Download on first use
-with a confirm dialog that states the size and that nothing is uploaded;
-cache in Cache Storage; progress events; WebGPU when available, else WASM.
+with a confirm dialog that states the size and that nothing is uploaded, or
+ahead of time from Home, Settings or the palette (`prepare()`); cache in Cache
+Storage; progress events; WebGPU when available, else WASM. The Windows
+installer bundles the runtime and the Fast model (no download there); Best
+stays an optional download.
 The model and runtime URLs live in one config object so a fork or mod can
 point them elsewhere (or to `web/vendor/`).
 
@@ -739,7 +762,7 @@ export async function readImageFile(file, { maxSide, maxPixels }) -> { canvas, n
 export async function fileToCanvas(file, { maxSide, maxPixels }) -> HTMLCanvasElement   // default cap: the browser canvas limit
 export async function encodePng8(canvas, { colors = 256, dither = true }) -> Blob   // from png8.js
 export function formatBytes(n) -> "1.4 MB"
-export function download(blob, filename)
+export function download(blob, filename) -> Promise<bool>   // true once saved or downloading; false when the user canceled the desktop Save dialog (or its write failed, which shows its own toast). Await it before any success state ("Saved ...") or closing a dialog.
 export async function copyImage(blob) -> bool
 export function extFor(type) -> "png"|"jpg"|"webp"
 // zip.js
@@ -797,7 +820,11 @@ Prefs (`ctx.prefs`, localStorage `longitude.prefs.v1`): `theme`, `snap`,
 `safeZones`, `grid`, `recentColors`, `toolColors`, `exportByPreset`,
 `mods`, `feedTitle`, `feedChannel`, `layersHeight`, `lastPreset`,
 `storageAsked` (bool: `navigator.storage.persist()` was requested once),
-`storageKept` (bool: its result).
+`storageKept` (bool: its result), `bgProvider` (the default background-removal
+provider id), `bgReadyCard` (`{ until, count, never }`: the Home card's Not
+now). Desktop app only: `updateCheck` (bool, default true: the daily look at
+GitHub's latest release), `updateCheckedAt` (ms of the last successful check),
+`updateSkipped` (a version string the update toast stays quiet about).
 Other localStorage keys: rescue copies `longitude.rescue.<docId>` =
 `{ id, at, doc }` (written when the page hides with a change not yet in
 IndexedDB, restored on the next start), and the boot watchdog flag

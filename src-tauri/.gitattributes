@@ -1,0 +1,5 @@
+*.bmp binary
+*.ico binary
+*.png binary
+# The installer's license page shows this file as plain text: Windows line endings (tests/desktop-shell.test.js keeps it equal to ../LICENSE).
+installer/license.txt text eol=crlf

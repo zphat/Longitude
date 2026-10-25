@@ -1,0 +1,4 @@
+# Build output, generated schemas, and the background remover the CI build copies in (docs/DESKTOP.md).
+/target/
+/gen/schemas/
+/vendor/

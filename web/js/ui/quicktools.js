@@ -1006,15 +1006,17 @@ function createBatchMode(ctx, cfg) {
   async function downloadAll() {
     const ready = rows.filter((r) => r.out && r.version === version);
     if (!ready.length) return;
+    // download() resolves once the desktop Save dialog has closed (false when
+    // it was canceled), so the button stays busy until then.
     if (ready.length === 1) {
-      download(ready[0].out.blob, ready[0].out.name);
+      await download(ready[0].out.blob, ready[0].out.name);
       return;
     }
     downloadBtn.setDisabled(true);
     downloadBtn.setLabel("Zipping");
     try {
       const zip = await makeZip(ready.map((r) => ({ name: r.out.name, blob: r.out.blob })));
-      download(zip, cfg.zipName);
+      await download(zip, cfg.zipName);
     } catch (err) {
       note = err?.message || "Could not make the zip file.";
       paintAll();
@@ -1291,7 +1293,8 @@ function bgMode(ctx, sheet) {
   async function start({ confirmed = false } = {}) {
     if (!file || !source || !bg) return;
     const pid = provider;
-    if (!confirmed) {
+    // A download that already runs was a yes: the removal waits for it.
+    if (!confirmed && modelStatus()?.state !== "downloading") {
       let i = null;
       try {
         i = await bg.modelInfo(pid);
@@ -1377,9 +1380,75 @@ function bgMode(ctx, sheet) {
     });
     seg.setDisabled(!!job);
     const p = bg.providers.get(provider);
-    const status = info ? (info.kind !== "ml" ? "No download needed" : info.cached ? "Ready on this computer" : `${info.downloadMB || info.sizeMB} MB download, once`) : "";
-    return [sectionLabel("Model"), seg, p?.note ? h("p", { class: "qt-help" }, p.note) : null, status ? h("p", { class: ["qt-help", info?.cached === false && info.kind === "ml" && "attention"] }, status) : null];
+    return [sectionLabel("Model"), seg, p?.note ? h("p", { class: "qt-help" }, p.note) : null, ...modelBlock()];
   }
+
+  // ---- the model's download status (the same words as Home and Settings)
+
+  const modelStatus = () => {
+    try {
+      return bg?.status?.(provider) || null;
+    } catch {
+      return null;
+    }
+  };
+  let modelView = null; // { bar, line, pct } while a download shows
+
+  function modelBlock() {
+    modelView = null;
+    const s = modelStatus();
+    if (!s || !bg.describe) {
+      const status = info ? (info.kind !== "ml" ? "No download needed" : info.cached ? "Ready on this computer" : `One-time ${info.downloadMB || info.sizeMB} MB download`) : "";
+      return status ? [h("p", { class: ["qt-help", info?.cached === false && info.kind === "ml" && "attention"] }, status)] : [];
+    }
+    const words = bg.describe(s);
+    if (s.kind !== "ml") return [h("p", { class: "qt-help" }, "No download needed")];
+    if (s.ready) return [h("p", { class: "qt-help", "data-tip": words.tip || null }, "Ready on this computer")];
+    if (s.state === "checking") return [];
+    // The removal's own progress shows below while it runs.
+    if (s.state === "downloading" && job) return [h("p", { class: "qt-help attention" }, words.short)];
+    if (s.state === "downloading") {
+      const bar = h("div", { class: "qt-progress-bar" });
+      const line = h("span", { class: "num" });
+      const pct = h("span", { class: "num" });
+      modelView = { bar, line, pct };
+      paintModel(s);
+      return [
+        h(
+          "div",
+          { class: "qt-bg-progress download" },
+          h("div", { class: "qt-bg-progress-line" }, h("span", null, "Downloading the model"), pct),
+          h("div", { class: "qt-progress-track" }, bar),
+          h("div", { class: "qt-bg-progress-line qt-bg-progress-sub" }, line),
+        ),
+        button({ label: "Cancel download", kind: "ghost", wide: true, onClick: () => bg.cancelDownload?.(s.id) }),
+      ];
+    }
+    // A browser that keeps no downloads for this site fetches the model with each removal.
+    if (s.storable === false) return [h("p", { class: "qt-help attention" }, words.detail)];
+    const out = [h("p", { class: ["qt-help", "attention"] }, s.state === "error" ? words.detail : `${words.short}. It runs on this computer and works offline after.`)];
+    // Before any image: get it ready now, so the first cutout starts at once.
+    if (!file && !consent) out.push(button({ label: s.state === "error" ? "Try again" : "Download now", icon: s.state === "error" ? "refresh" : "download", kind: "ghost", wide: true, onClick: () => bg.prepare?.(s.id).catch(() => {}) }));
+    return out;
+  }
+
+  function paintModel(s) {
+    if (!modelView || !s) return;
+    const words = bg.describe(s);
+    modelView.bar.style.width = `${words.percent}%`;
+    modelView.pct.textContent = `${words.percent}%`;
+    modelView.line.textContent = words.detail;
+  }
+
+  let shownState = null;
+  const offModel = bg && ctx.on ? ctx.on("bg-model", (s) => {
+    if (!s || s.id !== provider) return;
+    // A new state redraws the side; progress only updates the numbers in place.
+    if (s.state !== shownState) {
+      shownState = s.state;
+      paint();
+    } else paintModel(s);
+  }) : null;
 
   function paint() {
     // stage
@@ -1398,8 +1467,10 @@ function bgMode(ctx, sheet) {
       side.replaceChildren(h("div", { class: "qt-side-scroll" }, parts));
       return;
     }
+    shownState = modelStatus()?.state ?? null;
     const picker = providerPicker();
     if (picker) parts.push(...picker);
+    else if (bg.providers?.list?.().length) parts.push(...modelBlock());
 
     if (consent) {
       const mb = consent.downloadMB || consent.sizeMB;
@@ -1408,7 +1479,7 @@ function bgMode(ctx, sheet) {
           "div",
           { class: "qt-consent", role: "alertdialog", "aria-label": "Download the background remover" },
           h("div", { class: "qt-consent-title" }, icon("download", { size: "sm" }), "One-time download"),
-          h("p", null, `Background removal downloads a ${mb} MB model once. It runs on this computer; your image is never uploaded.`),
+          h("p", null, `Background removal needs a one-time ${mb} MB download. It runs on this computer; your image is never uploaded.`),
           h(
             "div",
             { class: "qt-consent-actions" },
@@ -1443,7 +1514,7 @@ function bgMode(ctx, sheet) {
   async function downloadResult() {
     if (!result) return;
     const blob = await encode(result.cutout, { type: "image/png" });
-    download(blob, `${stripExt(file?.name) || "image"}-cutout.png`);
+    await download(blob, `${stripExt(file?.name) || "image"}-cutout.png`);
   }
 
   async function copyResult() {
@@ -1477,6 +1548,7 @@ function bgMode(ctx, sheet) {
   }
 
   refreshInfo();
+  bg?.refreshStatus?.(provider)?.catch?.(() => {});
   paint();
   return {
     el,
@@ -1487,6 +1559,7 @@ function bgMode(ctx, sheet) {
       cancel();
       loadToken++;
       clearTimeout(copied);
+      offModel?.();
       compare.destroy();
     },
   };

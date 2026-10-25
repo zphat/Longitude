@@ -411,3 +411,162 @@ behavior, canceled); `tests/core-spelling.test.js` and
 8. Separate decision, not changed: Chalk's accent `#5e8200` is 4.18:1 as text
    on panels. About `#567600` would pass, but it changes the shared Sundial
    Chalk look.
+
+## Desktop and model download
+
+The ask: make the background-removal download obvious, or have it come with
+the install, and make the installer a clean experience. Nothing in this pass
+has run in a real browser, in WebView2 or in GitHub Actions yet. On the
+working tree: `tools/check.mjs` 80 modules ok, `deno test` 697 passed, and the
+fake-DOM harness (sweep, flows, round 1, lazy check) matches its last run,
+plus two new probes for the desktop and browser paths below, all passing.
+
+### What changed
+
+- **Windows desktop app** (`src-tauri/`, `web/js/app/desktop.js`,
+  `docs/DESKTOP.md`). Tauri 2 around the same `web/` folder, built only by
+  `.github/workflows/build.yml`. Per-user NSIS installer (no admin), Start
+  menu entry, `.longitude` file association, single instance, Save dialogs
+  for exports and project files, links in the default browser, the last
+  autosave finished before the window closes. The installer bundles
+  onnxruntime-web (both builds) and the Fast model as resources, served on
+  the `vendor` protocol, so Fast works offline right after install; Best stays
+  an in-app download. A daily look at GitHub's latest release shows a toast
+  with Download (opens the release page) and Skip this version; on by
+  default, switch in Settings > General > Updates, palette commands "Check for
+  updates" and "Automatic update checks on or off". No signed updater.
+- **Download status everywhere** (`ctx.bg.status()` and the `bg-model`
+  event, docs/BGREMOVE.md "Download status"): Home's "Get background removal
+  ready" card (size, Download now, Not now for 7 days, then for good), a
+  sun-gold top-bar pill with details and Cancel, "One-time 69 MB download"
+  under the inspector's Remove background (the quick bar's tooltip too), the
+  same in quick tools, and Settings > Background removal with each model's
+  state, size, Download, Cancel and Delete.
+- **Start Longitude.cmd** asks once on its first run whether to download
+  background removal now (about 82 MB, `tools/fetch_model.py --first-run`),
+  with a progress bar, and once more to finish a download that was stopped.
+
+### Fixed in the fixer pass
+
+- `download()` (compress.js) now resolves false when the desktop Save dialog
+  is canceled or the write fails. Export, Save a copy and quick tools await
+  it: a canceled dialog leaves the export sheet open with no "Saved" toast,
+  and Save a copy no longer claims a backup that does not exist. The export
+  button says Save in the desktop app. Save a copy loads the export module if
+  it has not preloaded yet, so it always gets the Save dialog there.
+  `tests/export-download.test.js` keeps the callers honest.
+- Settings > Background removal no longer rebuilds a model row (and its
+  Cancel) on every percent; the top-bar pill updates its number in place.
+- Download now answers at once: the status turns "downloading" ("Starting the
+  download") before the engine has loaded and asked for the graphics card.
+  Canceling in that moment ends in "not downloaded", and a model that turns
+  out to be here already ends ready. A removal of a model that is here shows
+  no download flash.
+- The editor's consent button says "Download and remove" while the chosen
+  model needs a download, "Remove background" for Magic or a model already
+  here.
+- Copy follows what is bundled: the Background removal note, the Models line
+  and the runtime line name only what still downloads (desktop: "Fast and the
+  runtime are included with the app. Only Best downloads, once, from Hugging
+  Face."). A `web/vendor/` folder from `fetch_model.py` reads "Downloaded for
+  offline use" with how to remove it, not "Included with the app"
+  (`bundledBy`, from the manifest's `"bundled": "desktop"`). Sizes of ready
+  models count the model file, not the shared runtime twice.
+- A mod's own ml provider no longer gets a dead "One-time 0 MB download"
+  offer on Home, in Settings or in the palette.
+- Desktop wording: "Saved" (not "in this browser"), "in Longitude", "runs on
+  your computer" in About; no "Ask the browser to keep data" row; the Updates
+  switch carries the disclosure "Nothing about you or your designs is sent."
+- `fetch_model.py`: a connection that closes early is a network error,
+  retried and resumed with Range (it used to delete the `.part` file and exit
+  2 as a SHA-256 failure); a cut chunked body no longer prints a traceback.
+  The first-run marker records `done`; an interrupted "yes" is offered once
+  more, then its `.part` files are deleted. The console says Longitude opens
+  when the download finishes and how Ctrl+C plus N skips it.
+- Window minimum 760 x 520 (was 1024 x 640, which ran under the taskbar on a
+  1366 x 768 screen at 125%).
+- `web/sw.js` VERSION `0.1.0-4`, so browser installs stage the new files in a
+  fresh cache instead of overwriting the live one.
+- README (desktop section, update-check disclosure in Privacy, first-run
+  prompt, sizes), SPEC (desktop owner rows, package.json note, `download()`
+  returns `Promise<bool>`, the status API, `bg-model`, prefs `bgProvider`,
+  `bgReadyCard`, `updateCheck`, `updateCheckedAt`, `updateSkipped`),
+  BGREMOVE.md and DESKTOP.md brought in line.
+
+### Building and testing the installer (lead)
+
+1. Run the checks locally: `deno run --allow-read tools/check.mjs` and
+   `deno test --allow-read tests/`. Optionally run
+   `python tools/fetch_model.py --list`.
+2. Commit everything, including `src-tauri/Cargo.lock`, `package.json`,
+   `.github/` and the new tests. `web/vendor/`, `src-tauri/vendor/`,
+   `src-tauri/target/` and `node_modules/` are git-ignored. Push to `main`.
+3. Watch the run: **check** (Ubuntu: module check, tests, Python compile),
+   then **windows** (Rust, `npm install`, fetch and `--check` the background
+   remover, `stage_vendor.py --move`, `npm run tauri build`, the 7-Zip look
+   inside the installer, the artifact, the `Cargo.lock` commit with
+   `[skip ci]`). Pull afterwards: CI commits `Cargo.lock` back to `main`.
+4. Download the artifact `Longitude-windows-installer` from the run and
+   install it on a Windows 11 account. Then:
+   - SmartScreen: More info, Run anyway. The installer shows the license, the
+     header and sidebar art, installs without asking for admin, and offers a
+     desktop shortcut.
+   - Start it with the network off. Home shows no "Get background removal
+     ready" card. Remove a background: no consent dialog, no download, a
+     cutout in a few seconds. Settings > Background removal: Fast "Included
+     with the app", Best "One-time ... download", the note says only Best
+     downloads, no jsDelivr.
+   - Network on: Best's Download works, the top-bar pill shows progress,
+     Cancel works, Delete works.
+   - Export: the button says Save, the Windows Save dialog opens in Pictures;
+     Cancel leaves the sheet open with no toast; Save writes the file and
+     toasts. Save a copy opens in Documents and behaves the same.
+   - Double-click a `.longitude` file with the app closed, then with it open
+     (the window comes to the front, no second window). "Open with
+     Longitude" on a PNG and on a TTF.
+   - Close the window right after an edit, reopen: the edit is there.
+   - Settings > General: Updates (switch, Check now), no "Ask the browser to
+     keep data". Check now before any release exists says "Longitude 0.1.0
+     is the latest version" (GitHub answers 404 then).
+   - Resize to the minimum and maximize on a scaled display: nothing runs
+     under the taskbar.
+   - Uninstall with "Delete the application data" off: designs survive a
+     reinstall.
+5. Release: `git tag -a v0.1.0 -m "..."` and push the tag (the version in
+   `tauri.conf.json` must match; the check job fails otherwise). The release
+   gets the NSIS installer and `Longitude-Setup.exe`;
+   `https://github.com/zphat/Longitude/releases/latest/download/Longitude-Setup.exe`
+   should download it. A later tag's release makes an installed 0.1.0 toast
+   within a day (or at once with Check for updates).
+
+### Browser checks (the script version)
+
+1. Delete `web/vendor/` if present (`python tools/fetch_model.py --clean`),
+   run `Start Longitude.cmd`: it asks about the 82 MB download. Answer Y, then
+   press Ctrl+C partway and answer N to "Terminate batch job": Longitude
+   opens. Start again: "Finish the background removal download (N MB left)?"
+   resumes from the `.part` files. Settings then shows Fast as "Downloaded for
+   offline use" with the `--clean` hint.
+2. Without `web/vendor/`: Home's card, Download now (the card switches to
+   "Starting the download" at once), the pill, Cancel, Not now twice.
+3. Select a photo, Shift+B: the consent says "Download and remove"; pick Magic
+   and it says "Remove background".
+4. Open Settings > Background removal during a download and click Cancel
+   while it runs: it cancels on the first click.
+5. An open tab from before the update: reload another tab; the first one's
+   Settings still opens with its Models list (the VERSION bump).
+
+### What to look at first
+
+- The first CI run's **windows** job: the Rust compile (`src/lib.rs`, the
+  vendor protocol handler and the plugins), the 7-Zip check, and whether the
+  `Cargo.lock` commit pushes. Compiler errors arrive as annotations.
+- On the installed app, that background removal really loads from
+  `http://vendor.localhost/` (no network) and that the page is cross-origin
+  isolated (threads); a CSP or CORP mistake shows as a failed removal, not a
+  crash. A release build has no DevTools; to see the console, start
+  Longitude with the environment variable
+  `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9222` and
+  open `edge://inspect` in Edge.
+- That the Save dialog opens from Export after a long encode (the fallback
+  is a plain download to Downloads).

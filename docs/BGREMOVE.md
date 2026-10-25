@@ -4,7 +4,9 @@ Longitude removes backgrounds on your own computer. The first time you use it,
 it downloads a model and the runtime that executes it, keeps them in the
 browser's Cache Storage, and from then on works without a network. Your images
 are never uploaded anywhere: the only network requests are the one-time
-downloads of the model and runtime files listed below.
+downloads of the model and runtime files listed below. The Windows installer
+bundles the runtime and the Fast model, so the desktop app needs no download
+for Fast (docs/DESKTOP.md).
 
 Code lives in `web/js/features/bgremove/`:
 
@@ -182,6 +184,10 @@ python tools/fetch_model.py --models all    runtime + every model file
 python tools/fetch_model.py --list          what can be fetched, and what is here
 python tools/fetch_model.py --check         verify what is here
 python tools/fetch_model.py --clean         delete web/vendor/
+python tools/fetch_model.py --first-run     asks once (what Start Longitude.cmd runs)
+
+  --quiet   one line per file instead of the progress bar (CI logs)
+  --yes     answer yes to the --first-run question
 ```
 
 The tool reads the same `BG_CONFIG` block (it is strict JSON between the
@@ -191,14 +197,124 @@ The tool reads the same `BG_CONFIG` block (it is strict JSON between the
 uses any file listed there instead of the network, with no Cache Storage copy.
 `web/vendor/` is git-ignored.
 
+Each file downloads into `<file>.part` and moves into place only after its size
+and SHA-256 match, so an interrupted run never leaves a broken file; running
+again goes on from the `.part` file where the server allows it (HTTP Range).
+Network errors are retried three times per file, a connection that closes
+before the last byte included. Exit codes: `0` done, `1` the download failed
+or was stopped (run it again to go on), `2` a file did not match its SHA-256
+or came out larger than `config.js` says (it was not saved), `3` `--check`
+found a problem. CI (`.github/workflows/build.yml`) relies on `--models fast`,
+`--quiet`, `--check`, these exit codes and the `web/vendor/{manifest.json, ort/,
+models/}` layout.
+
+On its first run `Start Longitude.cmd` asks once in the console:
+"Background removal needs a one-time download (about 82 MB). Download it now
+so it works offline? [Y/n]". The answer is kept in `web/vendor/first-run.json`
+(`--clean` deletes that too). A "no", a closed network or any error leaves the
+download to the app, which offers it on Home. Longitude opens once the
+download finishes; the console says so, and that Ctrl+C skips it (then answer
+N to Windows' "Terminate batch job (Y/N)?", or the launcher stops before
+Longitude opens). A "yes" whose download did not finish (`"done": false` in
+the marker) is offered once more on the next start, "Finish the background
+removal download (N MB left)?", going on from the `.part` files; a "no" to
+that, or a second failed try, deletes the `.part` files, and it never asks
+again. It asks only when both ends are a console, so scripts never hang on it.
+The 82 MB holds both runtime builds (WebGPU and CPU-only), so the folder works
+on any machine; the app's own download is smaller because it fetches only the
+build this machine uses. The app calls such a folder "Downloaded for offline
+use" (Settings shows how to remove it: `python tools/fetch_model.py --clean`).
+
+The desktop installer bundles the runtime (both builds) and the Fast model,
+staged by `src-tauri/stage_vendor.py` with a manifest of its own that says
+`"bundled": "desktop"` (docs/DESKTOP.md), so Fast works offline right after
+install and reports "Included with the app".
+
+## Download status (what every view shows)
+
+`ctx.bg` keeps one status per provider and sends every change as a `bg-model`
+event, so Home, the top bar, the inspector, quick tools and Settings always
+agree. The first look reads only `web/vendor/manifest.json` and Cache Storage;
+it loads neither the engine nor asks for the graphics card, so Home can show
+the size at start. Sizes come from the byte counts in `BG_CONFIG` (decimal MB).
+
+| State | Meaning |
+| --- | --- |
+| `checking` | the first look has not answered yet |
+| `ready-bundled` | in `web/vendor/`, or nothing to download (Magic); `bundledBy` is `"app"` for the desktop installer's copy, `"vendor"` for one from `fetch_model.py` |
+| `ready-cached` | downloaded before, in Cache Storage |
+| `downloading` | `bytes` of `total`, `speed` (bytes/s) and `eta` (s) once known |
+| `not-downloaded` | `downloadBytes` still to fetch (`sizeBytes`: the whole first-use download; `modelBytes`: the model file alone, without the shared runtime) |
+| `error` | `error: { message, code }`; `prepare()` tries again |
+
+A status also says `storable: false` when the browser keeps no downloads for
+the site (no Cache Storage, for example a plain-http address other than
+localhost); the views then offer nothing to get ready. `model` is set only for
+providers built from `BG_CONFIG` (`modelProvider`); the views offer Download
+and Delete only for those, since `prepare()` has nothing to fetch for a mod's
+own provider.
+
+```js
+bg.status(id?)                      // snapshot (default provider); starts a look the first time
+await bg.refreshStatus(id?)         // look again; all providers without an id
+await bg.prepare(id?, { signal, onProgress })   // download now, without a layer
+bg.cancelDownload(id?)              // true if one was running
+await bg.remove(id?)                // delete a downloaded model (the runtime goes with the last one)
+await bg.storage()                  // { bytes, files, bundledBytes, bundledBy }
+bg.downloading()                    // statuses of the downloads running now
+bg.describe(status)                 // { short, label, detail, tip, percent }: the shared copy
+bg.format.mb(bytes)                 // "69 MB"; also .speed, .eta, .progress
+ctx.on("bg-model", (status) => ...)
+```
+
+A download shows as `downloading` the moment it is asked for (with no total
+until the engine has planned the exact files, "Starting the download"), so a
+click on Download now answers at once. Downloads go runtime first, then the
+model; every finished file stays in Cache Storage, so a canceled or failed
+download goes on from the next file. A
+removal that needs the files downloads them through the same `prepare()`, so
+its progress shows everywhere. If the user started the download on purpose
+(Home, Settings, the palette), canceling a removal that joined it leaves the
+download running; a download only a removal asked for stops with it. When the
+download ends the service checks that the browser kept every file before it
+says "ready" (a full disk is an error, not a silent re-download).
+
+Where it shows:
+
+- **Home**: while the default model is not here, a card "Get background
+  removal ready" with the size, Download now and Not now; the progress bar with
+  MB done, speed, time left and Cancel; "Ready" for a moment, then it goes. Not
+  now hides it for 7 days and the second Not now for good (prefs `bgReadyCard`).
+  The Remove a background quick tool card shows the size too.
+- **Top bar**: a sun-gold pill with the percentage while any model downloads;
+  a click shows the details, Cancel and a way to Settings. A toast says
+  "Background removal is ready. It works offline now." when it lands.
+- **Inspector**: "Remove background" carries "One-time 69 MB download" under
+  its label before the first use and the progress while downloading; after
+  that it is just the label. The bundled state shows only as a tooltip. The
+  consent dialog's button reads "Download and remove" while the chosen model
+  needs a download. The quick bar's Remove background names the download in
+  its tooltip.
+- **Quick tools**: the same line, Download now before an image is chosen, and
+  the progress with Cancel.
+- **Settings > Background removal**: each model with its state, size (the
+  model file; the runtime's line says it is shared), license and links,
+  Download, Cancel and Delete, the default model, the space used and the
+  privacy note. The note and the Models line name only what still downloads:
+  in the desktop app, "Fast and the runtime are included with the app. Only
+  Best downloads, once, from Hugging Face."
+- **Palette**: Download background removal, Cancel the background removal
+  download, Background removal models.
+
 ## Privacy
 
 - Images are processed in the browser tab (worker) on this computer. No image,
   mask or metadata is sent anywhere.
 - The only requests are plain `GET`s for the files in `BG_CONFIG`, made with
   `credentials: "omit"`, and only after the user confirms the download.
-- Delete the downloaded files with `ctx.bg.clearCache()` (Settings can offer
-  this; `ctx.bg.cacheUsage()` returns `{ bytes, files }`).
+- Settings > Background removal deletes one model (`ctx.bg.remove(id)`) or all
+  downloads (`ctx.bg.clearCache()`); `ctx.bg.storage()` returns
+  `{ bytes, files, bundledBytes, bundledBy }`.
 
 ## Using the service (`ctx.bg`)
 

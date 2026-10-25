@@ -1255,6 +1255,10 @@
 .qt-bg-progress.download .qt-progress-bar {
   background: var(--highlight);
 }
+.qt-bg-progress-sub {
+  color: var(--muted);
+  font-size: 11px;
+}
 .qt-result-actions {
   display: flex;
   flex-direction: column;

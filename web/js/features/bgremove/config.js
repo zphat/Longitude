@@ -117,8 +117,23 @@ export const BG_CONFIG = /* bgconfig:begin */ {
 // web/ root, so "vendor/" resolves to web/vendor/ wherever this module is loaded from.
 export const WEB_ROOT = new URL("../../../", import.meta.url).href;
 
-export function vendorUrl(path = "") {
-  return new URL(BG_CONFIG.vendorDir + path, WEB_ROOT).href;
+// The desktop app (docs/DESKTOP.md) installs the runtime and the Fast model
+// next to the program and serves them on their own origin, the "vendor"
+// protocol: http://vendor.localhost/ on Windows (https when the app runs on
+// https://tauri.localhost), vendor://localhost/ elsewhere. Read from the
+// location, so it works in the page and in the background-removal worker.
+// Null in a browser.
+export function desktopVendorBase(loc = globalThis.location) {
+  if (!loc) return null;
+  if (loc.hostname === "tauri.localhost") return `${loc.protocol}//vendor.localhost/`;
+  if (loc.protocol === "tauri:") return "vendor://localhost/";
+  return null;
+}
+
+// A mod that points vendorDir somewhere else keeps its folder in the desktop app too.
+export function vendorUrl(path = "", loc = globalThis.location) {
+  const desktop = BG_CONFIG.vendorDir === "vendor/" ? desktopVendorBase(loc) : null;
+  return desktop ? new URL(path, desktop).href : new URL(BG_CONFIG.vendorDir + path, WEB_ROOT).href;
 }
 
 // The variants a model can run with on this machine, best first.

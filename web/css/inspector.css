@@ -439,6 +439,25 @@
   margin-left: auto;
   white-space: nowrap;
 }
+/* Remove background before the first use: "One-time 69 MB download" under the label. */
+.insp-remove-text {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  line-height: 1.2;
+}
+.btn.has-sub {
+  min-height: 48px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+.insp-remove-sub {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  opacity: 0.74;
+}
 .insp-edge {
   display: flex;
   flex-direction: column;

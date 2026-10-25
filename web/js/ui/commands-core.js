@@ -694,8 +694,13 @@ async function saveCopy(ctx) {
   const doc = ctx.store.doc;
   const blob = await exportProject(doc, ctx.assets, ctx.fonts);
   const name = projectFileName(doc);
-  if (ctx.exporter?.download) ctx.exporter.download(blob, name);
-  else {
+  // The desktop app saves through its Save dialog (compress.js download()), even
+  // in the moments before the export module has been preloaded.
+  const exporter = ctx.exporter || (ctx.desktop ? await import("../features/compress.js").catch(() => null) : null);
+  if (exporter?.download) {
+    // False: the Save dialog was canceled, or the write failed and said so.
+    if ((await exporter.download(blob, name)) === false) return;
+  } else {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = name;
@@ -779,7 +784,8 @@ export function registerCoreCommands(ctx) {
     when: has,
     run: async (ctx) => {
       await session.autosave?.flush?.({ thumb: true });
-      ctx.ui.toast?.(ctx.assets?.persistent === false ? "This browser is not keeping data for this site. Save a project file to keep your work." : "Saved in this browser", {
+      const notKept = ctx.desktop ? "Longitude could not store data on this computer. Save a project file to keep your work." : "This browser is not keeping data for this site. Save a project file to keep your work.";
+      ctx.ui.toast?.(ctx.assets?.persistent === false ? notKept : ctx.desktop ? "Saved" : "Saved in this browser", {
         kind: ctx.assets?.persistent === false ? "warn" : "ok",
         id: "save",
         action: { label: "Save project file", run: () => ctx.commands.run("file.save-copy") },

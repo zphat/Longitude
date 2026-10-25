@@ -6,7 +6,7 @@
 import { h, disposer } from "./dom.js";
 import { button, iconButton } from "./controls.js";
 import { corners } from "../core/geometry.js";
-import { Panel, fontButton, ensureIcons, trackBgJobs, bgJob, jobText, progressRing } from "./inspector.js";
+import { Panel, fontButton, ensureIcons, trackBgJobs, bgJob, jobText, progressRing, removeHint } from "./inspector.js";
 
 const SHOW_DELAY = 90;
 
@@ -187,7 +187,12 @@ export function mountQuickbar(stageEl, ctx) {
               b.disabled = sp.ids.length !== 1;
               return b;
             }
-            const b = sp.cmd("image.remove-bg", { label: "Remove background", icon: "remove-bg" });
+            // Before the first use the tooltip names the one-time download, as the inspector does under its button.
+            let hint = "";
+            try {
+              hint = removeHint(ctx.bg?.status?.(), ctx.bg?.describe);
+            } catch {}
+            const b = sp.cmd("image.remove-bg", { label: "Remove background", icon: "remove-bg", tip: hint ? `Remove background · ${hint}` : undefined });
             b.classList.add("qb-btn", "qb-accent");
             return b;
           }

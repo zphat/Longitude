@@ -292,7 +292,21 @@ function downloadMessage(info) {
   if (info.kind === "local" || info.id === "magic") return "Magic works best on flat color backgrounds and screenshots. Nothing to download, and it runs on this computer.";
   if (info.cached) return `${providerShort(info.label)} is ready. It runs on this computer; your image is never uploaded.`;
   const mb = info.downloadMB || info.sizeMB || 0;
-  return `Background removal downloads a ${mb} MB model once. It runs on this computer; your image is never uploaded.`;
+  return `Background removal needs a one-time ${mb} MB download. It runs on this computer; your image is never uploaded.`;
+}
+
+// The line under the Remove background button before the first use or while
+// the model downloads ("One-time 69 MB download", "Downloading · 34%"); empty
+// once it is ready, when the button is just "Remove background".
+export function removeHint(status, describe) {
+  if (!status || status.kind !== "ml" || status.ready || status.state === "checking" || typeof describe !== "function") return "";
+  return describe(status).short || "";
+}
+
+// The consent's primary action names the download when there is one.
+export function removeActionLabel(info) {
+  const needsDownload = !!info && info.kind !== "local" && info.id !== "magic" && !info.cached;
+  return needsDownload ? "Download and remove" : "Remove background";
 }
 
 // Choice of model before the first download. Resolves with a provider id or null.
@@ -309,7 +323,7 @@ async function chooseProvider(ctx, preferred) {
   if (typeof ctx.ui?.dialog !== "function") {
     const msg = downloadMessage(infos.get(choice));
     const ok = typeof ctx.ui?.confirm === "function"
-      ? await ctx.ui.confirm({ title: "Remove background", message: msg, ok: "Remove background", cancel: "Not now" })
+      ? await ctx.ui.confirm({ title: "Remove background", message: msg, ok: removeActionLabel(infos.get(choice)), cancel: "Not now" })
       : window.confirm(msg);
     if (ok) remember(choice);
     return ok ? choice : null;
@@ -323,6 +337,10 @@ async function chooseProvider(ctx, preferred) {
       const info = infos.get(choice);
       msg.textContent = downloadMessage(info);
       note.textContent = [info?.note, info?.license && `License: ${info.license}`].filter(Boolean).join("  ·  ");
+      // The primary button says "Download and remove" while the choice needs a download.
+      const primary = dlg?.buttons?.find?.((b) => b.classList.contains("primary"));
+      const span = primary?.lastElementChild;
+      if (span?.tagName === "SPAN") span.textContent = removeActionLabel(info);
     };
     const seg = segmented({
       options: provs.map((p) => ({ value: p.id, label: providerShort(p.label), tip: p.note || null })),
@@ -348,7 +366,7 @@ async function chooseProvider(ctx, preferred) {
       body: h("div", { class: "insp-dlg" }, msg, h("div", { class: "insp-dlg-field" }, h("span", { class: "micro" }, "Model"), seg), note),
       actions: [
         { label: "Not now", run: () => finish(null) },
-        { label: "Remove background", kind: "primary", run: () => finish(choice) },
+        { label: removeActionLabel(infos.get(choice)), kind: "primary", run: () => finish(choice) },
       ],
       onClose: () => setTimeout(() => finish(null), 0),
     });
@@ -366,8 +384,11 @@ export async function removeBackground(ctx, ids, { provider } = {}) {
   const layers = (ids || []).map((id) => ctx.store.get(id)).filter((l) => l?.type === "image");
   if (!layers.length) return false;
   let pid = provider || bg.defaultProvider;
-  const info = await bg.modelInfo(pid).catch(() => null);
-  if (!info || !info.cached) {
+  // Already downloading (started from Home, Settings or the top bar): the
+  // user said yes then, so the removal just waits for it.
+  const downloading = bg.status?.(pid)?.state === "downloading";
+  const info = downloading ? null : await bg.modelInfo(pid).catch(() => null);
+  if (!downloading && (!info || !info.cached)) {
     pid = await chooseProvider(ctx, pid);
     if (!pid) return false;
   }
@@ -1228,14 +1249,25 @@ function modelLine(p, { again = false } = {}) {
   if (!bg?.providers?.list) return null;
   const pick = h("button", { type: "button", class: "insp-model-pick", "aria-haspopup": "menu", "data-tip": "Choose the background remover" });
   const meta = h("span", { class: "insp-model-meta" });
-  // Working out a model's download size loads the removal engine and asks
-  // for the graphics card, so selecting an image does not do it: the size
-  // shows once the engine is loaded anyway, or the pointer or focus reaches
-  // the Remove button or this line (row.warm).
+  // The exact download size (the right runtime build and model file) needs
+  // the removal engine and asks for the graphics card, so selecting an image
+  // does not do it: the status's estimate shows at once, and the engine
+  // loads once the pointer or focus reaches the Remove button or this line
+  // (row.warm), which also makes the first removal start sooner.
   let wanted = false;
   const fill = () => {
     const id = bg.defaultProvider;
     const prov = bg.providers.get(id);
+    if (typeof bg.status === "function" && typeof bg.describe === "function") {
+      const s = bg.status(id);
+      const words = bg.describe(s);
+      // Before a mask the button carries the download line; this line says where it runs.
+      meta.textContent = !s ? "" : s.kind !== "ml" ? "No download" : again && !s.ready ? words.short : s.state === "checking" ? "" : "Runs on this computer";
+      if (words.tip && s?.ready) meta.dataset.tip = words.tip;
+      else delete meta.dataset.tip;
+      if (wanted && prov?.kind === "ml" && !bg.engineLoaded) bg.modelInfo(id).catch(() => {});
+      return;
+    }
     if (!wanted && prov?.kind === "ml" && bg.engineLoaded === false) return;
     bg.modelInfo(id)
       .then((info) => {
@@ -1262,7 +1294,9 @@ function modelLine(p, { again = false } = {}) {
         if (again) removeBackground(ctx, p.ids, { provider: prov.id });
       },
     }));
-    if (typeof ctx.ui?.menu === "function") ctx.ui.menu(items, { x: r.left, y: r.bottom + 6 });
+    // Sizes, downloads and Delete for every model.
+    const manage = typeof ctx.ui?.openSettings === "function" ? ["-", { label: "Manage models", icon: "settings", run: () => ctx.ui.openSettings({ tab: "background" }) }] : [];
+    if (typeof ctx.ui?.menu === "function") ctx.ui.menu([...items, ...manage], { x: r.left, y: r.bottom + 6 });
     else items[(items.findIndex((i) => i.icon === "check") + 1) % items.length].run();
   });
   const row = h("div", { class: "insp-model" }, h("span", { class: "insp-model-label" }, "Model"), pick, meta);
@@ -1272,6 +1306,8 @@ function modelLine(p, { again = false } = {}) {
     fill();
   };
   onIntent(row, row.warm);
+  const off = ctx.on?.("bg-model", (s) => s?.id === bg.defaultProvider && fill());
+  if (off) p.onCleanup(off);
   return row;
 }
 
@@ -1318,6 +1354,30 @@ function cutoutBlock(sp, state) {
       wide: true,
       big: true,
     });
+    if (remove && typeof ctx.bg?.status === "function") {
+      // A second line before the first use ("One-time 69 MB download") and
+      // while the model downloads; after that the button is just its label.
+      const label = remove.querySelector("span");
+      const sub = h("span", { class: "insp-remove-sub num" });
+      const paintSub = () => {
+        const text = removeHint(ctx.bg.status(), ctx.bg.describe);
+        sub.textContent = text;
+        sub.hidden = !text;
+        remove.classList.toggle("has-sub", !!text);
+      };
+      if (label) {
+        remove.append(h("span", { class: "insp-remove-text" }, label, sub));
+        // setLabel() would otherwise find the wrapper first and drop the second line.
+        remove.setLabel = (t) => (label.textContent = t);
+      }
+      paintSub();
+      const off = ctx.on?.("bg-model", (s) => s?.id === ctx.bg.defaultProvider && paintSub());
+      if (off) sp.onCleanup(off);
+      // Another default model has its own size.
+      const offPrefs = ctx.on?.("prefs", (d) => d?.key === "bgProvider" && paintSub());
+      if (offPrefs) sp.onCleanup(offPrefs);
+      sp.onUpdate(paintSub);
+    }
     const line = modelLine(sp);
     if (remove && line?.warm) onIntent(remove, line.warm);
     out.push(remove, line);
@@ -2189,6 +2249,56 @@ function registerCommands(ctx) {
     keywords: "cutout cut out transparent erase background",
     when: () => of("image").length > 0,
     run: (c, args) => removeBackground(c, args?.ids || of("image").map((l) => l.id), { provider: args?.provider }),
+  });
+  // The one-time download on its own, from the palette (Home and Settings have buttons).
+  const modelState = (c) => {
+    try {
+      return c.bg?.status?.() || null;
+    } catch {
+      return null;
+    }
+  };
+  reg({
+    id: "image.download-model",
+    title: "Download background removal",
+    group: "Image",
+    icon: "download",
+    home: true,
+    keywords: "model offline get ready background removal cutout",
+    when: (c) => {
+      const s = modelState(c);
+      // Only models built from BG_CONFIG (s.model): prepare() has nothing to fetch for a mod's provider.
+      return !!s && s.kind === "ml" && !!s.model && s.storable !== false && (s.state === "not-downloaded" || s.state === "error");
+    },
+    run: (c) => {
+      const s = modelState(c);
+      if (s && c.bg.describe) c.ui?.toast?.(`Downloading background removal · ${c.bg.format?.mb?.(s.downloadBytes || s.sizeBytes) || ""}`.replace(/ · $/, ""), { kind: "info", id: "bg-model-start", timeout: 3000 });
+      // The top bar shows the progress; a failure gets its own toast there.
+      return c.bg.prepare().then(
+        () => true,
+        () => false,
+      );
+    },
+  });
+  reg({
+    id: "image.cancel-download",
+    title: "Cancel the background removal download",
+    group: "Image",
+    icon: "x",
+    home: true,
+    keywords: "stop model download",
+    when: (c) => modelState(c)?.state === "downloading",
+    run: (c) => c.bg.cancelDownload(),
+  });
+  reg({
+    id: "settings.background",
+    title: "Background removal models",
+    group: "App",
+    icon: "remove-bg",
+    home: true,
+    keywords: "model download delete offline storage fast best magic default settings",
+    when: (c) => !!c.bg?.providers && typeof c.ui?.openSettings === "function",
+    run: (c) => c.ui.openSettings({ tab: "background" }),
   });
   reg({
     id: "image.restore",

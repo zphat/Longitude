@@ -437,7 +437,9 @@ export function openExportDialog(ctx, opts = {}) {
   let warnKey = "";
 
   const copyBtn = button({ label: "Copy image", icon: "copy", onClick: () => doCopy() });
-  const downloadBtn = button({ label: "Download", icon: "download", kind: "primary", big: true, tip: "Download", kbd: keysLabel("Mod+Enter"), onClick: () => doDownload() });
+  // The desktop app asks where to save (app/desktop.js), so its button says Save.
+  const saveLabel = ctx.desktop ? "Save" : "Download";
+  const downloadBtn = button({ label: saveLabel, icon: "download", kind: "primary", big: true, tip: saveLabel, kbd: keysLabel("Mod+Enter"), onClick: () => doDownload() });
   downloadBtn.setAttribute("data-autofocus", "");
   downloadBtn.classList.add("xp-download");
 
@@ -671,7 +673,10 @@ export function openExportDialog(ctx, opts = {}) {
       const r = await ensureResult();
       if (sheet.closed) return;
       const name = fileName(r);
-      download(r.blob, name);
+      // False when the desktop Save dialog was canceled or the write failed
+      // (its own toast says so): the sheet stays open to try again.
+      const saved = await download(r.blob, name);
+      if (sheet.closed || !saved) return;
       sheet.close();
       ctx.ui?.toast?.(`Saved ${name} · ${formatBytes(r.bytes)}`, { kind: "ok" });
     } catch (err) {
@@ -682,7 +687,7 @@ export function openExportDialog(ctx, opts = {}) {
       saving = false;
       if (!sheet.closed) {
         downloadBtn.setDisabled(false);
-        downloadBtn.setLabel("Download");
+        downloadBtn.setLabel(saveLabel);
       }
     }
   }

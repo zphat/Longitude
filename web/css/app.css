@@ -441,6 +441,86 @@ body.ui-hidden .zoombar {
   font-weight: 700;
   white-space: nowrap;
 }
+/* Background removal downloading: sun-gold, quiet, a click shows the details. */
+.dl-pill {
+  flex: none;
+  height: 28px;
+  gap: 5px;
+  margin-left: 2px;
+  padding: 0 9px 0 7px;
+  cursor: pointer;
+  transition: background var(--t-fast), transform var(--t-fast);
+}
+.dl-pill:hover {
+  background: color-mix(in srgb, var(--highlight) 26%, transparent);
+}
+.dl-pill:active {
+  transform: scale(0.97);
+}
+.dl-pill .num {
+  font-size: 10.5px;
+}
+.dl-popover {
+  padding: 14px;
+}
+.dl-pop {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dl-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dl-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dl-row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+  font-weight: 650;
+}
+.dl-pct {
+  color: var(--highlight);
+  font-size: 11.5px;
+}
+.dl-track,
+.home-bg-track {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--panel2);
+}
+.dl-bar,
+.home-bg-bar {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--highlight);
+  transition: width var(--t) var(--ease);
+}
+.dl-line {
+  color: var(--muted);
+  font-size: 11px;
+}
+.dl-note {
+  margin: 0;
+  color: var(--faint);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+.dl-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
 
 .search-pill {
   display: flex;
@@ -1846,6 +1926,92 @@ input.palette-input::placeholder {
   opacity: 1;
 }
 
+/* Background removal: get it ready before the first cutout */
+.home-bg {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line-soft);
+  background: color-mix(in srgb, var(--panel) 84%, transparent);
+  animation: home-bg-in var(--t) var(--spring);
+}
+.home-bg.busy {
+  border-color: color-mix(in srgb, var(--highlight) 32%, transparent);
+}
+.home-bg.done {
+  border-color: var(--accent-line);
+}
+.home-bg.warn {
+  border-color: color-mix(in srgb, var(--highlight) 40%, transparent);
+  background: color-mix(in srgb, var(--highlight-soft) 60%, var(--panel));
+}
+@keyframes home-bg-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+.home-bg-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.home-bg-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r);
+  background: var(--panel2);
+  color: var(--text);
+}
+.home-bg.busy .home-bg-icon,
+.home-bg.warn .home-bg-icon {
+  background: var(--highlight-soft);
+  color: var(--highlight);
+}
+.home-bg.done .home-bg-icon {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.home-bg-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.home-bg-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.home-bg-text {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+.home-bg-line {
+  margin: -4px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  min-height: 1.4em;
+}
+.home-bg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.home-bg-actions .btn {
+  min-height: 30px;
+  padding: 5px 12px;
+}
+
 /* Quick tools */
 .tool-grid {
   display: flex;
@@ -1910,6 +2076,15 @@ input.palette-input::placeholder {
   color: var(--muted);
   font-size: 11.5px;
   line-height: 1.35;
+}
+/* What the first use costs ("One-time 69 MB download"), or the download's progress. */
+.tool-status {
+  color: var(--faint);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.tool-status.busy {
+  color: var(--highlight);
 }
 
 /* Recent designs: one row of compact cards right under the heading. */
@@ -2225,6 +2400,9 @@ input.palette-input::placeholder {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: start;
   }
+  .home-bg {
+    grid-column: 1 / -1;
+  }
 }
 @media (max-width: 759px) {
   :root {
@@ -2234,7 +2412,11 @@ input.palette-input::placeholder {
     grid-template-columns: minmax(0, 1fr) max-content;
   }
   .top-center,
-  .status-pill {
+  .status-pill:not(.dl-pill) {
+    display: none;
+  }
+  /* A model download stays visible, as an icon and a number. */
+  .dl-pill-text {
     display: none;
   }
   .top-right .top-sep {

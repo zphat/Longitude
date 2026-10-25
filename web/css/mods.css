@@ -359,6 +359,90 @@ a.btn {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 16%, transparent);
 }
 
+/* Background removal models */
+.bg-model {
+  align-items: flex-start;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+.bg-model .set-row-main {
+  gap: 4px;
+}
+.bg-model-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.bg-chip {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--panel2);
+  border: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+/* Ready is the quiet state; only a download in progress or a failure asks for attention. */
+.bg-chip.ready-cached,
+.bg-chip.ready-bundled:not(.local) {
+  color: var(--text);
+}
+.bg-chip.downloading,
+.bg-chip.error {
+  background: var(--highlight-soft);
+  border-color: transparent;
+  color: var(--highlight);
+}
+.bg-model-err {
+  color: var(--highlight);
+}
+.bg-model-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--faint);
+  font-size: 11px;
+}
+.bg-model-meta .dotsep {
+  color: var(--faint);
+}
+.set-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border-radius: 4px;
+  color: var(--muted);
+  text-decoration: none;
+}
+.set-link:hover {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.bg-track {
+  height: 4px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--panel2);
+}
+.bg-bar {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--highlight);
+  transition: width var(--t) var(--ease);
+}
+.bg-model-actions {
+  flex: none;
+  flex-wrap: nowrap;
+}
+
 /* Storage meter */
 .set-meter {
   height: 8px;

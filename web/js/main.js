@@ -26,7 +26,7 @@ import { mountQuickbar } from "./ui/quickbar.js";
 import { openColorPicker } from "./ui/colorpicker.js";
 import { openFontPicker } from "./ui/fontpicker.js";
 // Export, feed preview, quick tools, the encoders and Settings load on first use.
-import { registerExportCommands, openExport, openFeedPreview, openQuickTool, loadedCompress, warmOnIntent, pinOnDemand } from "./ui/ondemand.js";
+import { registerExportCommands, openExport, openFeedPreview, openQuickTool, loadCompress, loadedCompress, warmOnIntent, pinOnDemand } from "./ui/ondemand.js";
 import { loadMods, loadSettings, openSettings, registerModCommands, validateIndex } from "./mods/loader.js";
 import { defaultModsBase } from "./mods/paths.js";
 import { createPalette } from "./ui/palette.js";
@@ -50,6 +50,7 @@ import {
   rescueIsNewer,
 } from "./ui/commands-core.js";
 import { h } from "./ui/dom.js";
+import { installDesktop, isDesktop } from "./app/desktop.js";
 
 const $ = (id) => document.getElementById(id);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -365,7 +366,8 @@ async function keepStorage(ctx) {
     const kept = await s.persist();
     ctx.prefs.set("storageAsked", true);
     ctx.prefs.set("storageKept", !!kept);
-    if (!kept) {
+    // The desktop app has a storage folder of its own, not a browser's (docs/DESKTOP.md).
+    if (!kept && !isDesktop()) {
       ctx.ui.toast?.("This browser may clear saved designs when the disk is nearly full. Save a project file of anything you want to keep.", {
         kind: "info",
         timeout: 12000,
@@ -453,6 +455,9 @@ async function boot() {
   wireAutosave(ctx, shell);
   holdWindowLock();
   attempt("Windows", () => connectWindows(ctx));
+  // The desktop app (docs/DESKTOP.md): Save dialogs, files from its command
+  // line, links in the default browser, the daily update check. Null in a browser.
+  const desktop = attempt("Desktop app", () => installDesktop(ctx, { openFiles: (files) => openFiles(ctx, files, { fresh: true }), flush: flushBriefly, preload: loadCompress }));
 
   // Files handed over by the operating system ("Open with Longitude"). The
   // consumer is set before the last design reopens so a launch with files
@@ -468,6 +473,8 @@ async function boot() {
       else files.then((list) => list.length && openFiles(ctx, list, { fresh: true }));
     });
   }
+  // The desktop app hands over the files on its command line the same way.
+  if (desktop && !launch) launch = desktop.launchFiles();
 
   // Mods load last; a broken mod is reported in Settings, never fatal, and a
   // slow one never holds the app back for more than a few seconds.
@@ -498,11 +505,15 @@ async function boot() {
   reportFailures(ctx);
   if (safe) safeModeToast(ctx, safe);
   if (!ctx.assets.persistent) shell?.setSaveState("memory");
+  attempt("Desktop app", () => desktop?.bootDone());
 
   // Old images nothing uses any more.
   setTimeout(() => Promise.resolve(collectGarbage(ctx)).catch(() => {}), 20000);
-  if (document.readyState === "complete") serviceWorker(ctx);
-  else addEventListener("load", () => serviceWorker(ctx), { once: true });
+  // The desktop app's files are inside the program: no offline cache to keep.
+  if (!isDesktop()) {
+    if (document.readyState === "complete") serviceWorker(ctx);
+    else addEventListener("load", () => serviceWorker(ctx), { once: true });
+  }
   return ctx;
 }
 

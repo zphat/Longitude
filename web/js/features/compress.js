@@ -1,6 +1,8 @@
 // Export engine: encode, fit under a file size, resize, convert, download,
 // copy. Main.js exposes this module's namespace as ctx.exporter.
 
+import { saveHandler } from "../app/desktop.js";
+
 // The PNG-8 encoder and the zip writer load on first use (a color-limited
 // PNG, a batch download), not with the rest of this module. sw.js precaches
 // both, so they load offline too. A failed load is retried next time.
@@ -543,11 +545,22 @@ export async function fileToCanvas(file, opts) {
   return (await readImageFile(file, opts)).canvas;
 }
 
+// Saves a file. In a browser it downloads at once; in the desktop app it asks
+// where to save first (app/desktop.js, with this download as the fallback).
+// Resolves true once saved or downloading, false when the user canceled.
 export function download(blob, filename) {
+  const name = safeFileName(filename || "longitude", blob.type?.startsWith("image/") ? blob.type : null);
+  const save = saveHandler();
+  if (save) return save(blob, name, () => browserDownload(blob, name));
+  browserDownload(blob, name);
+  return Promise.resolve(true);
+}
+
+function browserDownload(blob, name) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = safeFileName(filename || "longitude", blob.type?.startsWith("image/") ? blob.type : null);
+  a.download = name;
   a.rel = "noopener";
   a.style.display = "none";
   document.body.append(a);

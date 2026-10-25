@@ -278,7 +278,9 @@ export function mountShell(ctx, regions = {}) {
   const saveDot = h("span", { class: "save-dot" });
   const saveText = h("span", { class: "save-text" }, "Saved");
   const saveState = h("span", { class: "save-state", hidden: true, "data-state": "draft" }, saveDot, saveText);
-  const statusPill = h("span", { class: "status-pill", hidden: true });
+  // Shown while a background removal model downloads; a click shows the details.
+  const statusPill = h("button", { type: "button", class: "status-pill dl-pill", hidden: true, "aria-haspopup": "dialog", "data-tip": "Background removal is downloading" });
+  statusPill.addEventListener("click", () => openDownloads(statusPill));
 
   const leftIsland = h("div", { class: "island top-island top-left" }, menuBtn, h("span", { class: "top-sep" }), nameWrap, presetChip, saveState, statusPill);
 
@@ -374,7 +376,9 @@ export function mountShell(ctx, regions = {}) {
     const time = savedAt ? new Date(savedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
     if (state === "saved") {
       saveText.textContent = "Saved";
-      saveState.dataset.tip = time ? `Saved in this browser at ${time}` : "Saved in this browser";
+      // The desktop app keeps designs in its own folder, not a browser's.
+      const where = ctx.desktop ? "Saved" : "Saved in this browser";
+      saveState.dataset.tip = time ? `${where} at ${time}` : where;
     } else if (state === "pending") {
       saveText.textContent = "Saving…";
       saveState.dataset.tip = "Saving your latest change";
@@ -383,7 +387,7 @@ export function mountShell(ctx, regions = {}) {
       saveState.dataset.tip = info.message ? `Not saved: ${info.message}` : "Not saved. Save a project file to keep your work.";
     } else if (state === "memory") {
       saveText.textContent = "Not stored";
-      saveState.dataset.tip = "This browser is not keeping data for this site. Save a project file to keep your work.";
+      saveState.dataset.tip = ctx.desktop ? "Longitude could not store data on this computer. Save a project file to keep your work." : "This browser is not keeping data for this site. Save a project file to keep your work.";
     }
   }
 
@@ -870,6 +874,141 @@ export function mountShell(ctx, regions = {}) {
     nameInput.focus();
   });
 
+  // ---- background removal downloads: a quiet pill, its details, a toast when ready
+
+  let otherDownload = null; // { label, progress, message } from a mod's provider
+  let dlPop = null; // { close, paint } while the details are open
+  let pillPct = null; // the pill's percentage
+  const lastState = new Map(); // providerId -> state
+
+  function downloadsNow() {
+    try {
+      return ctx.bg?.downloading?.() || [];
+    } catch {
+      return [];
+    }
+  }
+
+  function paintDownloads() {
+    const list = downloadsNow();
+    const bg = ctx.bg;
+    if (!list.length && !otherDownload) {
+      statusPill.hidden = true;
+      dlPop?.paint();
+      return;
+    }
+    const pct = list.length ? Math.round(list.reduce((s, d) => s + bg.describe(d).percent, 0) / list.length) : Math.round(otherDownload.progress * 100);
+    statusPill.hidden = false;
+    // Built once; each tick only changes the percentage.
+    if (!pillPct || !statusPill.contains(pillPct)) {
+      pillPct = h("span", { class: "num" });
+      statusPill.replaceChildren(icon("download", { size: "sm" }), h("span", { class: "dl-pill-text" }, "Model"), pillPct);
+    }
+    pillPct.textContent = `${pct}%`;
+    const line = list.length ? bg.describe(list[0]).detail : otherDownload.message;
+    statusPill.dataset.tip = line ? `Background removal is downloading: ${line}` : "Background removal is downloading";
+    statusPill.setAttribute("aria-label", `Background removal download, ${pct}%. Show details`);
+    dlPop?.paint();
+  }
+
+  function downloadRow(s) {
+    const words = ctx.bg.describe(s);
+    const bar = h("span", { class: "dl-bar", style: { width: `${words.percent}%` } });
+    return h(
+      "div",
+      { class: "dl-row" },
+      h("div", { class: "dl-row-head" }, h("span", { class: "dl-name" }, String(s.label || "Model").replace(/\s*\(.*\)\s*$/, "")), h("span", { class: "dl-pct num" }, `${words.percent}%`)),
+      h("div", { class: "dl-track", role: "progressbar", "aria-label": `${s.label} download`, "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(words.percent) }, bar),
+      h("div", { class: "dl-line num" }, words.detail),
+    );
+  }
+
+  // Details of the running downloads, live, with Cancel.
+  function openDownloads(anchor) {
+    if (dlPop) {
+      dlPop.close();
+      return;
+    }
+    const rows = h("div", { class: "dl-rows" });
+    const cancel = h("button", { type: "button", class: "btn ghost" }, h("span", null, "Cancel download"));
+    cancel.addEventListener("click", () => {
+      for (const s of downloadsNow()) ctx.bg?.cancelDownload?.(s.id);
+    });
+    // Every model, its size and the Delete buttons live in Settings.
+    const manage = typeof ctx.ui.openSettings === "function" ? h("button", { type: "button", class: "btn ghost" }, h("span", null, "Models")) : null;
+    manage?.addEventListener("click", () => {
+      dlPop?.close();
+      ctx.ui.openSettings({ tab: "background" });
+    });
+    const body = h(
+      "div",
+      { class: "dl-pop" },
+      h("div", { class: "pop-head" }, h("span", { class: "pop-title" }, "Downloading background removal")),
+      rows,
+      h("p", { class: "dl-note" }, "A one-time download. Background removal then runs on this computer and works offline. Your images are never uploaded."),
+      h("div", { class: "dl-actions" }, ...(manage ? [manage] : []), cancel),
+    );
+    let shownKey = "";
+    const paint = () => {
+      const list = downloadsNow();
+      if (!list.length && !otherDownload) {
+        dlPop?.close();
+        return;
+      }
+      // Rows are drawn again only when the set changes; numbers update in place.
+      const key = list.map((s) => s.id).join(",") || "other";
+      if (key !== shownKey) {
+        shownKey = key;
+        rows.replaceChildren(...(list.length ? list.map(downloadRow) : [h("div", { class: "dl-row" }, h("div", { class: "dl-line" }, otherDownload.message || `${otherDownload.label}: ${Math.round(otherDownload.progress * 100)}%`))]));
+      } else if (list.length) {
+        [...rows.children].forEach((row, i) => {
+          const s = list[i];
+          const words = ctx.bg.describe(s);
+          row.querySelector(".dl-bar").style.width = `${words.percent}%`;
+          row.querySelector(".dl-pct").textContent = `${words.percent}%`;
+          row.querySelector(".dl-track").setAttribute("aria-valuenow", String(words.percent));
+          row.querySelector(".dl-line").textContent = words.detail;
+        });
+      }
+      cancel.hidden = !list.length;
+    };
+    const handle = ctx.ui.popover?.(anchor, body, {
+      placement: "bottom-start",
+      width: 320,
+      class: "dl-popover",
+      onClose: () => {
+        dlPop = null;
+      },
+    });
+    // A click on the pill that just closed it (an outside click) opens nothing.
+    if (!handle || handle.closed) return;
+    dlPop = { close: () => handle.close(), paint };
+    paint();
+  }
+
+  function modelChanged(s) {
+    if (!s?.id) return;
+    const was = lastState.get(s.id);
+    lastState.set(s.id, s.state);
+    paintDownloads();
+    if (was !== "downloading" || s.state === "downloading") return;
+    // Home's card shows the default model's outcome itself, unless a dialog covers it.
+    const onHome = ctx.ui.isHomeOpen?.() && !ctx.ui.isBlocking?.() && s.id === ctx.bg?.defaultProvider;
+    if (s.ready) {
+      if (onHome) return;
+      const name = String(s.label || "").replace(/\s*\(.*\)\s*$/, "");
+      const first = s.id === ctx.bg?.defaultProvider || !name;
+      ctx.ui.toast?.(first ? "Background removal is ready. It works offline now." : `${name} is ready. It works offline now.`, { kind: "ok", id: "bg-model-ready" });
+    } else if (s.state === "error" && s.origin === "prepare" && !onHome) {
+      // A removal reports its own failure; this one was a download on its own.
+      ctx.ui.toast?.(s.error?.message || "The download stopped.", {
+        kind: "error",
+        id: "bg-model-error",
+        action: { label: "Try again", run: () => ctx.bg?.prepare?.(s.id).catch(() => {}) },
+      });
+    }
+  }
+
   // ---- wiring
 
   ctx.on("tool", (d) => {
@@ -891,14 +1030,22 @@ export function mountShell(ctx, regions = {}) {
     if (d?.id === "edit.undo") pulse(undoBtn);
     if (d?.id === "edit.redo") pulse(redoBtn);
   });
+  ctx.on("bg-model", (s) => modelChanged(s));
+  // A mod's own provider (or a browser without Cache Storage, where the worker
+  // fetches the files itself) reports its download only as bg-progress.
   ctx.on("bg-progress", (d) => {
-    if (d?.phase === "download") {
-      statusPill.hidden = false;
-      statusPill.textContent = `Downloading model ${Math.round((d.progress || 0) * 100)}%`;
-      statusPill.dataset.tip = "The background remover downloads once, then works offline.";
-    } else {
-      statusPill.hidden = true;
+    if (!d) return;
+    if (d.phase !== "download") {
+      if (otherDownload?.provider === d.provider) {
+        otherDownload = null;
+        paintDownloads();
+      }
+      return;
     }
+    // Built-in models' downloads are in their status (bg-model) already.
+    if (ctx.bg?.status?.(d.provider)?.state === "downloading") return;
+    otherDownload = { provider: d.provider, label: ctx.bg?.providers?.get?.(d.provider)?.label || "Model", progress: Number(d.progress) || 0, message: d.message || "" };
+    paintDownloads();
   });
   ctx.tools.onChange(() => renderRail());
   ctx.shapes?.onChange?.(() => registerShapeCommands());

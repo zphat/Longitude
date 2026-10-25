@@ -11,6 +11,11 @@ if not defined PY (
   exit /b 1
 )
 title Longitude
+rem First run only: offer the one-time background removal download, so it
+rem works offline. Asked once (web\vendor\first-run.json), and once more to
+rem finish a download that was stopped; any problem leaves the download to the
+rem app. Longitude opens when it is done.
+%PY% tools\fetch_model.py --first-run
 echo Starting Longitude. Keep this window open while you work; close it to stop.
 %PY% serve.py --open --quiet
 if errorlevel 1 pause

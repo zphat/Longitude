@@ -15,9 +15,14 @@ the moments that need attention.
 
 ## Start
 
-**Windows:** double-click `Start Longitude.cmd`. It starts a local server and
-opens Longitude in its own Edge window. Keep the black console window open
-while you work.
+**Windows, installed:** get the desktop app (below). Background removal is
+included, so nothing else needs to download.
+
+**Windows, from this folder:** double-click `Start Longitude.cmd`. It starts a
+local server and opens Longitude in its own Edge window. Keep the black console
+window open while you work. The first time, it asks once whether to download
+background removal now (about 82 MB) so it works offline; say no and the app
+offers it when you need it.
 
 **Any system with Python 3.8+:**
 
@@ -30,8 +35,28 @@ Firefox works except the color eyedropper. In Edge or Chrome you can install
 it as an app (the install icon in the address bar) so it opens like any other
 program.
 
-Nothing to install, no build step. The only thing Longitude ever downloads is
-the background-removal model, once, when you first ask for it.
+The browser version needs nothing installed and has no build step. The only
+thing it ever downloads is the background-removal model, once, when you ask
+for it. The desktop app also looks once a day for a newer release (below).
+
+## Desktop app (Windows)
+
+Download `Longitude-Setup.exe` from the
+[latest release](https://github.com/zphat/Longitude/releases/latest). It
+installs for your Windows account only (no admin rights), and background
+removal is included, so it works offline right after install. Best, the
+larger model, stays an optional download inside the app.
+
+The installer is not code-signed yet. If Windows SmartScreen warns about it,
+choose **More info**, then **Run anyway**.
+
+Once a day the app asks GitHub's API (`api.github.com`) whether a newer
+release exists and, if there is one, shows a Download button that opens the
+release page. Nothing about you or your designs is sent. Turn it off in
+Settings > General > Updates, or with "Automatic update checks on or off" in
+the command palette (Ctrl K); "Check for updates" looks right away. Designs in
+the desktop app are kept apart from the browser version's; move one across
+with Save a copy. Details: [docs/DESKTOP.md](docs/DESKTOP.md).
 
 ## What it does
 
@@ -120,20 +145,28 @@ Licenses and credits are in [docs/FONTS.md](docs/FONTS.md) and
 
 ## Background removal
 
-Runs entirely in your browser with
+Runs entirely on your computer with
 [ONNX Runtime Web](https://onnxruntime.ai/), on the GPU when WebGPU is
 available. Your image never leaves your computer.
 
 | Mode | Model | Download | License |
 | --- | --- | --- | --- |
-| Fast (default) | IS-Net general use, int8 | about 70 MB once | Apache-2.0 |
-| Best | BiRefNet lite | about 150 MB once | MIT |
+| Fast (default) | IS-Net general use, int8 | about 69 MB once (58 MB without WebGPU); included in the desktop app | Apache-2.0 |
+| Best | BiRefNet lite | about 148 MB once (up to 224 MB without a capable GPU) | MIT |
 | Magic | Flat-color flood fill | none | MIT |
 
+The sizes include the shared runtime, which comes once with the first model.
+Until Fast is here, Home shows a "Get background removal ready" card with its
+size and a Download now button, and the Remove background button carries a
+line like "One-time 69 MB download". While a model downloads, a sun-gold pill
+in the top bar shows the progress (click it for details or Cancel), and you
+can keep working. Settings > Background removal lists each model with its
+state and size, with Download, Cancel and Delete.
+
 Downloads are cached by the browser, so later sessions start straight away.
-To work fully offline, run `python tools/fetch_model.py` once; it stores the
-runtime and models in `web/vendor/`. Details and sources:
-[docs/BGREMOVE.md](docs/BGREMOVE.md).
+To work fully offline, run `python tools/fetch_model.py` once (Start
+Longitude.cmd offers this on its first run); it stores the runtime and models
+in `web/vendor/`. Details and sources: [docs/BGREMOVE.md](docs/BGREMOVE.md).
 
 ## Mods
 
@@ -158,6 +191,7 @@ have read.
 
 ```
 serve.py, Start Longitude.cmd   local server and Windows launcher
+src-tauri/, package.json        the Windows desktop app (built by GitHub Actions only)
 web/                            the app (static files)
   index.html, main.js           shell and boot
   js/core/                      document model, history, rendering, assets, fonts
@@ -168,7 +202,7 @@ web/                            the app (static files)
   fonts/  presets/  icons/
 tools/                          font build, model fetch, module checker
 tests/                          Deno unit tests
-docs/                           SPEC (architecture contract), modding, fonts, background removal
+docs/                           SPEC (architecture contract), modding, fonts, background removal, desktop app
 ```
 
 ## Development
@@ -191,8 +225,9 @@ the module boundaries and the design language.
 ## Privacy
 
 No accounts, no analytics, no network calls except the optional one-time
-model download. Designs live in your browser's storage until you delete them
-or export them.
+model download and, in the desktop app, a once-a-day look at GitHub's latest
+release (turn it off in Settings > General > Updates). Designs live in your
+browser's storage, or the desktop app's, until you delete them or export them.
 
 ## License
 
