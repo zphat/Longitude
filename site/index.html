@@ -1,0 +1,996 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Longitude: a free editor for thumbnails and covers</title>
+    <meta name="description" content="A small, open-source image editor for YouTube thumbnails and Spotify covers. No account, no subscription, nothing uploaded. For Windows and the browser." />
+    <meta name="theme-color" content="#090b0d" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="app/icons/icon-192.png" />
+
+    <!-- Social cards need an absolute image URL. Change these two when the site moves to its own domain. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Longitude" />
+    <meta property="og:title" content="Longitude: a free editor for thumbnails and covers" />
+    <meta property="og:description" content="A small, open-source image editor for YouTube thumbnails and Spotify covers. No account, no subscription, nothing uploaded." />
+    <meta property="og:image" content="https://zphat.github.io/Longitude/assets/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The Longitude logo and the editor with a YouTube thumbnail" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Longitude: a free editor for thumbnails and covers" />
+    <meta name="twitter:description" content="A small, open-source image editor for YouTube thumbnails and Spotify covers. No account, no subscription, nothing uploaded." />
+    <meta name="twitter:image" content="https://zphat.github.io/Longitude/assets/og.png" />
+
+    <!-- The interface fonts come from the app copy next to this page (app/ is web/). -->
+    <link rel="preload" href="app/fonts/ui/syne.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="app/fonts/ui/manrope.woff2" as="font" type="font/woff2" crossorigin />
+    <style>
+      @font-face {
+        font-family: "Manrope";
+        src: url("app/fonts/ui/manrope.woff2") format("woff2");
+        font-weight: 200 800;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Syne";
+        src: url("app/fonts/ui/syne.woff2") format("woff2");
+        font-weight: 400 800;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Space Mono";
+        src: url("app/fonts/ui/spacemono-400.woff2") format("woff2");
+        font-weight: 400;
+        font-display: swap;
+      }
+
+      /* Signal theme, as in web/css/tokens.css */
+      :root {
+        color-scheme: dark;
+        --bg: #090b0d;
+        --panel: #111517;
+        --panel2: #1b2023;
+        --line: #30383d;
+        --line-soft: rgba(48, 56, 61, 0.7);
+        --text: #eef1ec;
+        --muted: #a8b3b3;
+        --faint: #8d9a9a;
+        --accent: #d1ff4a;
+        --ink: #16200d;
+        --highlight: #ffc56b;
+        --accent-soft: rgba(209, 255, 74, 0.14);
+        --accent-line: rgba(209, 255, 74, 0.45);
+        --hover: rgba(238, 241, 236, 0.06);
+        --dot: rgba(238, 241, 236, 0.07);
+        --f-body: "Manrope", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+        --f-display: "Syne", "Manrope", system-ui, sans-serif;
+        --f-mono: "Space Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+        --r-lg: 18px;
+        --r: 12px;
+        --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+        --maxw: 75rem;
+        --gutter: clamp(16px, 4vw, 40px);
+        --island-shadow: 0 18px 50px -18px rgba(0, 0, 0, 0.55), 0 2px 8px -2px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      }
+      @media (min-width: 1800px) {
+        html {
+          font-size: 17px;
+        }
+      }
+      @media (min-width: 2200px) {
+        html {
+          font-size: 18.5px;
+        }
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html {
+        background: var(--bg);
+        -webkit-text-size-adjust: 100%;
+        scroll-padding-top: 6rem;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        overflow-x: hidden;
+        color: var(--text);
+        font-family: var(--f-body);
+        font-size: 1rem;
+        line-height: 1.55;
+        letter-spacing: -0.005em;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+        background:
+          radial-gradient(70rem 38rem at 4% -6rem, var(--accent-soft), transparent 62%),
+          radial-gradient(56rem 40rem at 104% 44rem, rgba(209, 255, 74, 0.055), transparent 62%),
+          var(--bg);
+        background-repeat: no-repeat;
+      }
+      /* Film grain, the app's texture. */
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        pointer-events: none;
+        opacity: 0.05;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+      }
+
+      img,
+      svg {
+        display: block;
+        max-width: 100%;
+      }
+      h1,
+      h2,
+      h3,
+      p,
+      ul,
+      figure {
+        margin: 0;
+      }
+      ul {
+        padding: 0;
+        list-style: none;
+      }
+      a {
+        color: inherit;
+      }
+      /* The outline follows each element's own corner radius. */
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+      .text-link:focus-visible {
+        border-radius: 4px;
+      }
+      .wrap {
+        width: 100%;
+        max-width: calc(var(--maxw) + 2 * var(--gutter));
+        margin-inline: auto;
+        padding-inline: var(--gutter);
+      }
+      .num {
+        font-family: var(--f-mono);
+        font-size: 0.92em;
+        letter-spacing: -0.02em;
+      }
+      .micro {
+        color: var(--faint);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .i {
+        width: 18px;
+        height: 18px;
+        flex: none;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.7;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .skip {
+        position: absolute;
+        left: 12px;
+        top: -100px;
+        z-index: 200;
+        padding: 10px 14px;
+        border-radius: var(--r);
+        background: var(--accent);
+        color: var(--ink);
+        font-weight: 700;
+        text-decoration: none;
+      }
+      .skip:focus {
+        top: 12px;
+      }
+
+      /* Buttons, as in the app. */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        min-height: 3.25rem;
+        padding: 0.8rem 1.35rem;
+        border-radius: 13px;
+        border: 1px solid var(--line-soft);
+        background: var(--panel2);
+        color: var(--text);
+        font-size: 1rem;
+        font-weight: 650;
+        line-height: 1.2;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: background 120ms, border-color 120ms, box-shadow 120ms, transform 120ms;
+      }
+      .btn:hover {
+        background: color-mix(in srgb, var(--panel2) 90%, var(--text));
+        border-color: var(--line);
+      }
+      .btn:active {
+        transform: translateY(1px) scale(0.99);
+      }
+      .btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--ink);
+        font-weight: 750;
+        box-shadow: 0 10px 30px -10px var(--accent-line);
+      }
+      .btn.primary:hover {
+        background: color-mix(in srgb, var(--accent) 88%, var(--text));
+        box-shadow: 0 12px 36px -10px var(--accent-line);
+      }
+      .btn.sm {
+        min-height: 2.375rem;
+        padding: 0.45rem 0.85rem;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        gap: 7px;
+      }
+      .btn.ghost {
+        background: transparent;
+        border-color: transparent;
+      }
+      .btn.ghost:hover {
+        background: var(--hover);
+      }
+      .btn .i {
+        width: 1.15em;
+        height: 1.15em;
+      }
+
+      /* Top bar: a floating island like the app's. */
+      .top-shell {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        padding-top: 10px;
+        pointer-events: none;
+      }
+      .top {
+        pointer-events: auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        max-width: var(--maxw);
+        margin-inline: auto;
+        padding: 7px 7px 7px 12px;
+        border-radius: var(--r-lg);
+        border: 1px solid var(--line-soft);
+        background: rgba(17, 21, 23, 0.74);
+        -webkit-backdrop-filter: blur(20px) saturate(1.25);
+        backdrop-filter: blur(20px) saturate(1.25);
+        box-shadow: var(--island-shadow);
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        border-radius: 10px;
+      }
+      .brand img {
+        width: 32px;
+        height: 32px;
+      }
+      .wordmark {
+        font-family: var(--f-display);
+        font-weight: 700;
+        font-size: 1.3rem;
+        letter-spacing: -0.015em;
+        line-height: 1;
+      }
+      .top nav {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      /* Hero */
+      .hero {
+        padding-top: clamp(3rem, 9vh, 6.5rem);
+        padding-bottom: clamp(2.5rem, 6vh, 4rem);
+      }
+      h1 {
+        font-family: var(--f-display);
+        font-weight: 700;
+        /* The second line is about 13.6em wide: it stays on one line from tablets up. */
+        font-size: clamp(2.25rem, (100vw - 2 * var(--gutter)) / 14.3, 5.25rem);
+        line-height: 1.02;
+        letter-spacing: -0.04em;
+        text-wrap: balance;
+      }
+      h1 span {
+        display: block;
+        color: var(--muted);
+      }
+      .lede {
+        max-width: 38rem;
+        margin-top: clamp(1.25rem, 2.6vh, 1.75rem);
+        color: var(--muted);
+        font-size: clamp(1.0625rem, 0.95rem + 0.4vw, 1.25rem);
+        line-height: 1.55;
+        text-wrap: pretty;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 14px 16px;
+        margin-top: clamp(1.75rem, 4vh, 2.5rem);
+      }
+      .action {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .hint {
+        padding-left: 4px;
+        color: var(--faint);
+        font-size: 0.875rem;
+      }
+      .unsigned {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        max-width: 38rem;
+        margin-top: 1.5rem;
+        padding: 12px 14px;
+        border-radius: var(--r);
+        border: 1px solid rgba(255, 197, 107, 0.2);
+        background: rgba(255, 197, 107, 0.06);
+        color: var(--muted);
+        font-size: 0.875rem;
+        line-height: 1.5;
+      }
+      .unsigned .i {
+        margin-top: 1px;
+        color: var(--highlight);
+      }
+      .unsigned b {
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      /* The editor screenshot on a workspace card. */
+      .shot {
+        position: relative;
+        isolation: isolate;
+      }
+      .shot::before {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        inset: 8% 12% -2%;
+        border-radius: 50%;
+        background: radial-gradient(closest-side, rgba(209, 255, 74, 0.13), transparent);
+        filter: blur(30px);
+      }
+      .frame {
+        padding: clamp(6px, 0.9vw, 12px);
+        border-radius: var(--r-lg);
+        border: 1px solid var(--line-soft);
+        background:
+          radial-gradient(var(--dot) 1px, transparent 1.4px) 0 0 / 14px 14px,
+          linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01)),
+          var(--panel);
+        box-shadow: 0 50px 120px -50px rgba(0, 0, 0, 0.9), 0 18px 50px -18px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+      .frame img {
+        width: 100%;
+        height: auto;
+        border-radius: 10px;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+      }
+
+      /* Sections */
+      .section {
+        padding-top: clamp(4.5rem, 11vw, 8rem);
+      }
+      .section-head {
+        max-width: 40rem;
+        margin-bottom: clamp(1.75rem, 4vw, 2.75rem);
+      }
+      h2 {
+        margin-top: 0.75rem;
+        font-family: var(--f-display);
+        font-weight: 700;
+        font-size: clamp(1.85rem, 1.1rem + 2.4vw, 3rem);
+        line-height: 1.06;
+        letter-spacing: -0.035em;
+        text-wrap: balance;
+      }
+      /* Room for "The tools a thumbnail needs" on one line on desktops; the paragraph keeps its measure. */
+      .section-head.wide {
+        max-width: 48rem;
+      }
+      .section-head p:not(.micro) {
+        max-width: 40rem;
+        margin-top: 1rem;
+        color: var(--muted);
+        font-size: 1.0625rem;
+        text-wrap: pretty;
+      }
+      kbd {
+        display: inline-block;
+        min-width: 1.6em;
+        padding: 0 0.4em;
+        border-radius: 6px;
+        border: 1px solid var(--line);
+        background: var(--panel2);
+        color: var(--text);
+        font-family: var(--f-body);
+        font-size: 0.85em;
+        font-weight: 650;
+        line-height: 1.6;
+        text-align: center;
+      }
+
+      .card {
+        border-radius: var(--r-lg);
+        border: 1px solid var(--line-soft);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 60%), color-mix(in srgb, var(--panel) 86%, transparent);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+      }
+
+      /* Features */
+      .features {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .feature {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 1.25rem 1.25rem 1.35rem;
+      }
+      .tile {
+        display: grid;
+        place-items: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        margin-bottom: 0.6rem;
+        border-radius: 11px;
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .tile .i {
+        width: 1.25rem;
+        height: 1.25rem;
+      }
+      h3 {
+        font-size: 1.0625rem;
+        font-weight: 700;
+        line-height: 1.3;
+        letter-spacing: -0.01em;
+      }
+      .feature p {
+        color: var(--muted);
+        font-size: 0.9375rem;
+        line-height: 1.5;
+        text-wrap: pretty;
+      }
+
+      /* Sizes */
+      .split {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        gap: clamp(2rem, 5vw, 4.5rem);
+        align-items: center;
+      }
+      .split .section-head {
+        margin-bottom: 0;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 1.75rem;
+      }
+      .chips li {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 8px;
+        padding: 7px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--line-soft);
+        background: color-mix(in srgb, var(--panel) 86%, transparent);
+        font-size: 0.875rem;
+        font-weight: 600;
+      }
+      .chips .num {
+        color: var(--faint);
+        font-size: 0.8rem;
+      }
+
+      /* Open source */
+      .open {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        gap: clamp(2rem, 5vw, 4rem);
+        padding: clamp(1.5rem, 4vw, 3.25rem);
+      }
+      .open .section-head {
+        margin-bottom: 0;
+      }
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 1.75rem;
+      }
+      .facts {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.75rem 2rem;
+        align-content: center;
+      }
+      .facts li {
+        padding-top: 1rem;
+        border-top: 1px solid var(--line-soft);
+      }
+      .facts h3 {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+      }
+      .facts h3 .i {
+        color: var(--accent);
+      }
+      .facts p {
+        margin-top: 0.4rem;
+        color: var(--muted);
+        font-size: 0.9375rem;
+        line-height: 1.5;
+        text-wrap: pretty;
+      }
+      .text-link {
+        text-decoration: underline;
+        text-decoration-color: var(--accent-line);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+        transition: text-decoration-color 120ms, color 120ms;
+      }
+      .text-link:hover {
+        color: var(--text);
+        text-decoration-color: var(--accent);
+      }
+
+      /* Siblings: a footnote to the open-source card, so it sits close under it. */
+      .section.after-open {
+        padding-top: clamp(0.75rem, 1.4vw, 1.25rem);
+      }
+      .siblings {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        padding: 1.25rem clamp(1.25rem, 3vw, 2rem);
+      }
+      .coord {
+        flex: none;
+        width: 3rem;
+        height: 3rem;
+        color: var(--accent);
+      }
+      .coord .i {
+        width: 100%;
+        height: 100%;
+        stroke-width: 1.1;
+      }
+      .siblings p {
+        color: var(--muted);
+        font-size: 1rem;
+        text-wrap: pretty;
+      }
+      .siblings .aside {
+        margin-top: 0.2rem;
+        color: var(--faint);
+        font-size: 0.9375rem;
+      }
+      .siblings strong {
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      /* Closing call to action */
+      .closing {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .closing img {
+        width: clamp(88px, 10vw, 128px);
+        height: auto;
+        margin-bottom: 1.75rem;
+      }
+      .closing h2 {
+        margin-top: 0;
+        max-width: 18ch;
+      }
+      .closing > p {
+        max-width: 34rem;
+        margin-top: 1rem;
+        color: var(--muted);
+        font-size: 1.0625rem;
+        text-wrap: balance;
+      }
+      .closing .actions {
+        justify-content: center;
+      }
+      .closing .action {
+        align-items: center;
+      }
+
+      /* Footer */
+      footer {
+        margin-top: clamp(4.5rem, 10vw, 7rem);
+      }
+      .foot {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem 2rem;
+        padding: 1.75rem 0 2.5rem;
+        border-top: 1px solid var(--line-soft);
+        color: var(--faint);
+        font-size: 0.875rem;
+      }
+      .foot-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted);
+      }
+      .foot-brand img {
+        width: 24px;
+        height: 24px;
+      }
+      .foot-brand .wordmark {
+        color: var(--text);
+        font-size: 1.05rem;
+      }
+      .foot nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 1.5rem;
+      }
+      .foot nav a {
+        color: var(--muted);
+        text-decoration: none;
+        border-radius: 4px;
+      }
+      .foot nav a:hover {
+        color: var(--text);
+        text-decoration: underline;
+        text-decoration-color: var(--accent-line);
+        text-underline-offset: 3px;
+      }
+
+      /* Tablet */
+      @media (max-width: 1023px) {
+        .features {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .split,
+        .open {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .split .section-head {
+          max-width: 40rem;
+        }
+      }
+      /* Phone */
+      @media (max-width: 639px) {
+        .top {
+          padding-left: 10px;
+        }
+        .brand img {
+          width: 28px;
+          height: 28px;
+        }
+        .wordmark {
+          font-size: 1.15rem;
+        }
+        .top .btn.sm {
+          padding-inline: 0.7rem;
+        }
+        .top .btn.sm .i {
+          display: none;
+        }
+        .actions,
+        .action {
+          width: 100%;
+        }
+        .btn {
+          width: 100%;
+        }
+        .top .btn {
+          width: auto;
+        }
+        .closing .action {
+          align-items: stretch;
+        }
+        .links .btn {
+          width: auto;
+        }
+        /* Presets as a compact list: name left, size right. */
+        .chips {
+          display: block;
+          padding: 4px 14px;
+          border-radius: var(--r-lg);
+          border: 1px solid var(--line-soft);
+          background: color-mix(in srgb, var(--panel) 86%, transparent);
+        }
+        .chips li {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          padding: 10px 0;
+          border: 0;
+          border-radius: 0;
+          background: none;
+        }
+        .chips li + li {
+          border-top: 1px solid var(--line-soft);
+        }
+        .features {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 10px;
+        }
+        .feature {
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr);
+          column-gap: 14px;
+          row-gap: 0.25rem;
+          padding: 1rem 1rem 1.1rem;
+        }
+        .feature .tile {
+          grid-row: span 2;
+          margin-bottom: 0;
+        }
+        .facts {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 1.25rem;
+        }
+        .siblings {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.9rem;
+        }
+        .coord {
+          width: 2.5rem;
+          height: 2.5rem;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+
+    <div class="top-shell wrap">
+      <header class="top">
+        <a class="brand" href="./">
+          <img src="assets/favicon.svg" width="32" height="32" alt="" />
+          <span class="wordmark">Longitude</span>
+        </a>
+        <nav aria-label="Site">
+          <a class="btn sm ghost" href="https://github.com/zphat/Longitude">GitHub</a>
+          <a class="btn sm" href="https://github.com/zphat/Longitude/releases/latest/download/Longitude-Setup.exe">
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /><path d="M12 15V3" /></svg>
+            Download
+          </a>
+        </nav>
+      </header>
+    </div>
+
+    <main id="main">
+      <section class="hero wrap" aria-labelledby="title">
+        <h1 id="title">Thumbnails and covers. <span>No fees, nothing uploaded.</span></h1>
+        <p class="lede">Longitude is a small, open-source image editor for YouTube thumbnails and Spotify covers that runs on your own computer, with no account and no subscription.</p>
+
+        <div class="actions" id="download">
+          <div class="action">
+            <a class="btn primary" href="https://github.com/zphat/Longitude/releases/latest/download/Longitude-Setup.exe">
+              <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /><path d="M12 15V3" /></svg>
+              Download for Windows
+            </a>
+            <p class="hint"><span class="num">36 MB</span> · Windows 10 and 11</p>
+          </div>
+          <div class="action">
+            <a class="btn" href="app/">
+              Open in your browser
+              <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+            </a>
+            <p class="hint">Chrome, Edge or Firefox · nothing to install</p>
+          </div>
+        </div>
+
+        <p class="unsigned">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></svg>
+          <span>The installer is not code-signed yet. If Windows says “Windows protected your PC”, choose <b>More info</b>, then <b>Run anyway</b>.</span>
+        </p>
+      </section>
+
+      <figure class="shot wrap">
+        <div class="frame">
+          <img src="assets/editor.webp" width="2000" height="1250" fetchpriority="high" alt="The Longitude editor with a YouTube thumbnail: a stroked headline that reads I tested 5 free editors, a sticker burst, a cutout with an outline, a red highlight circle and a bent arrow. Tools on the left, text settings and layers on the right." />
+        </div>
+      </figure>
+
+      <section class="section wrap" aria-labelledby="what">
+        <div class="section-head wide">
+          <p class="micro">What it does</p>
+          <h2 id="what">The tools a thumbnail needs</h2>
+          <p>Every action is a command: <kbd>Ctrl</kbd> <kbd>K</kbd> finds it, and the tooltips show the shortcut.</p>
+        </div>
+        <ul class="features">
+          <li class="feature card">
+            <span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21" /></svg></span>
+            <h3>Your own images and fonts</h3>
+            <p>PNG, JPEG, WebP, GIF, AVIF, BMP and SVG, plus any TTF, OTF, WOFF or WOFF2 font you drop in.</p>
+          </li>
+          <li class="feature card">
+            <span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v4" /><path d="M12 10v4" /><path d="M12 18v4" /><rect x="5" y="6" width="14" height="4" rx="1" /><rect x="8" y="14" width="8" height="4" rx="1" /></svg></span>
+            <h3>Snap guides</h3>
+            <p>Layers pull to the center and to each other. A lime line shows when something is centered.</p>
+          </li>
+          <li class="feature card">
+            <span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V4h16v3" /><path d="M9 20h6" /><path d="M12 4v16" /></svg></span>
+            <h3>Stroked text</h3>
+            <p>Stroke, a second outline, shadow, glow and a background pill, edited on the canvas.</p>
+          </li>
+          <li class="feature card">
+            <span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.2 5.4C11.2 3.8 5.6 5.2 3.7 9c-1.9 4 1.2 8.6 7.3 9.3 6 .7 10.4-2.3 9.9-6.4-.4-3.7-5.4-6.5-10.9-5.8" /></svg></span>
+            <h3>Highlight circles and arrows</h3>
+            <p>Circle the thing that matters, then point at it with an arrow you can bend.</p>
+          </li>
+          <li class="feature card">
+            <span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V6a2 2 0 0 1 2-2h2" /><path d="M16 4h2a2 2 0 0 1 2 2v2" /><path d="M20 16v2a2 2 0 0 1-2 2h-2" /><path d="M8 20H6a2 2 0 0 1-2-2v-2" /><circle cx="12" cy="10" r="3" /><path d="M7.5 18.5c.9-2.3 2.5-3.5 4.5-3.5s3.6 1.2 4.5 3.5" /></svg></span>
+            <h3>Background removal on your computer</h3>
+            <p>One click cuts out a person or an object. The image never leaves your computer.</p>
+          </li>
+          <li class="feature card">
+            <span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /><path d="M12 15V3" /></svg></span>
+            <h3>Export under 2&nbsp;MB</h3>
+            <p>PNG, JPG or WebP, with “fit under 2&nbsp;MB” for YouTube and a 256-color PNG option.</p>
+          </li>
+          <li class="feature card">
+            <span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /></svg></span>
+            <h3>Feed preview</h3>
+            <p>See your design at real size in a mock YouTube home grid, on a phone or in a Spotify library.</p>
+          </li>
+          <li class="feature card">
+            <span class="tile"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10l-3.1-3.1a2 2 0 0 0-2.81.01L6 21" /><path d="m14 19 3 3v-5.5" /><path d="m17 22 3-3" /><circle cx="9" cy="9" r="2" /></svg></span>
+            <h3>Quick tools</h3>
+            <p>Compress a batch of images, remove a background, or resize and convert, without opening a design.</p>
+          </li>
+        </ul>
+      </section>
+
+      <section class="section wrap split" aria-labelledby="sizes">
+        <div class="section-head">
+          <p class="micro">Presets</p>
+          <h2 id="sizes">Start at the right size</h2>
+          <p>Pick a size, drop an image, or pick up where you left off. Every preset is drawn to scale, and safe-zone overlays show what the platform covers, like the duration badge on a thumbnail.</p>
+          <ul class="chips" aria-label="Some of the presets">
+            <li>YouTube thumbnail <span class="num">1280 × 720</span></li>
+            <li>Shorts <span class="num">1080 × 1920</span></li>
+            <li>Channel banner <span class="num">2560 × 1440</span></li>
+            <li>Podcast cover <span class="num">3000 × 3000</span></li>
+            <li>Playlist cover <span class="num">1080 × 1080</span></li>
+            <li>Custom <span class="num">16 to 8000 px</span></li>
+          </ul>
+        </div>
+        <figure class="shot">
+          <div class="frame">
+            <img src="assets/home.webp" width="2000" height="1250" loading="lazy" decoding="async" alt="The Longitude home screen: a recent design, YouTube, Spotify and social presets drawn to scale, a drop zone for images and the quick tools." />
+          </div>
+        </figure>
+      </section>
+
+      <section class="section wrap" aria-labelledby="open">
+        <div class="open card">
+          <div class="section-head">
+            <p class="micro">Free and open source</p>
+            <h2 id="open">Yours to use, read and change</h2>
+            <p>Longitude is plain files with no build step. Read the code, run it from the folder, or make it your own with a mod.</p>
+            <div class="links">
+              <a class="btn sm" href="https://github.com/zphat/Longitude">
+                <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m16 18 6-6-6-6" /><path d="m8 6-6 6 6 6" /></svg>
+                Source on GitHub
+              </a>
+              <a class="btn sm ghost" href="https://github.com/zphat/Longitude/blob/main/docs/MODDING.md">Writing a mod</a>
+            </div>
+          </div>
+          <ul class="facts">
+            <li>
+              <h3><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /></svg>MIT license</h3>
+              <p>Use it for anything, including paid work. The bundled fonts are free to use in your thumbnails.</p>
+            </li>
+            <li>
+              <h3><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>No account</h3>
+              <p>Nothing to sign up for. Designs are saved on your computer and leave it only when you export them.</p>
+            </li>
+            <li>
+              <h3><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg>No telemetry</h3>
+              <p>No analytics. The desktop app looks for a newer release once a day, and you can turn that off.</p>
+            </li>
+            <li>
+              <h3><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.39 4.39a1 1 0 0 0 1.68-.47 2.5 2.5 0 1 1 3.01 3.01 1 1 0 0 0-.47 1.68l1.68 1.68a2.41 2.41 0 0 1 0 3.42l-1.68 1.68a1 1 0 0 1-1.68-.47 2.5 2.5 0 1 0-3.01 3.01 1 1 0 0 1 .47 1.68l-1.68 1.68a2.41 2.41 0 0 1-3.42 0l-1.68-1.68a1 1 0 0 0-1.68.47 2.5 2.5 0 1 1-3.01-3.01 1 1 0 0 0 .47-1.68l-1.68-1.68a2.41 2.41 0 0 1 0-3.42l1.68-1.68a1 1 0 0 1 1.68.47 2.5 2.5 0 1 0 3.01-3.01 1 1 0 0 1-.47-1.68l1.68-1.68a2.41 2.41 0 0 1 3.42 0z" /></svg>Mods</h3>
+              <p>Packs add themes, presets and palettes. Code mods get a small, versioned API for commands, tools and filters.</p>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="section after-open wrap" aria-label="Sibling apps">
+        <div class="siblings card">
+          <span class="coord" aria-hidden="true">
+            <svg class="i" viewBox="0 0 48 48"><circle cx="24" cy="24" r="21" /><path d="M24 3c-7 5.5-10 13-10 21s3 15.5 10 21" opacity=".55" /><path d="M24 3c7 5.5 10 13 10 21s-3 15.5-10 21" opacity=".55" /><path d="M24 3v42" /><path d="M3 24h42" stroke="var(--text)" /><circle cx="24" cy="24" r="3" fill="currentColor" stroke="none" /></svg>
+          </span>
+          <div>
+            <p>Longitude has two siblings with the same look: <a class="text-link" href="https://github.com/zphat/Latitude"><strong>Latitude</strong></a>, a screen recorder, and <a class="text-link" href="https://github.com/zphat/Sundial"><strong>Sundial</strong></a>, a planner.</p>
+            <p class="aside">Latitude and longitude together give a coordinate: a target to aim for.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section wrap closing" aria-labelledby="get">
+        <img src="assets/longitude-logo.svg" width="128" height="128" alt="" loading="lazy" />
+        <h2 id="get">Make your next thumbnail here</h2>
+        <p>Free on Windows and in the browser. The desktop app includes background removal, so it works offline right after install. The browser version downloads it once, about 69&nbsp;MB, the first time you use it.</p>
+        <div class="actions">
+          <div class="action">
+            <a class="btn primary" href="https://github.com/zphat/Longitude/releases/latest/download/Longitude-Setup.exe">
+              <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /><path d="M12 15V3" /></svg>
+              Download for Windows
+            </a>
+          </div>
+          <div class="action">
+            <a class="btn" href="app/">
+              Open in your browser
+              <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="wrap">
+      <div class="foot">
+        <div class="foot-brand">
+          <img src="assets/favicon.svg" width="24" height="24" alt="" />
+          <span class="wordmark">Longitude</span>
+          <span>MIT License</span>
+        </div>
+        <nav aria-label="Footer">
+          <a href="https://github.com/zphat/Longitude">GitHub</a>
+          <a href="https://github.com/zphat/Longitude/releases/latest">Latest release on GitHub</a>
+          <a href="https://github.com/zphat/Longitude/blob/main/LICENSE">License</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

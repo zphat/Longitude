@@ -6,6 +6,9 @@ stroked text, circle and arrow the thing that matters, cut out the
 background, and export under the platform's size limit. No account, no
 subscription, no stock library, nothing uploaded.
 
+**Website:** <https://zphat.github.io/Longitude/> ·
+**Try it in your browser:** <https://zphat.github.io/Longitude/app/> (nothing to install)
+
 ![The Longitude editor with a YouTube thumbnail: stroked headline, sticker burst, cutout with an outline, highlight circle and a bent arrow](docs/images/editor.webp)
 
 Longitude is the sibling of [Latitude](https://github.com/zphat/Latitude)
@@ -205,6 +208,7 @@ tools/                          font build, model fetch, module checker
 tests/                          Deno unit tests
 docs/                           SPEC (architecture contract), modding, fonts, background removal, desktop app
 brand/                          the logo (SVG and PNG) and when to use which file
+site/                           the website; GitHub Pages publishes it with web/ as app/ (.github/workflows/pages.yml)
 ```
 
 ## Development

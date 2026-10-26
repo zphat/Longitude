@@ -1,0 +1,76 @@
+# Publishes the website on GitHub Pages: the landing page (site/) at the root and the browser version of the app (a copy
+# of web/) under app/, so https://zphat.github.io/Longitude/ is the landing page and .../Longitude/app/ is the editor.
+# Every URL in site/ and web/ is relative, so the same files work on a custom domain without changes (the social card
+# image in site/index.html is the one absolute URL; its comment says what to change).
+# web/vendor/ (the offline background remover) is git-ignored, so it is not in the checkout and never published: the
+# browser version downloads the runtime and model once, when someone asks for background removal.
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # Only these feed the site. site/assets/ holds copies of the logos in brand/ and the screenshots in
+      # docs/images/: when those change, copy them into site/assets/ as well.
+      - "web/**"
+      - "site/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. A newer push waits for the running one instead of cancelling it halfway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+# GitHub's own actions/* stay on their major tags (the convention in build.yml).
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # _site/ = site/* with web/ as _site/app/. Both come from the checkout, so git-ignored files never get in.
+      # site/.nojekyll only matters for branch builds: nothing runs Jekyll here, and upload-pages-artifact leaves
+      # dotfiles out of the artifact.
+      - name: Assemble the site
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site/app
+          cp -R site/. _site/
+          cp -R web/. _site/app/
+          # upload-pages-artifact archives with --dereference, so a symbolic link would publish whatever it points
+          # to. Only real files from site/ and web/ go out.
+          if find _site -type l | grep .; then
+            echo "::error::Symbolic link found in site/ or web/ (above). Replace it with the file itself."
+            exit 1
+          fi
+          for f in index.html assets/og.png assets/favicon.svg app/index.html app/sw.js app/js/main.js app/fonts/ui/syne.woff2 app/fonts/ui/manrope.woff2 app/fonts/ui/spacemono-400.woff2; do
+            test -f "_site/$f" || { echo "::error::_site/$f is missing"; exit 1; }
+          done
+          # A root-absolute URL would break under /Longitude/ (or on the custom domain later).
+          if grep -rnE '(href|src)="/[^/]|url\(["'"'"']?/[^/]' _site --include='*.html' --include='*.css'; then
+            echo "::error::Root-absolute URL found (above). Use a relative URL so the site works under /Longitude/ and on its own domain."
+            exit 1
+          fi
+          du -sh _site _site/app
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
