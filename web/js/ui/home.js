@@ -111,6 +111,24 @@ export function bgCardSnooze(pref, now = Date.now()) {
   return { until: now + BG_SNOOZE_MS, count, never: count >= 2 };
 }
 
+// The "Get the desktop app" card on the web version. Windows only (so is the
+// installer), never inside the desktop app, and only once the person has a
+// design, so a first look is not a sales pitch. "Not now" hides it for 30 days,
+// a second "Not now" or a click on Download for good (same pref shape as above).
+const DESK_CARD_PREF = "desktopCard";
+export const DESK_SNOOZE_MS = 30 * 24 * 60 * 60 * 1000;
+export const DESKTOP_DOWNLOAD = "https://github.com/zphat/Longitude/releases/latest/download/Longitude-Setup.exe";
+
+export function deskCardSnooze(pref, now = Date.now()) {
+  const count = (Number(pref?.count) || 0) + 1;
+  return { until: now + DESK_SNOOZE_MS, count, never: count >= 2 };
+}
+
+export function showDesktopCard({ desktop, platform, designs, pref, now = Date.now() }) {
+  if (desktop || !/win/i.test(platform || "") || !(designs > 0)) return false;
+  return !bgCardSnoozed(pref, now);
+}
+
 export function mountHome(ctx, el = document.getElementById("home")) {
   let isOpen = false;
   let thumbs = new Map(); // "id:updated:size" -> object URL, reused across refreshes
@@ -415,6 +433,50 @@ export function mountHome(ctx, el = document.getElementById("home")) {
     ctx.bg?.prepare?.(id).catch(() => {});
   }
 
+  // ---- the desktop app: a quiet offer on the web version
+
+  const deskDownload = h(
+    "a",
+    { class: "btn", href: DESKTOP_DOWNLOAD, target: "_blank", rel: "noopener" },
+    icon("download", { size: "sm" }),
+    h("span", null, "Download for Windows"),
+  );
+  const deskNotNow = bgButton("Not now", "ghost", () => {
+    ctx.prefs.set(DESK_CARD_PREF, deskCardSnooze(ctx.prefs.get(DESK_CARD_PREF, null)));
+    paintDeskCard();
+  });
+  deskDownload.addEventListener("click", () => {
+    ctx.prefs.set(DESK_CARD_PREF, { never: true });
+    setTimeout(paintDeskCard, 600);
+  });
+  const deskCard = h(
+    "section",
+    { class: "home-bg home-desk", hidden: true, "aria-labelledby": "home-desk-title" },
+    h(
+      "div",
+      { class: "home-bg-head" },
+      h("span", { class: "home-bg-icon", "aria-hidden": "true" }, icon("monitor", { size: "sm" })),
+      h(
+        "div",
+        { class: "home-bg-copy" },
+        h("h2", { class: "home-bg-title", id: "home-desk-title" }, "Get the desktop app"),
+        h("p", { class: "home-bg-text" }, "Background removal is built in, it works offline, and it opens like any other program. Free for Windows."),
+      ),
+    ),
+    h("div", { class: "home-bg-actions" }, deskDownload, deskNotNow),
+  );
+
+  function paintDeskCard() {
+    const show = showDesktopCard({
+      desktop: !!(ctx.desktop || document.documentElement.dataset.desktop),
+      platform: navigator.userAgentData?.platform || navigator.platform || "",
+      designs: recentCache.length,
+      pref: ctx.prefs.get(DESK_CARD_PREF, null),
+    });
+    if (!show && deskCard.contains(document.activeElement)) (presetsEl.querySelector(".preset-card") || el).focus({ preventScroll: true });
+    deskCard.hidden = !show;
+  }
+
   function paintBgTool(s = bgStatus()) {
     const words = s && ctx.bg?.describe ? ctx.bg.describe(s) : null;
     const quiet = !words || s.kind !== "ml" || s.ready || s.state === "checking";
@@ -619,6 +681,7 @@ export function mountHome(ctx, el = document.getElementById("home")) {
     if (ticket !== refreshing) return;
     recentCache = list;
     renderRecent(list);
+    paintDeskCard();
   }
   const refreshSoon = debounce(() => isOpen && refresh(), 250);
 
@@ -647,7 +710,7 @@ export function mountHome(ctx, el = document.getElementById("home")) {
         "div",
         { class: "home-grid" },
         h("div", { class: "home-main" }, presetsEl),
-        h("aside", { class: "home-side" }, drop, bgCard, h("section", { class: "home-tools" }, h("h2", { class: "home-h micro" }, "Quick tools"), toolsEl)),
+        h("aside", { class: "home-side" }, drop, bgCard, deskCard, h("section", { class: "home-tools" }, h("h2", { class: "home-h micro" }, "Quick tools"), toolsEl)),
       ),
       footer,
     ),

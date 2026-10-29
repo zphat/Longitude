@@ -1996,6 +1996,9 @@ input.palette-input::placeholder {
   min-height: 30px;
   padding: 5px 12px;
 }
+.home-bg-actions a.btn {
+  text-decoration: none;
+}
 
 /* Quick tools */
 .tool-grid {
