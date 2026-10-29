@@ -6,8 +6,8 @@ stroked text, circle and arrow the thing that matters, cut out the
 background, and export under the platform's size limit. No account, no
 subscription, no stock library, nothing uploaded.
 
-**Website:** <https://zphat.github.io/Longitude/> ·
-**Try it in your browser:** <https://zphat.github.io/Longitude/app/> (nothing to install)
+**Website:** <https://longitude.pictures> ·
+**Try it in your browser:** <https://longitude.pictures/app/> (nothing to install)
 
 ![The Longitude editor with a YouTube thumbnail: stroked headline, sticker burst, cutout with an outline, highlight circle and a bent arrow](docs/images/editor.webp)
 

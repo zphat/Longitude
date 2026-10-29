@@ -1,5 +1,5 @@
 # Publishes the website on GitHub Pages: the landing page (site/) at the root and the browser version of the app (a copy
-# of web/) under app/, so https://zphat.github.io/Longitude/ is the landing page and .../Longitude/app/ is the editor.
+# of web/) under app/, so https://longitude.pictures/ is the landing page and .../app/ is the editor.
 # Every URL in site/ and web/ is relative, so the same files work on a custom domain without changes (the social card
 # image in site/index.html is the one absolute URL; its comment says what to change).
 # web/vendor/ (the offline background remover) is git-ignored, so it is not in the checkout and never published: the
